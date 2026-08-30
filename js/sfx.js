@@ -17,15 +17,15 @@
 import { TIMING } from "./timing.js";
 
 export const JINGLE_SRC = {
-  intellect: "../sounds/IntellectJingle.mp3",
-  psyche: "../sounds/PsyJingle.mp3",
-  physique: "../sounds/PhysicalJingle.mp3",
-  motorics: "../sounds/MotoricsJingle.mp3",
+  intellect: "sounds/IntellectJingle.mp3",
+  psyche: "sounds/PsyJingle.mp3",
+  physique: "sounds/PhysicalJingle.mp3",
+  motorics: "sounds/MotoricsJingle.mp3",
 };
 
 export const ROLL_SRC = {
-  success: "../sounds/RollSuccess.mp3",
-  failure: "../sounds/RollFailure.mp3",
+  success: "sounds/RollSuccess.mp3",
+  failure: "sounds/RollFailure.mp3",
 };
 
 const cache = {};
@@ -47,7 +47,7 @@ function clip(src) {
   if (!cache[src]) {
     const audio = new Audio();
     audio.preload = "auto";
-    audio.src = src;
+    audio.src = new URL(src, window.location.href).href;
     try {
       audio.load();
     } catch (error) {

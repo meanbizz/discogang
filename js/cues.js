@@ -20,10 +20,10 @@ const FADE_CLASS = "is-fading";
 /* Overlay art, held in memory from boot so the verdict never waits on a
    fetch at the moment the tape stops. */
 const CHECK_ART = [
-  "../images/check-success-background.png",
-  "../images/check-failure-background.png",
-  "../images/check-success-title.svg",
-  "../images/check-failure-title.svg",
+  "images/check-success-background.png",
+  "images/check-failure-background.png",
+  "images/check-success-title.svg",
+  "images/check-failure-title.svg",
 ];
 
 const artHeld = [];
@@ -38,11 +38,11 @@ export function preloadAll() {
   if (artHeld.length) return;
 
   const wanted = CHECK_ART.slice();
-  for (let i = 1; i <= 6; i += 1) wanted.push("../images/dice/" + i + ".svg");
+  for (let i = 1; i <= 6; i += 1) wanted.push("images/dice/" + i + ".svg");
 
   wanted.forEach((src) => {
     const image = new Image();
-    image.src = src;
+    image.src = new URL(src, window.location.href).href;
     /* Keeping the reference is what keeps the decode around. */
     artHeld.push(image);
   });
@@ -87,7 +87,8 @@ function stopTape() {
 function paintDie(image, value) {
   if (!image) return;
   if (value) {
-    image.src = "../images/dice/" + value + ".svg";
+    const resultSrc = "images/dice/" + value + ".svg";
+    image.src = new URL(resultSrc, window.location.href).href;
     image.hidden = false;
     return;
   }
@@ -117,7 +118,10 @@ function showVerdict(check, result) {
   paintDie(dom.checkDie1, check.dice1);
   paintDie(dom.checkDie2, check.dice2);
   if (dom.checkOverlayTitle) {
-    dom.checkOverlayTitle.src = "../images/check-" + result + "-title.svg";
+    dom.checkOverlayTitle.src = new URL(
+      "../images/check-" + result + "-title.svg",
+      window.location.href,
+    ).href;
   }
 
   host.classList.remove("is-in", "is-out");
