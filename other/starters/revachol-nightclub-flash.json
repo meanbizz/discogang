@@ -1,0 +1,90 @@
+{
+  "Danaerys": {
+    "root": "dan-1",
+    "nodes": {
+      "dan-1": {
+        "speaker": "Narrator",
+        "dialogue": "The night air in Jamrock is thick with grease, ozone, and the dull, subterranean thud of compressed low-end frequencies. Before you stands the reinforced steel door of the club, bathed in flickering magenta neon.",
+        "next": "dan-2"
+      },
+      "dan-2": {
+        "speaker": "Inland Empire",
+        "dialogue": "Listen to the door. It isn't just vibrating from the speakers inside—it is breathing. A mechanical beast keeping its stomach full of dancing ghosts, guarded by a solitary sentinel.",
+        "next": "dan-3"
+      },
+      "dan-3": {
+        "speaker": "Narrator",
+        "dialogue": "Under the hum of the neon tube sits Glem. He is a wall of boiled wool and scarred leather, arms folded across a chest built like an iron stove. A dead cigarette hangs loosely between his cracked lips.",
+        "next": "dan-4"
+      },
+      "dan-4": {
+        "speaker": "Empathy",
+        "dialogue": "There is no hatred in his gaze, only a deep, petrified boredom. He has watched ten thousand desperate people try to enter this void, and he expects nothing new from anyone tonight.",
+        "options": [
+          {
+            "id": "dan-opt-neon",
+            "label": "Observe the pulsing neon sign overhead.",
+            "next": "dan-sign"
+          },
+          {
+            "id": "dan-opt-bouncer",
+            "label": "Take in the aura surrounding Glem.",
+            "next": "dan-bouncer"
+          }
+        ]
+      },
+      "dan-sign": {
+        "speaker": "Conceptualization",
+        "dialogue": "The broken glass tubing flickers erratically, casting jagged shadows across the wet cobblestones. It spells out half a name in violet light, an incomplete thought frozen against the Revachol gloom."
+      },
+      "dan-bouncer": {
+        "speaker": "Inland Empire",
+        "dialogue": "Heavy as an anchor dropped in mud. He stands between the cold drizzle of the street and whatever intoxicating madness awaits behind that door. You can feel the static hum of his indifference."
+      }
+    }
+  },
+  "Rando": {
+    "root": "sny-1",
+    "nodes": {
+      "sny-1": {
+        "speaker": "Narrator",
+        "dialogue": "A low-frequency pulse shakes the wet asphalt beneath your boots. The club's entrance is an alleyway bottleneck—narrow, flanked by damp brickwork, and lit in sputtering shades of magenta.",
+        "next": "sny-2"
+      },
+      "sny-2": {
+        "speaker": "Perception",
+        "dialogue": "The air smells of stale motor oil, cheap wintergreen gum, and ozone. A heavy steel door with reinforced hinges sits locked from the inside. At the threshold: one bouncer, nameplate reads *GLEM* in faded yellow paint on his lapel.",
+        "next": "sny-3"
+      },
+      "sny-3": {
+        "speaker": "Visual Calculus",
+        "dialogue": "Weight: roughly 115 kilograms. Center of gravity low, feet planted shoulder-width apart on the dry patch beneath the awning. His right hand rests naturally near his coat pocket—weighted down, likely a sap or a heavy roll of coins.",
+        "next": "sny-4"
+      },
+      "sny-4": {
+        "speaker": "Reaction Speed",
+        "dialogue": "His eyes tracked your boots the moment you entered the alley. Slow blink rate. He isn't drunk; he's calibrated to sudden movements.",
+        "options": [
+          {
+            "id": "sny-opt-door",
+            "label": "Inspect the door and structural bottlenecks.",
+            "next": "sny-door"
+          },
+          {
+            "id": "sny-opt-glem",
+            "label": "Check Glem's gear and physical condition.",
+            "next": "sny-gear"
+          }
+        ]
+      },
+      "sny-door": {
+        "speaker": "Interfacing",
+        "dialogue": "Industrial-grade latch with an auxiliary deadbolt installed aftermarket. A small rectangular sliding slit at eye level allows the doorman to communicate with whoever is inside."
+      },
+      "sny-gear": {
+        "speaker": "Perception",
+        "dialogue": "Calloused knuckles with faint white scar tissue on the index and middle joints. A faint ring of salt stains around his collar from dried sweat. He hasn't moved an inch since you arrived."
+      }
+    }
+  }
+}

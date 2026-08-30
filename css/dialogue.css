@@ -1,6 +1,6 @@
 /* Dialogue rounds: the one-line speaker/verdict/body row, vitals notes,
-   choice buttons, the check overlay, and the administrateur's raw payload
-   echo.
+   choice buttons, the check overlay, the narrator's read-aloud button, and
+   the administrateur's raw payload echo.
 
    Static appearance only — every keyframe and transition these classes take
    part in lives in animations.css. */
@@ -53,6 +53,55 @@
   font-weight: 700;
   letter-spacing: 0.2em;
   opacity: 1;
+}
+
+/* ---------------- Narrator read-aloud ---------------- */
+
+/* Rides at the end of a narrated line and keeps out of the way until the
+   entry is hovered. It stays visible while it is working, so a reading in
+   progress can always be stopped, and it is reachable by keyboard whether
+   the pointer is anywhere near it or not. */
+.entry-speak {
+  padding: 0 0.3rem;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--option-hi);
+  font-size: 0.72rem;
+  line-height: 1.2;
+  vertical-align: baseline;
+  opacity: 0;
+  transition:
+    opacity 90ms linear,
+    border-color 90ms linear,
+    background-color 90ms linear;
+}
+
+.entry.dialogue:hover .entry-speak,
+.entry.dialogue:focus-within .entry-speak,
+.entry-speak[data-state="loading"],
+.entry-speak[data-state="playing"],
+.entry-speak[data-state="error"] {
+  opacity: 1;
+}
+
+.entry-speak:hover {
+  border-color: var(--option);
+  background: rgba(126, 66, 44, 0.24);
+  color: var(--option-hi);
+}
+
+.entry-speak[data-state="loading"] {
+  color: var(--text-now);
+  cursor: progress;
+}
+
+.entry-speak[data-state="playing"] {
+  border-color: var(--option);
+  background: rgba(126, 66, 44, 0.3);
+}
+
+.entry-speak[data-state="error"] {
+  color: var(--danger);
 }
 
 /* Vitals effect */
@@ -244,6 +293,14 @@ button.choice.continue {
   border-color: var(--option);
   background: rgba(126, 66, 44, 0.22);
   color: var(--option-hi);
+}
+
+/* Touch and other pointers with no hover: the button is simply always
+   there, since there is no hover to reveal it with. */
+@media (hover: none) {
+  .entry-speak {
+    opacity: 1;
+  }
 }
 
 @media (max-width: 32rem) {

@@ -12,6 +12,7 @@ import { dom } from "./dom.js";
 import { paintMarkup } from "./utils.js";
 import * as vitals from "./vitals.js";
 import * as cues from "./cues.js";
+import * as narration from "./narration.js";
 
 export const DIFFICULTY_TARGET = {
   trivial: 6,
@@ -432,6 +433,7 @@ export function reset() {
   steps = 0;
   vitalsSpent.clear();
   cues.reset();
+  narration.stop();
   emitArt(null);
 }
 
@@ -503,6 +505,48 @@ function checkTag(check) {
   }
 
   return tag;
+}
+
+/* The narrator's own lines can be read aloud. The button rides at the end of
+   the line, out of sight until the entry is hovered, and it is the only
+   control: a second press cancels the fetch or stops the clip. */
+const SPEAK_FACE = {
+  idle: "▶",
+  loading: "…",
+  playing: "■",
+  error: "!",
+};
+
+const SPEAK_TITLE = {
+  idle: "Read this aloud",
+  loading: "Fetching the reading — press again to cancel",
+  playing: "Stop reading",
+  error: "That line could not be read aloud — press to try again",
+};
+
+function paintSpeakButton(button, state) {
+  const key = own(SPEAK_FACE, state) ? state : "idle";
+  button.dataset.state = key;
+  button.textContent = SPEAK_FACE[key];
+  button.title = SPEAK_TITLE[key];
+  button.setAttribute("aria-label", SPEAK_TITLE[key]);
+  button.setAttribute("aria-pressed", key === "playing" ? "true" : "false");
+}
+
+function speakButton(node) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "entry-speak";
+  paintSpeakButton(button, "idle");
+
+  button.addEventListener("click", (event) => {
+    event.stopPropagation();
+    narration.toggle("node:" + node.id, node.dialogue, (state) => {
+      paintSpeakButton(button, state);
+    });
+  });
+
+  return button;
 }
 
 function renderVitals(effect, nodeId) {
@@ -633,6 +677,13 @@ function renderNode(id) {
   body.className = "entry-body";
   paintMarkup(body, node.dialogue);
   lead.appendChild(body);
+
+  /* Only the narrator's lines are offered aloud. */
+  if (node.dialogue && narration.isNarrator(node.speaker)) {
+    article.dataset.narrated = "true";
+    lead.appendChild(document.createTextNode(" "));
+    lead.appendChild(speakButton(node));
+  }
 
   article.appendChild(lead);
 
