@@ -5,6 +5,7 @@
   /* Surfaces & ink */
   --bg: #131311;
   --bg-lift: #191917;
+  --bg-sunk: #0b0b0a;
   --text-old: #7e7e7c;
   --text-now: #cdcac5;
   --rule: #2a2a26;
@@ -28,6 +29,17 @@
   --p6: #b98cff;
   --p7: #ff7fbe;
   --p8: #d9e04a;
+
+  /* Attribute voices. A dialogue speaker that names a skill borrows the
+     colour of the attribute that owns it. */
+  --attr-intellect: rgb(92 193 215);
+  --attr-psyche: rgb(117 86 207);
+  --attr-physique: rgb(203 71 106);
+  --attr-motorics: rgb(227 183 52);
+
+  /* Scrollbars */
+  --scroll-thumb: var(--option);
+  --scroll-track: var(--bg-sunk);
 
   /* Type */
   --font-serif:

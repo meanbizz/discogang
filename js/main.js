@@ -36,6 +36,7 @@ let selfReady = false;
 let profile = { name: "", portrait: null };
 let roomId = "";
 let scene = { image: null };
+let sceneOverride = null; // skill art shown while a dialogue node is speaking
 let stagedPortrait = null;
 let stagedSheet = null;
 let sheetState = null;
@@ -361,7 +362,7 @@ function renderRoster() {
   });
 }
 
-function renderReadyBanner() {
+function countReady() {
   let players = 0;
   let readied = 0;
   roster.forEach((person) => {
@@ -369,7 +370,40 @@ function renderReadyBanner() {
     players += 1;
     if (person.ready) readied += 1;
   });
-  dom.readyBanner.hidden = !(isAdmin && players > 0 && readied === players);
+  return { players, readied };
+}
+
+function everyoneReady() {
+  const tally = countReady();
+  return tally.players > 0 && tally.readied === tally.players;
+}
+
+function renderReadyBanner() {
+  dom.readyBanner.hidden = !(isAdmin && everyoneReady());
+  refreshSpeakLock();
+}
+
+/* The administrateur stays mute until every player has readied up. */
+function refreshSpeakLock() {
+  const locked = isAdmin && !everyoneReady();
+
+  if (dom.textInput) dom.textInput.disabled = locked;
+  if (dom.sendButton) dom.sendButton.disabled = locked;
+  if (dom.composer) dom.composer.classList.toggle("is-locked", locked);
+
+  if (!dom.composerLock) return;
+
+  if (!locked) {
+    dom.composerLock.hidden = true;
+    dom.composerLock.textContent = "";
+    return;
+  }
+
+  const tally = countReady();
+  dom.composerLock.hidden = false;
+  dom.composerLock.textContent = tally.players
+    ? `Waiting on the players — ${tally.readied} of ${tally.players} ready.`
+    : "Waiting for players to join.";
 }
 
 function paintReadyButton() {
@@ -382,6 +416,29 @@ function commit(entry) {
   logEntries.push(entry);
   if (logEntries.length > HISTORY_LIMIT) logEntries.shift();
   renderEntry(entry);
+}
+
+/* Lifts a raw payload back out of the log. */
+function rawCopyButton(text) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "entry-copy";
+  button.textContent = "Copy";
+  button.title = "Copy this payload";
+  button.setAttribute("aria-label", "Copy this payload");
+
+  let resetTimer = null;
+  button.addEventListener("click", () => {
+    copyText(text, (ok) => {
+      button.textContent = ok ? "Copied ✓" : "Failed";
+      if (resetTimer) clearTimeout(resetTimer);
+      resetTimer = setTimeout(() => {
+        button.textContent = "Copy";
+      }, 1600);
+    });
+  });
+
+  return button;
 }
 
 function renderEntry(entry) {
@@ -401,6 +458,7 @@ function renderEntry(entry) {
     label.className = "entry-label";
     label.textContent = "Turn payload sent";
     wrapper.appendChild(label);
+    wrapper.appendChild(rawCopyButton(entry.text));
   }
 
   const body = document.createElement("p");
@@ -503,6 +561,13 @@ dialogue.setHooks({
     reportDialogueDone();
 
     refreshPlanningLock();
+  },
+
+  /* The reader hands over a skill's card art, or null to fall back to the
+     administrateur's scene image. */
+  onSkillArt: (url) => {
+    sceneOverride = url || null;
+    renderScene();
   },
 });
 
@@ -677,7 +742,8 @@ function publishDialogue(payload, raw) {
 /* ---------------- Scene & NPCs ---------------- */
 
 function renderScene() {
-  if (dom.sceneThumb) paintThumb(dom.sceneThumb, { portrait: scene.image });
+  if (dom.sceneThumb)
+    paintThumb(dom.sceneThumb, { portrait: sceneOverride || scene.image });
 }
 
 function applyScene(next) {
@@ -749,6 +815,10 @@ function setSelfReady(next) {
 
 function shareText(text) {
   if (!isAdmin) return;
+  if (!everyoneReady()) {
+    systemNote("Not everybody is ready. Nothing leaves this desk yet.");
+    return;
+  }
 
   const attempt = dialogue.parsePayload(text);
   if (attempt.payload) {
@@ -864,6 +934,7 @@ function connect(room, name, portrait) {
   dialogueLive = false;
   dialogue.reset();
   refreshPlanningLock();
+  refreshSpeakLock();
 
   applyScene({ image: null });
   sheetState = isAdmin ? null : window.DiscoSkillSheet?.normalize(stagedSheet);
@@ -932,6 +1003,7 @@ function leave() {
   applyScene({ image: null });
   setStatus("offline", "Offline");
   refreshPlanningLock();
+  refreshSpeakLock();
   dom.nameInput.focus();
 }
 
@@ -1108,7 +1180,7 @@ dom.importButton.addEventListener("click", exportTurns);
 
 if (dom.sceneThumb) {
   dom.sceneThumb.addEventListener("click", () =>
-    modals.openImage("Scene", scene.image, ""),
+    modals.openImage("Scene", sceneOverride || scene.image, ""),
   );
 }
 
@@ -1328,6 +1400,7 @@ window.addEventListener("beforeunload", () => network.disconnect());
   renderTurnEmptyState();
   paintReadyButton();
   refreshPlanningLock();
+  refreshSpeakLock();
   dom.nameInput.focus();
   setStatus("offline", "Offline");
 })();

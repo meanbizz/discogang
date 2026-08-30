@@ -6,6 +6,34 @@
   box-sizing: border-box;
 }
 
+/* Scrollbars: rust thumb on a sunk track, everywhere something scrolls. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--text-old) var(--scroll-track);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--scroll-track);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scroll-thumb);
+  border: 2px solid var(--scroll-track);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--option-hi);
+}
+
+::-webkit-scrollbar-corner {
+  background: var(--scroll-track);
+}
+
 html {
   -webkit-text-size-adjust: 100%;
 }

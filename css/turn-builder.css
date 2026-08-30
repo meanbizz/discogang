@@ -1,5 +1,5 @@
 /* Turn planning: the plan log, the composer, the ready toggle, and the
-   all-ready banner. */
+   all-ready banner. Lock notices live in composer.css. */
 
 .turn-builder {
   padding-top: 1rem;
@@ -15,27 +15,12 @@
   text-transform: uppercase;
 }
 
-/* Why planning is unavailable right now. */
-.turn-lock {
-  margin: 0 0 0.7rem;
-  padding: 0.3rem 0.7rem;
-  border: var(--hairline);
-  color: var(--text-old);
-  font-size: 0.7rem;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  text-align: center;
-}
-
-.turn-lock[hidden] {
-  display: none;
-}
-
 .turn-log {
   height: min(28vh, 11rem);
-  padding-left: 0.85rem;
+  padding: 0.6rem 0.85rem;
   overflow-y: auto;
   overscroll-behavior: contain;
+  background: var(--bg-sunk);
   border-left: var(--hairline);
 }
 

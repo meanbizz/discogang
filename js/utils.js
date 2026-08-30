@@ -9,6 +9,10 @@ import {
   ADMIN_NAME,
 } from "./config.js";
 
+/* The address of a painted portrait travels as a custom property so the
+   stylesheet can lay the frame down first and the face over it. */
+export const PORTRAIT_VAR = "--portrait";
+
 export function sanitizeRoomCode(value) {
   const code = String(value == null ? "" : value)
     .toLowerCase()
@@ -96,17 +100,34 @@ export function isAdminName(name) {
   return cleanName(name).toLowerCase() === ADMIN_NAME;
 }
 
+/* Hands the address to CSS and leaves the painting order to the
+   stylesheet. data-mark says whether the text fallback is a real initial or
+   the bare question mark, so only the latter is dimmed. */
 export function paintThumb(element, person) {
   if (!element) return;
-  element.style.backgroundImage =
-    person && person.portrait ? cssUrl(person.portrait) : "";
-  if (person && person.portrait) {
+  const portrait = person && person.portrait ? person.portrait : null;
+
+  if (portrait) {
+    element.style.setProperty(PORTRAIT_VAR, cssUrl(portrait));
     element.removeAttribute("data-empty");
+    element.removeAttribute("data-mark");
     element.textContent = "";
-  } else {
-    element.setAttribute("data-empty", "true");
-    element.textContent = person && person.name ? person.name.charAt(0) : "";
+    return;
   }
+
+  element.style.removeProperty(PORTRAIT_VAR);
+  element.setAttribute("data-empty", "true");
+  const initial = person && person.name ? person.name.charAt(0) : "";
+  element.setAttribute("data-mark", initial ? "letter" : "unknown");
+  element.textContent = initial || "?";
+}
+
+export function clearThumb(element) {
+  if (!element) return;
+  element.style.removeProperty(PORTRAIT_VAR);
+  element.setAttribute("data-empty", "true");
+  element.setAttribute("data-mark", "unknown");
+  element.textContent = "";
 }
 
 /* "spoken" → quote, (aside) → aside, *style* → past.

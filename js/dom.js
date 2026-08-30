@@ -19,6 +19,8 @@ export const dom = {
   log: document.getElementById("log"),
   composer: document.getElementById("composer"),
   textInput: document.getElementById("text-input"),
+  sendButton: document.getElementById("send-button"),
+  composerLock: document.getElementById("composer-lock"),
 
   turnLog: document.getElementById("turn-builder-log"),
   turnComposer: document.getElementById("turn-composer"),
@@ -52,11 +54,17 @@ export const dom = {
   deckError: document.getElementById("deck-error"),
   audioUnlock: document.getElementById("audio-unlock"),
 
+  // Skill-check verdict overlay
+  checkOverlay: document.getElementById("check-overlay"),
+  checkOverlayScene: document.getElementById("check-overlay-scene"),
+  checkDie1: document.getElementById("check-die-1"),
+  checkDie2: document.getElementById("check-die-2"),
+  checkOverlayTitle: document.getElementById("check-overlay-title"),
+
   modal: document.getElementById("portrait-modal"),
   modalCard: document.querySelector("#portrait-modal .modal-card"),
   modalClose: document.getElementById("portrait-modal-close"),
   modalImage: document.getElementById("portrait-modal-image"),
-  modalName: document.getElementById("portrait-modal-name"),
   modalRole: document.getElementById("portrait-modal-role"),
 
   npcButton: document.getElementById("npc-button"),

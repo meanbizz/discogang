@@ -1,63 +1,55 @@
-/* Dialogue rounds: speaker lines, skill-check banners, vitals notes,
-   choice buttons, and the administrateur's raw payload echo. */
+/* Dialogue rounds: the one-line speaker/verdict/body row, vitals notes,
+   choice buttons, the check overlay, and the administrateur's raw payload
+   echo. */
+
+/* SPEAKER [Medium 10+: success] — body, all on one line. */
+.entry-line {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
 
 .entry-speaker {
-  margin: 0 0 0.25rem;
   color: var(--option-hi);
-  font-size: 0.72rem;
-  letter-spacing: 0.16em;
+  font-size: 16px;
+  letter-spacing: 0.8px;
   text-transform: uppercase;
 }
 
-.entry.dialogue:not(.current) .entry-speaker {
-  color: var(--text-old);
+/* A speaker that names a skill takes the colour of its attribute. */
+.entry-speaker[data-attribute="intellect"] {
+  color: var(--attr-intellect);
+}
+.entry-speaker[data-attribute="psyche"] {
+  color: var(--attr-psyche);
+}
+.entry-speaker[data-attribute="physique"] {
+  color: var(--attr-physique);
+}
+.entry-speaker[data-attribute="motorics"] {
+  color: var(--attr-motorics);
 }
 
-/* Skill check */
-.check {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.25rem 0.7rem;
-  margin: 0 0 0.5rem;
-  padding: 0.25rem 0.6rem;
-  border-left: 2px solid var(--rule);
-  font-size: 0.7rem;
-  letter-spacing: 0.12em;
+/* Spent dialogue recedes as a whole — speaker colours included — instead of
+   being repainted line by line. */
+.entry.dialogue:not(.current) {
+  opacity: 0.5;
+}
+
+/* Inline skill-check verdict. */
+.check-tag {
+  font-size: 13px;
+  letter-spacing: 0.8px;
   text-transform: uppercase;
-}
-
-.check[data-result="success"] {
-  border-left-color: var(--ready);
-}
-.check[data-result="failure"] {
-  border-left-color: var(--option);
-}
-
-.check-skill {
-  color: var(--text-now);
-}
-
-.check-target,
-.check-dice {
-  opacity: 0.8;
-}
-
-.check-verdict {
-  margin-left: auto;
-}
-
-.check[data-result="success"] .check-verdict {
-  color: var(--ready);
-}
-.check[data-result="failure"] .check-verdict {
-  color: var(--option);
+  white-space: nowrap;
+  opacity: 0.9;
 }
 
 /* Snake eyes and double sixes get shouted. */
-.check[data-crit="true"] .check-verdict {
+.check-tag[data-crit="true"] {
   font-weight: 700;
   letter-spacing: 0.2em;
+  opacity: 1;
 }
 
 /* Vitals effect */
@@ -86,6 +78,7 @@
 }
 
 button.choice {
+  width: fit-content;
   padding: 0.4rem 0.7rem;
   border-color: var(--rule);
   background: rgba(126, 66, 44, 0.12);
@@ -120,24 +113,159 @@ button.choice.is-chosen::before {
 
 button.choice.continue {
   justify-self: start;
-  padding: 0.3rem 1.1rem;
-  font-size: 0.72rem;
-  letter-spacing: 0.22em;
+  width: 100%;
+  height: 60px;
+  background: var(--option);
+  font-size: 23px;
   text-transform: uppercase;
+  color: white;
 }
 
-.dialogue-end {
-  margin: 0.9rem 0;
-  text-align: center;
-  font-size: 0.8rem;
-  font-style: italic;
-  letter-spacing: 0.14em;
-  opacity: 0.65;
+/* Terminal choice: nothing follows it, so the row bows out. */
+.entry-choices.is-fading {
+  animation: choice-fade 420ms ease forwards;
+  pointer-events: none;
+}
+
+@keyframes choice-fade {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .entry-choices.is-fading {
+    animation: none;
+    opacity: 0;
+  }
+}
+
+/* ---------------- Check verdict overlay ---------------- */
+
+/* Fades in over the whole viewport, then the mask slides so the card is
+   wiped away from the left edge rightwards. */
+.check-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+  opacity: 0;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    transparent 50%,
+    #000 66.6%,
+    #000 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    transparent 50%,
+    #000 66.6%,
+    #000 100%
+  );
+  -webkit-mask-size: 300% 100%;
+  mask-size: 300% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: 100% 0;
+  mask-position: 100% 0;
+}
+
+.check-overlay[hidden] {
+  display: none;
+}
+
+/* No surface of its own: the verdict backdrops are transparent PNGs, so the
+   session behind them stays visible. Only the image paints here. */
+.check-overlay-scene {
+  position: absolute;
+  inset: 0;
+  background-color: transparent;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+.check-overlay-body {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 1.25rem;
+}
+
+.check-overlay-dice {
+  display: flex;
+  gap: 1.25rem;
+}
+
+.check-die {
+  width: clamp(3.5rem, 9vw, 7rem);
+  height: auto;
+}
+
+.check-overlay-title {
+  width: clamp(13rem, 40vw, 32rem);
+  height: auto;
+}
+
+.check-overlay.is-in {
+  animation: check-in 220ms ease forwards;
+}
+
+.check-overlay.is-out {
+  animation: check-wipe 700ms linear forwards;
+}
+
+@keyframes check-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes check-wipe {
+  from {
+    opacity: 1;
+    -webkit-mask-position: 100% 0;
+    mask-position: 100% 0;
+  }
+  to {
+    opacity: 1;
+    -webkit-mask-position: 0% 0;
+    mask-position: 0% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .check-overlay.is-in {
+    animation: none;
+    opacity: 1;
+  }
+  .check-overlay.is-out {
+    animation: none;
+    opacity: 0;
+  }
 }
 
 /* Raw payload echo — administrateur's own log only. */
+.entry.raw {
+  position: relative;
+}
+
 .entry.raw .entry-label {
   margin: 0 0 0.3rem;
+  padding-right: 5.5rem;
   color: var(--option-hi);
   font-size: 0.68rem;
   letter-spacing: 0.18em;
@@ -145,6 +273,7 @@ button.choice.continue {
 }
 
 .entry.raw .entry-body {
+  display: block;
   max-height: 12rem;
   padding: 0.5rem 0.6rem;
   overflow: auto;
@@ -157,11 +286,28 @@ button.choice.continue {
   white-space: pre-wrap;
 }
 
+/* Lifts the payload back to the clipboard. */
+.entry-copy {
+  position: absolute;
+  top: -0.15rem;
+  right: 0;
+  padding: 0.1rem 0.55rem;
+  border-color: var(--rule);
+  color: var(--option-hi);
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.entry-copy:hover {
+  border-color: var(--option);
+  background: rgba(126, 66, 44, 0.22);
+  color: var(--option-hi);
+}
+
 @media (max-width: 32rem) {
-  .check {
+  .entry-speaker,
+  .check-tag {
     font-size: 0.66rem;
-  }
-  .check-verdict {
-    margin-left: 0;
   }
 }

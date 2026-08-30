@@ -1,0 +1,73 @@
+/* Portrait thumbnails and the file/URL picker that feeds them.
+
+   Layering, back to front: the element's own surface, then the frame
+   (::before), then the portrait (::after), then the initial-letter fallback
+   that paintThumb writes as text content. The portrait address arrives as
+   --portrait, so the frame is always behind the face instead of over it. */
+
+.portrait-picker {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.portrait-controls {
+  min-width: 0;
+  display: grid;
+  gap: 0.3rem;
+}
+
+.portrait-controls input[type="url"] {
+  padding: 0.35rem 0.5rem;
+  font-size: 0.85rem;
+}
+
+.thumb {
+  position: relative;
+  isolation: isolate;
+  flex: 0 0 auto;
+  width: 2.25rem;
+  height: 3.375rem;
+  display: grid;
+  place-items: center;
+  background: var(--bg);
+  border: var(--hairline);
+  color: var(--text-old);
+  font-size: 1rem;
+  text-transform: uppercase;
+  filter: grayscale(0.25) contrast(1.05);
+}
+
+/* The frame stands slightly proud of the portrait on every side and sits
+   underneath it. Scene art is not a portrait, so it keeps its bare box. */
+.thumb:not(.scene-thumb)::before {
+  content: "";
+  position: absolute;
+  inset: -8%;
+  z-index: -2;
+  background: url("/images/portrait-frame.png") center / 100% 100% no-repeat;
+  pointer-events: none;
+}
+
+/* The portrait itself, one layer above the frame. */
+.thumb::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--portrait, none) center / cover no-repeat;
+  pointer-events: none;
+}
+
+/* Sizes must out-specify the bare .thumb box. */
+.thumb.thumb-lg {
+  width: 5rem;
+  height: 7.5rem;
+  font-size: 1.6rem;
+}
+
+/* paintThumb writes the initial letter, or "?" when there is no name to
+   take one from; the question mark reads dimmer than a real initial. */
+.thumb[data-mark="unknown"] {
+  color: #4a4a47;
+}

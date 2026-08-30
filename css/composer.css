@@ -13,9 +13,32 @@
   flex: 0 0 auto;
 }
 
-/* Dimmed while a dialogue round is still playing out. */
+/* Dimmed while a dialogue round is still playing out, or while the
+   administrateur is waiting on the table. */
 .composer.is-locked {
   opacity: 0.55;
+}
+
+/* Why a composer is unavailable right now. Shared by the turn composer and
+   the administrateur's speak box. */
+.lock-note {
+  margin: 0 0 0.7rem;
+  padding: 0.3rem 0.7rem;
+  border: var(--hairline);
+  color: var(--text-old);
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.lock-note[hidden] {
+  display: none;
+}
+
+/* Sits above the composer's own rule, so it needs its own breathing room. */
+#composer-lock {
+  margin-top: 1rem;
 }
 
 @media (max-width: 32rem) {

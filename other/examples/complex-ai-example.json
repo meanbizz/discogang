@@ -1,0 +1,264 @@
+{
+  "Vlad": {
+    "root": "wake",
+    "nodes": {
+      "wake": {
+        "speaker": "Shivers",
+        "dialogue": "The cold comes up through the floorboards first. Then the smell — ash, spilled pastis, something older underneath.<br>You are lying face down in a room that has already forgotten you.",
+        "next": "inventory-of-pain"
+      },
+      "inventory-of-pain": {
+        "speaker": "Pain Threshold",
+        "dialogue": "*Everything catalogues itself.* Left shoulder: bruised. Ribs: negotiable. Mouth: tastes of copper wiring.",
+        "vitals": { "vitality": "loss" },
+        "next": "sit-up"
+      },
+      "sit-up": {
+        "speaker": "Physical Instrument",
+        "dialogue": "Get up. Nobody is going to lift you.",
+        "skillCheck": {
+          "skill": "physical-instrument",
+          "difficulty": "medium",
+          "result": "success",
+          "diceRoll": { "dice1": 4, "dice2": 3 },
+          "modifier": 3
+        },
+        "next": "room"
+      },
+      "room": {
+        "speaker": "Perception",
+        "dialogue": "A rented room, top floor. One window, curtain half torn. A chair on its side. And there, by the radiator — a shape under a coat that is not a coat.",
+        "options": [
+          {
+            "id": "look-body",
+            "label": "Look at the shape by the radiator.",
+            "next": "body"
+          },
+          {
+            "id": "look-window",
+            "label": "Go to the window instead. Whatever it is, it can wait.",
+            "next": "window"
+          },
+          {
+            "id": "speak",
+            "label": "\"Is somebody in here with me?\"",
+            "next": "voice"
+          }
+        ]
+      },
+      "body": {
+        "speaker": "Visual Calculus",
+        "dialogue": "Angles. The chair fell east, the bottle rolled west, and the shape was moved — twice. Someone tidied, then thought better of it.<p>Something in the reconstruction refuses to close.</p>",
+        "skillCheck": {
+          "skill": "visual-calculus",
+          "difficulty": "challenging",
+          "result": "failure",
+          "diceRoll": { "dice1": 2, "dice2": 3 },
+          "modifier": 2
+        },
+        "vitals": { "morale": "loss" },
+        "next": "body-after"
+      },
+      "body-after": {
+        "speaker": "Half Light",
+        "dialogue": "You do not want the arithmetic. You want the door. *Now.*",
+        "options": [
+          {
+            "id": "flee",
+            "label": "(Take the door. Hallway. Air.)",
+            "next": "hallway"
+          },
+          {
+            "id": "pockets",
+            "label": "(Go through the pockets first. You will hate yourself either way.)",
+            "next": "pockets"
+          },
+          {
+            "id": "kneel",
+            "label": "(Kneel. Say something to it.)",
+            "next": "kneel"
+          }
+        ]
+      },
+      "kneel": {
+        "speaker": "Empathy",
+        "dialogue": "\"I don't know your name yet. I'm going to find it out.\"<br>The room does not soften, but you do, a little.",
+        "vitals": { "morale": "gain" },
+        "next": "landing"
+      },
+      "pockets": {
+        "speaker": "Interfacing",
+        "dialogue": "Lining, seam, a folded card that tears at the corner as you pull it. Whatever was written on the missing corner was the part that mattered.",
+        "skillCheck": {
+          "skill": "interfacing",
+          "difficulty": "formidable",
+          "result": "failure",
+          "diceRoll": { "dice1": 1, "dice2": 1 },
+          "modifier": 4
+        },
+        "next": "landing"
+      },
+      "window": {
+        "speaker": "Shivers",
+        "dialogue": "Below: a wet street, a tram wire humming to itself, a district that has been holding its breath for forty years. It will not tell you what happened here. It never does.",
+        "next": "landing"
+      },
+      "voice": {
+        "speaker": "Volition",
+        "dialogue": "Your own voice comes back at you flat and unfamiliar. Good. It means you still have one.",
+        "skillCheck": {
+          "skill": "volition",
+          "difficulty": "easy",
+          "result": "success",
+          "diceRoll": { "dice1": 5, "dice2": 2 },
+          "modifier": 2
+        },
+        "vitals": { "morale": "gain" },
+        "next": "landing"
+      },
+      "hallway": {
+        "speaker": "Composure",
+        "dialogue": "The corridor is narrow and the carpet has been the same colour since before the war. Straighten your collar. Whoever is downstairs will read you in under a second.",
+        "options": [
+          {
+            "id": "stairs",
+            "label": "Down the stairs. Get it over with.",
+            "next": "stairs"
+          },
+          {
+            "id": "listen",
+            "label": "(Stand still. Listen to the building.)",
+            "next": "listen"
+          },
+          {
+            "id": "back",
+            "label": "(Back into the room. You left something unfinished.)",
+            "next": "landing"
+          }
+        ]
+      },
+      "listen": {
+        "speaker": "Reaction Speed",
+        "dialogue": "A floorboard, two doors down. It settles before you can turn your head. Someone else is awake on this landing.",
+        "skillCheck": {
+          "skill": "reaction-speed",
+          "difficulty": "trivial",
+          "result": "success",
+          "diceRoll": { "dice1": 3, "dice2": 4 },
+          "modifier": 1
+        },
+        "next": "stairs"
+      },
+      "landing": {
+        "speaker": "Inland Empire",
+        "dialogue": "The room wants you to stay a moment longer. Rooms like this always do — they are collectors.",
+        "options": [
+          {
+            "id": "mirror",
+            "label": "(Face the mirror over the basin.)",
+            "next": "mirror"
+          },
+          {
+            "id": "descend",
+            "label": "Go downstairs and find whoever rented you this room.",
+            "next": "stairs"
+          },
+          {
+            "id": "sit",
+            "label": "(Sit on the edge of the bed. Just for a minute.)",
+            "next": "stay"
+          }
+        ]
+      },
+      "mirror": {
+        "speaker": "Electrochemistry",
+        "dialogue": "Look at that face. That is the face of a man who was *magnificent* eleven hours ago and cannot prove it.",
+        "skillCheck": {
+          "skill": "electrochemistry",
+          "difficulty": "trivial",
+          "result": "success",
+          "diceRoll": { "dice1": 6, "dice2": 2 },
+          "modifier": 0
+        },
+        "vitals": { "vitality": "gain", "morale": "loss" },
+        "next": "stairs"
+      },
+      "stay": {
+        "speaker": "Volition",
+        "dialogue": "A minute. Not more. You are allowed a minute and then you are going to be a person again.",
+        "next": "stairs"
+      },
+      "stairs": {
+        "speaker": "Esprit de Corps",
+        "dialogue": "Somewhere below, a woman is counting coins into a tin and thinking about which of her tenants she will have to lie for this week.",
+        "next": "bar"
+      },
+      "bar": {
+        "speaker": "Authority",
+        "dialogue": "\"Nobody leaves this building. Not until I've had a look at the top floor.\"<br>The words come out too loud and half a size too big for you.",
+        "skillCheck": {
+          "skill": "authority",
+          "difficulty": "legendary",
+          "result": "failure",
+          "diceRoll": { "dice1": 3, "dice2": 2 },
+          "modifier": 5
+        },
+        "vitals": { "morale": "loss" },
+        "next": "bar-after"
+      },
+      "bar-after": {
+        "speaker": "Suggestion",
+        "dialogue": "She has already decided what you are. There is still room to decide *which kind.*",
+        "options": [
+          {
+            "id": "apologize",
+            "label": "\"That came out wrong. I'm asking, not ordering.\"",
+            "next": "apology"
+          },
+          {
+            "id": "lie",
+            "label": "\"Health inspection. Unannounced. You understand.\"",
+            "next": "lie"
+          },
+          {
+            "id": "truth",
+            "label": "\"There is a dead man in room eleven and I don't know how I know that.\"",
+            "next": "truth"
+          },
+          {
+            "id": "leave",
+            "label": "(Say nothing. Walk out into the street.)",
+            "next": "exit"
+          }
+        ]
+      },
+      "apology": {
+        "speaker": "Empathy",
+        "dialogue": "Her shoulders come down a centimetre. That centimetre is worth more than the whole speech before it.",
+        "vitals": { "morale": "gain" },
+        "next": "exit"
+      },
+      "lie": {
+        "speaker": "Drama",
+        "dialogue": "*Sublime.* The clipboard you are not holding has never been more real.",
+        "skillCheck": {
+          "skill": "drama",
+          "difficulty": "heroic",
+          "result": "success",
+          "diceRoll": { "dice1": 6, "dice2": 6 },
+          "modifier": 4
+        },
+        "next": "exit"
+      },
+      "truth": {
+        "speaker": "Encyclopedia",
+        "dialogue": "<ul><li>Room eleven has been let to the same name for six years.</li><li>That name is not the name you woke up with.</li></ul>She goes very still, and you understand that she already knew.",
+        "next": "exit"
+      },
+      "exit": {
+        "speaker": "Hand/Eye Coordination",
+        "dialogue": "The front door handle is loose in its plate. You catch it before it drops, set it back, and step out into the rain.<br>*Something starts here.*"
+      }
+    }
+  }
+}

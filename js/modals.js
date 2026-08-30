@@ -1,5 +1,5 @@
 import { dom } from "./dom.js";
-import { paintThumb, cleanName, cleanImageUrl, uid } from "./utils.js";
+import { paintThumb, clearThumb, cleanName, cleanImageUrl, uid } from "./utils.js";
 import { refreshVitals } from "./vitals.js";
 
 let modalReturnFocus = null;
@@ -12,7 +12,6 @@ let stagedNpcPortrait = null;
 
 export function openImage(name, image, role) {
   paintThumb(dom.modalImage, { name, portrait: image });
-  dom.modalName.textContent = name || "—";
   dom.modalRole.textContent = role || "";
   dom.modalRole.hidden = !role;
 
@@ -26,8 +25,7 @@ export function openImage(name, image, role) {
 export function closePortrait() {
   if (dom.modal.hidden) return;
   dom.modal.hidden = true;
-  dom.modalImage.style.backgroundImage = "";
-  dom.modalImage.textContent = "";
+  clearThumb(dom.modalImage);
   if (modalReturnFocus && document.contains(modalReturnFocus)) {
     modalReturnFocus.focus();
   }

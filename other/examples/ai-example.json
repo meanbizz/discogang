@@ -1,0 +1,79 @@
+{
+  "Player One": {
+    "root": "arrival",
+    "nodes": {
+      "arrival": {
+        "speaker": "NARRATOR",
+        "dialogue": "The stairwell smells of wet plaster and old tobacco. Two floors up, a door stands ajar — a wedge of yellow light across the landing.",
+        "next": "look"
+      },
+      "look": {
+        "speaker": "PERCEPTION",
+        "dialogue": "Someone left in a hurry. *A coat still swings on its hook.* The light in there is a lamp, not a bulb — it flickers.",
+        "skillCheck": {
+          "skill": "perception",
+          "difficulty": "easy",
+          "result": "success",
+          "diceRoll": { "dice1": 4, "dice2": 3 },
+          "modifier": 1
+        },
+        "next": "voice"
+      },
+      "voice": {
+        "speaker": "WOMAN BEHIND THE DOOR",
+        "dialogue": "\"I told you people already. I have nothing left to say about the third of last month.\"",
+        "next": "read"
+      },
+      "read": {
+        "speaker": "EMPATHY",
+        "dialogue": "She is not angry with you. (She is repeating a line she has rehearsed too many times.) Underneath it: exhaustion, and something closer to fear.",
+        "skillCheck": {
+          "skill": "empathy",
+          "difficulty": "medium",
+          "result": "failure",
+          "diceRoll": { "dice1": 2, "dice2": 2 },
+          "modifier": 0
+        },
+        "vitals": { "morale": "loss" },
+        "next": "close"
+      },
+      "close": {
+        "speaker": "NARRATOR",
+        "dialogue": "You get nothing from the tone of her voice. Only the door, the light, and the coat swinging on its hook.",
+        "options": [{ "id": "step-in", "label": "[ Knock, and go in. ]" }]
+      }
+    }
+  },
+  "Player Two": {
+    "root": "street",
+    "nodes": {
+      "street": {
+        "speaker": "NARRATOR",
+        "dialogue": "You wait on the street below, collar up. The rain has stopped, but the gutters are still running.",
+        "next": "hold"
+      },
+      "hold": {
+        "speaker": "COMPOSURE",
+        "dialogue": "Stand straight. *Whoever left that building in a hurry may still be watching it.*",
+        "skillCheck": {
+          "skill": "composure",
+          "difficulty": "trivial",
+          "result": "success",
+          "diceRoll": { "dice1": 5, "dice2": 5 },
+          "modifier": 0
+        },
+        "next": "figure"
+      },
+      "figure": {
+        "speaker": "NARRATOR",
+        "dialogue": "A figure detaches itself from the doorway opposite and walks off without hurry, west, toward the canal.",
+        "options": [
+          {
+            "id": "wait",
+            "label": "[ Hold your position and watch the door. ]"
+          }
+        ]
+      }
+    }
+  }
+}

@@ -8,6 +8,7 @@
 import { dom } from "./dom.js";
 import { paintMarkup } from "./utils.js";
 import * as vitals from "./vitals.js";
+import * as sfx from "./sfx.js";
 
 export const DIFFICULTY_TARGET = {
   trivial: 6,
@@ -34,13 +35,32 @@ const SPEAKER_MAX = 48;
 const LABEL_MAX = 240;
 const BODY_MAX = 4000;
 
+/* Card art lives with the skill sheet's assets; the sheet exposes the file
+   names on DiscoSkillSheet.ATTRIBUTES, so only the base needs repeating. */
+const SKILL_ART_BASE =
+  "https://disco-elysium-skill-editor.netlify.app/_next/static/media";
+
+const FADE_MS = 420;
+
+/* Verdict overlay beats. IN and OUT mirror the animations in dialogue.css. */
+const TAPE_CLASS = "is-rolling";
+const OVERLAY_IN_MS = 220;
+const OVERLAY_HOLD_MS = 1300;
+const OVERLAY_OUT_MS = 700;
+
+/* The verdict lands when the roll clip finishes, not before it. This is the
+   backstop for a clip that never reports itself at all: sfx arms its own
+   fallback by ~2.3s, so this only ever fires when nothing else did. */
+const VERDICT_FALLBACK_MS = 3000;
+
 let tree = null;
 let cursor = null;
 let active = false;
 let finished = true;
 let steps = 0;
 const vitalsSpent = new Set();
-let hooks = { onFinish: null };
+let hooks = { onFinish: null, onSkillArt: null };
+let overlayTimers = [];
 
 /* ---------------- Small helpers ---------------- */
 
@@ -121,41 +141,133 @@ function normalizeKey(value) {
     .toLowerCase();
 }
 
-function skillLabel(id) {
+/* "HAND / EYE COORDINATION" and "hand-eye-coordination" collapse to the
+   same token, so a speaker name can be matched against a skill id. */
+function slug(value) {
+  return String(value == null ? "" : value)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "");
+}
+
+let skillIndex = null;
+
+function buildSkillIndex() {
+  const map = {};
   const groups =
     (window.DiscoSkillSheet && window.DiscoSkillSheet.ATTRIBUTES) || [];
   for (let i = 0; i < groups.length; i += 1) {
-    for (let j = 0; j < groups[i].skills.length; j += 1) {
-      if (groups[i].skills[j].id === id) return groups[i].skills[j].name;
+    const group = groups[i];
+    for (let j = 0; j < group.skills.length; j += 1) {
+      const skill = group.skills[j];
+      const record = {
+        id: skill.id,
+        name: skill.name,
+        attribute: group.id,
+        art: skill.art ? SKILL_ART_BASE + "/" + skill.art : null,
+      };
+      map[slug(skill.id)] = record;
+      map[slug(skill.name)] = record;
     }
   }
+  return map;
+}
+
+/* The sheet script may not have run yet on the first call, so an empty index
+   is retried rather than cached. */
+function findSkill(value) {
+  if (!skillIndex || !Object.keys(skillIndex).length) {
+    skillIndex = buildSkillIndex();
+  }
+  const key = slug(value);
+  return key && own(skillIndex, key) ? skillIndex[key] : null;
+}
+
+function skillLabel(id) {
+  const found = findSkill(id);
+  if (found) return found.name;
   return String(id).replace(/[-_]+/g, " ").toUpperCase();
+}
+
+function emitArt(url) {
+  if (hooks.onSkillArt) hooks.onSkillArt(url || null);
 }
 
 /* ---------------- Sanitising ---------------- */
 
+/* "SUCCESS", "passed", "Critical failure" — anything that plainly reads as a
+   verdict resolves to one of the two the overlay knows. */
+function resolveResult(value) {
+  const key = normalizeKey(value);
+  if (!key) return "";
+  if (own(RESULTS, key)) return key;
+  if (/succ|pass|win/.test(key)) return "success";
+  if (/fail|miss|lose|lost/.test(key)) return "failure";
+  return "";
+}
+
+function dieValue(value) {
+  const number = Math.round(Number(value));
+  return isFinite(number) && number >= 1 && number <= 6 ? number : 0;
+}
+
+/* A pair of dice may arrive as diceRoll/dice/roll, as an object keyed
+   dice1/die1/d1 or as a two-slot array, or loose on the check itself. When
+   none of those hold up the pair stays at zero and the verdict simply shows
+   without faces. */
+function cleanDice(raw) {
+  const sources = [raw.diceRoll, raw.dice, raw.roll, raw];
+  for (let i = 0; i < sources.length; i += 1) {
+    const source = sources[i];
+    if (!source || typeof source !== "object") continue;
+
+    if (Array.isArray(source)) {
+      const first = dieValue(source[0]);
+      const second = dieValue(source[1]);
+      if (first && second) return { dice1: first, dice2: second };
+      continue;
+    }
+
+    const first = dieValue(
+      source.dice1 != null
+        ? source.dice1
+        : source.die1 != null
+          ? source.die1
+          : source.d1 != null
+            ? source.d1
+            : source.first,
+    );
+    const second = dieValue(
+      source.dice2 != null
+        ? source.dice2
+        : source.die2 != null
+          ? source.die2
+          : source.d2 != null
+            ? source.d2
+            : source.second,
+    );
+    if (first && second) return { dice1: first, dice2: second };
+  }
+  return { dice1: 0, dice2: 0 };
+}
+
 function cleanCheck(raw) {
   if (!raw || typeof raw !== "object") return null;
+
   const skill = line(raw.skill, 64);
-  if (!skill) return null;
+  const result = resolveResult(raw.result);
+  /* A verdict with no named skill is still a verdict worth showing. */
+  if (!skill && !result) return null;
 
   const difficulty = normalizeKey(raw.difficulty);
-  const result = normalizeKey(raw.result);
-  const dice =
-    raw.diceRoll && typeof raw.diceRoll === "object" ? raw.diceRoll : {};
-
-  const die = (value) => {
-    const number = Math.round(Number(value));
-    return isFinite(number) && number >= 1 && number <= 6 ? number : 0;
-  };
+  const dice = cleanDice(raw);
   const modifier = Math.round(Number(raw.modifier));
 
   return {
     skill,
     difficulty: own(DIFFICULTY_TARGET, difficulty) ? difficulty : "",
-    result: own(RESULTS, result) ? result : "",
-    dice1: die(dice.dice1),
-    dice2: die(dice.dice2),
+    result,
+    dice1: dice.dice1,
+    dice2: dice.dice2,
     modifier: isFinite(modifier) ? Math.max(-20, Math.min(20, modifier)) : 0,
   };
 }
@@ -305,7 +417,10 @@ export function treeKeys(payload) {
 /* ---------------- Reader ---------------- */
 
 export function setHooks(next) {
-  hooks = { onFinish: (next && next.onFinish) || null };
+  hooks = {
+    onFinish: (next && next.onFinish) || null,
+    onSkillArt: (next && next.onSkillArt) || null,
+  };
 }
 
 export function isActive() {
@@ -327,6 +442,10 @@ export function reset() {
   finished = true;
   steps = 0;
   vitalsSpent.clear();
+  sfx.stopAll();
+  stopTape();
+  hideCheckOverlay();
+  emitArt(null);
 }
 
 export function start(nextTree) {
@@ -348,46 +467,178 @@ function appendToLog(node) {
   dom.log.scrollTop = dom.log.scrollHeight;
 }
 
-function finish(note) {
+function finish() {
   if (finished) return;
   finished = true;
-
-  const end = document.createElement("p");
-  end.className = "dialogue-end";
-  end.textContent = note || "— end of scene —";
-  dom.log.appendChild(end);
-  dom.log.scrollTop = dom.log.scrollHeight;
-
   if (hooks.onFinish) hooks.onFinish();
 }
 
-function renderCheck(check) {
-  const banner = document.createElement("div");
-  banner.className = "check";
-  if (check.result) banner.dataset.result = check.result;
+/* Plays the fade class out, then drops the node. The timer is the fallback
+   for browsers that never fire animationend. */
+function fadeAway(node, done) {
+  if (!node) {
+    if (done) done();
+    return;
+  }
+  let settled = false;
+  const settle = () => {
+    if (settled) return;
+    settled = true;
+    node.remove();
+    if (done) done();
+  };
+  node.addEventListener("animationend", settle, { once: true });
+  setTimeout(settle, FADE_MS + 120);
+  node.classList.add("is-fading");
+}
 
-  const skill = document.createElement("span");
-  skill.className = "check-skill";
-  skill.textContent = skillLabel(check.skill);
-  banner.appendChild(skill);
+/* ---------------- Roll cues ---------------- */
 
-  if (check.difficulty) {
-    const target = document.createElement("span");
-    target.className = "check-target";
-    target.textContent =
-      check.difficulty.charAt(0).toUpperCase() +
-      check.difficulty.slice(1) +
-      " " +
-      DIFFICULTY_TARGET[check.difficulty] +
-      "+";
-    banner.appendChild(target);
+function clearOverlayTimers() {
+  for (let i = 0; i < overlayTimers.length; i += 1) {
+    clearTimeout(overlayTimers[i]);
+  }
+  overlayTimers = [];
+}
+
+/* The tape class rides on the log and on the scene column, so the texture
+   scrolls while the entries and the portrait are held out of sight. */
+function startTape() {
+  if (dom.log) {
+    dom.log.classList.remove(TAPE_CLASS);
+    void dom.log.offsetWidth;
+    dom.log.classList.add(TAPE_CLASS);
+  }
+  if (dom.stageSide) dom.stageSide.classList.add(TAPE_CLASS);
+}
+
+function stopTape() {
+  if (dom.log) dom.log.classList.remove(TAPE_CLASS);
+  if (dom.stageSide) dom.stageSide.classList.remove(TAPE_CLASS);
+}
+
+function hideCheckOverlay() {
+  clearOverlayTimers();
+  const host = dom.checkOverlay;
+  if (!host) return;
+  host.classList.remove("is-in", "is-out");
+  host.hidden = true;
+}
+
+/* A face only shows when there is a real die behind it. */
+function paintDie(image, value) {
+  if (!image) return;
+  if (value) {
+    image.src = "/images/dice/" + value + ".svg";
+    image.hidden = false;
+    return;
+  }
+  image.removeAttribute("src");
+  image.hidden = true;
+}
+
+/* Fades in over the whole viewport, holds, then wipes away left to right. */
+function showCheckOverlay(check, result) {
+  const host = dom.checkOverlay;
+  if (!host) return;
+  clearOverlayTimers();
+
+  host.dataset.result = result;
+  if (dom.checkOverlayScene) {
+    dom.checkOverlayScene.style.backgroundImage =
+      'url("/images/check-' + result + '-background.png")';
+  }
+  paintDie(dom.checkDie1, check.dice1);
+  paintDie(dom.checkDie2, check.dice2);
+  if (dom.checkOverlayTitle) {
+    dom.checkOverlayTitle.src = "/images/check-" + result + "-title.svg";
   }
 
+  host.classList.remove("is-in", "is-out");
+  host.hidden = false;
+  void host.offsetWidth;
+  host.classList.add("is-in");
+
+  overlayTimers.push(
+    setTimeout(() => {
+      host.classList.remove("is-in");
+      host.classList.add("is-out");
+      overlayTimers.push(
+        setTimeout(() => {
+          host.classList.remove("is-out");
+          host.hidden = true;
+        }, OVERLAY_OUT_MS),
+      );
+    }, OVERLAY_IN_MS + OVERLAY_HOLD_MS),
+  );
+}
+
+/* The log texture runs past like tape for as long as the roll clip plays.
+   The verdict lands the moment that clip ends — never over the top of the
+   rolling tape — or on the fallback timer if the clip never reports itself. */
+function runCheckSequence(check) {
+  const result = check.result === "success" ? "success" : "failure";
+  startTape();
+
+  let shown = false;
+  const reveal = () => {
+    if (shown) return;
+    shown = true;
+    stopTape();
+    showCheckOverlay(check, result);
+  };
+
+  sfx.playRoll(result, null, reveal);
+  overlayTimers.push(setTimeout(reveal, VERDICT_FALLBACK_MS));
+}
+
+/* A skill speaking plays its attribute's jingle; a check with a verdict waits
+   for that jingle to clear before starting the tape. */
+function playCues(voice, check) {
+  const attribute = voice ? voice.attribute : null;
+  const rolled = Boolean(check && check.result);
+
+  if (attribute && rolled) {
+    sfx.playJingle(attribute, () => runCheckSequence(check));
+    return;
+  }
+  if (attribute) {
+    sfx.playJingle(attribute, null);
+    return;
+  }
+  if (rolled) runCheckSequence(check);
+}
+
+/* [Medium 10+: success] — sits inside the speaker line. The dice breakdown
+   rides along as a title so the numbers stay reachable. */
+function checkTag(check) {
+  const parts = [];
+
+  if (check.difficulty) {
+    parts.push(
+      check.difficulty.charAt(0).toUpperCase() + check.difficulty.slice(1),
+    );
+  }
+
+  if (check.result) parts.push(check.result);
+  if (!parts.length) parts.push(skillLabel(check.skill));
+
+  const tag = document.createElement("span");
+  tag.className = "check-tag";
+  if (check.result) tag.dataset.result = check.result;
+  tag.textContent = "[" + parts.join(": ") + "]";
+
   if (check.dice1 && check.dice2) {
+    if (
+      check.dice1 === check.dice2 &&
+      (check.dice1 === 1 || check.dice1 === 6)
+    ) {
+      tag.dataset.crit = "true";
+    }
     const total = check.dice1 + check.dice2 + check.modifier;
-    const dice = document.createElement("span");
-    dice.className = "check-dice";
-    dice.textContent =
+    tag.title =
+      skillLabel(check.skill) +
+      " — " +
       check.dice1 +
       " + " +
       check.dice2 +
@@ -396,25 +647,11 @@ function renderCheck(check) {
         : "") +
       " = " +
       total;
-    banner.appendChild(dice);
-
-    if (
-      check.dice1 === check.dice2 &&
-      (check.dice1 === 1 || check.dice1 === 6)
-    ) {
-      banner.dataset.crit = "true";
-    }
+  } else {
+    tag.title = skillLabel(check.skill);
   }
 
-  if (check.result) {
-    const verdict = document.createElement("span");
-    verdict.className = "check-verdict";
-    verdict.textContent =
-      (banner.dataset.crit === "true" ? "critical " : "") + check.result;
-    banner.appendChild(verdict);
-  }
-
-  return banner;
+  return tag;
 }
 
 function renderVitals(effect, nodeId) {
@@ -455,18 +692,29 @@ function renderOptions(host, options) {
       const siblings = host.querySelectorAll("button");
       for (let i = 0; i < siblings.length; i += 1) siblings[i].disabled = true;
       button.classList.add("is-chosen");
-      if (option.next) renderNode(option.next);
-      else finish();
+      if (option.next) {
+        renderNode(option.next);
+        return;
+      }
+      /* Nothing follows this choice — let it fade before the scene closes. */
+      fadeAway(host, () => finish());
     });
     host.appendChild(button);
   });
 }
 
 function renderContinue(host, nextId) {
+  const buttonContent = document.createElement("span");
+  buttonContent.style.display = "inline-block";
+  buttonContent.style.transform = "scale(1, 1.5)";
+  buttonContent.style.letterSpacing = "0px";
+  buttonContent.style.transformOrigin = "0 0";
+  buttonContent.style.lineHeight = "1";
+  buttonContent.textContent = "Continue ➤";
   const button = document.createElement("button");
   button.type = "button";
   button.className = "choice continue";
-  button.textContent = "[ Continue ]";
+  button.appendChild(buttonContent);
   button.addEventListener("click", () => {
     if (host.dataset.spent === "true") return;
     host.dataset.spent = "true";
@@ -485,28 +733,53 @@ function renderNode(id) {
 
   steps += 1;
   if (steps > MAX_STEPS) {
-    finish("— the scene runs in circles. Stopping here. —");
+    finish();
     return;
   }
   cursor = id;
 
+  /* A speaker that names a skill drives both its colour and the scene
+     thumbnail; a bare check falls back to the skill being rolled. */
+  const voice =
+    findSkill(node.speaker) ||
+    (node.skillCheck ? findSkill(node.skillCheck.skill) : null);
+
   const article = document.createElement("article");
   article.className = "entry dialogue current";
   article.dataset.node = id;
-
-  if (node.skillCheck) article.appendChild(renderCheck(node.skillCheck));
-
-  if (node.speaker) {
-    const speaker = document.createElement("p");
-    speaker.className = "entry-speaker";
-    speaker.textContent = node.speaker;
-    article.appendChild(speaker);
+  if (node.skillCheck && node.skillCheck.result) {
+    article.dataset.result = node.skillCheck.result;
   }
 
-  const body = document.createElement("p");
+  /* Speaker, check verdict, and body all live on one line. */
+  const lead = document.createElement("p");
+  lead.className = "entry-line";
+
+  if (node.speaker) {
+    const speaker = document.createElement("span");
+    speaker.className = "entry-speaker";
+    if (voice) speaker.dataset.attribute = voice.attribute;
+    speaker.textContent = node.speaker;
+    lead.appendChild(speaker);
+  }
+
+  if (node.skillCheck) {
+    if (lead.childNodes.length) {
+      lead.appendChild(document.createTextNode(" "));
+    }
+    lead.appendChild(checkTag(node.skillCheck));
+  }
+
+  if (lead.childNodes.length && node.dialogue) {
+    lead.appendChild(document.createTextNode(" — "));
+  }
+
+  const body = document.createElement("span");
   body.className = "entry-body";
   paintMarkup(body, node.dialogue);
-  article.appendChild(body);
+  lead.appendChild(body);
+
+  article.appendChild(lead);
 
   if (node.vitals) {
     const note = renderVitals(node.vitals, id);
@@ -514,6 +787,8 @@ function renderNode(id) {
   }
 
   appendToLog(article);
+  emitArt(voice ? voice.art : null);
+  playCues(voice, node.skillCheck);
 
   const choices = document.createElement("div");
   choices.className = "entry-choices";

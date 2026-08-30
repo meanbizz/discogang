@@ -53,28 +53,50 @@
   line-height: 1.4;
 }
 
-/* Portrait modal */
+/* Portrait modal. Same back-to-front order as the thumbnails: surface,
+   frame, portrait, fallback letter. */
 .modal-portrait {
+  position: relative;
+  isolation: isolate;
   width: min(78vw, 22rem, 52vh);
   aspect-ratio: 2 / 3;
   height: auto;
   margin: 0 auto 1rem;
   display: grid;
   place-items: center;
-  background: var(--bg) center / contain no-repeat;
+  background: var(--bg);
   border: var(--hairline);
   color: var(--text-old);
   font-size: 4rem;
   text-transform: uppercase;
 }
 
-.modal-portrait[data-empty="true"]:empty::after {
-  content: "?";
-  opacity: 0.5;
+/* Same frame as the thumbnails, hugging the enlarged portrait's box. */
+.modal-portrait::before {
+  content: "";
+  position: absolute;
+  inset: -5%;
+  z-index: -2;
+  background: url("/images/portrait-frame.png") center / 100% 100% no-repeat;
+  pointer-events: none;
+}
+
+.modal-portrait::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--portrait, none) center / cover no-repeat;
+  pointer-events: none;
+}
+
+.modal-portrait[data-mark="unknown"] {
+  color: #4a4a47;
 }
 
 .modal-name {
   margin: 0;
+  padding-top: 2rem;
   color: var(--text-now);
   font-size: 0.95rem;
   letter-spacing: 0.12em;

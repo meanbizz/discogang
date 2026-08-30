@@ -132,7 +132,7 @@
         <section id="turn-builder" class="turn-builder">
           <h2 class="turn-builder-title">What is being planned…</h2>
 
-          <p id="turn-lock" class="turn-lock" role="status" hidden></p>
+          <p id="turn-lock" class="lock-note" role="status" hidden></p>
 
           <div id="ready-banner" class="ready-banner" role="status" hidden>
             <span class="ready-banner-text">All players ready</span>
@@ -175,9 +175,11 @@
               class="option ready-toggle"
               aria-pressed="false"
             >
-              Ready
+              Ready to End Turn
             </button>
-            <button type="submit" id="turn-send" class="option">Plan</button>
+            <button type="submit" id="turn-send" class="option">
+              Send Plan
+            </button>
             <p
               id="turn-error"
               class="error turn-error"
@@ -188,6 +190,8 @@
         </section>
 
         <!-- Admin Chat Composer -->
+        <p id="composer-lock" class="lock-note" role="status" hidden></p>
+
         <form id="composer" class="composer" autocomplete="off" hidden>
           <label class="visually-hidden" for="text-input">Say something</label>
           <textarea
@@ -404,6 +408,23 @@
         </div>
       </div>
     </main>
+
+    <!-- Skill-check verdict overlay -->
+    <div id="check-overlay" class="check-overlay" aria-hidden="true" hidden>
+      <div id="check-overlay-scene" class="check-overlay-scene"></div>
+      <div class="check-overlay-body">
+        <div class="check-overlay-dice">
+          <img id="check-die-1" class="check-die" src="" alt="" />
+          <img id="check-die-2" class="check-die" src="" alt="" />
+        </div>
+        <img
+          id="check-overlay-title"
+          class="check-overlay-title"
+          src=""
+          alt=""
+        />
+      </div>
+    </div>
 
     <!-- Global external scripts -->
     <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
