@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Salon</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400..700;1,400..700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="./stats/disco-skills.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <!-- ------------------------------------------------ join ------------ -->
+      <section id="join-panel" class="panel">
+        <form id="join-form" autocomplete="off">
+          <div class="field">
+            <label for="name-input">Display name</label>
+            <input
+              id="name-input"
+              name="name"
+              type="text"
+              placeholder="Your character name"
+              maxlength="24"
+              required
+            />
+          </div>
+
+          <div class="field">
+            <label for="portrait-input">Portrait</label>
+            <div class="portrait-picker">
+              <div
+                id="portrait-preview"
+                class="thumb thumb-lg"
+                data-empty="true"
+                aria-hidden="true"
+              ></div>
+              <div class="portrait-controls">
+                <input
+                  id="portrait-input"
+                  name="portrait"
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/gif"
+                />
+                <label class="sub-label" for="portrait-url"
+                  >or paste an image address</label
+                >
+                <input
+                  id="portrait-url"
+                  type="url"
+                  inputmode="url"
+                  placeholder="https://…/portrait.jpg"
+                  maxlength="2048"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="stats-input">Stats file</label>
+            <input
+              id="stats-input"
+              name="stats"
+              type="file"
+              accept="application/json,.json"
+            />
+            <p class="sub-label">
+              Optional — a .json sheet with attributes and skills.
+            </p>
+          </div>
+
+          <button type="submit" id="join-button" class="option">Join</button>
+          <p
+            id="join-error"
+            class="error"
+            role="alert"
+            aria-live="assertive"
+          ></p>
+        </form>
+      </section>
+
+      <!-- ---------------------------------------------- session ----------- -->
+      <section id="session-panel" class="panel" hidden>
+        <div class="session-bar">
+          <div class="session-meta">
+            <!-- present only for the administrateur -->
+            <span id="role-label" class="badge" data-role="admin" hidden
+              >Administrateur</span
+            >
+          </div>
+          <div class="session-status">
+            <span
+              id="status-dot"
+              class="dot"
+              data-state="offline"
+              aria-hidden="true"
+            ></span>
+            <span id="status-text" aria-live="polite">Offline</span>
+          </div>
+          <div class="session-actions">
+            <button type="button" id="leave-button">Leave</button>
+          </div>
+        </div>
+
+        <!-- roster sits at the top of the log box -->
+        <div id="roster" class="roster" aria-label="Characters"></div>
+
+        <!-- scene on the left, log on the right -->
+        <div class="stage">
+          <aside class="stage-side">
+            <button
+              type="button"
+              id="scene-thumb"
+              class="thumb scene-thumb"
+              data-empty="true"
+              aria-label="Open the scene image"
+            ></button>
+
+            <div id="scene-tools" class="scene-tools">
+              <label class="visually-hidden" for="scene-image-input"
+                >Scene image</label
+              >
+              <input
+                id="scene-image-input"
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/gif"
+              />
+              <label class="visually-hidden" for="scene-image-url"
+                >Scene image address</label
+              >
+              <input
+                id="scene-image-url"
+                type="url"
+                inputmode="url"
+                placeholder="https://…/scene.jpg"
+                maxlength="2048"
+              />
+              <p
+                id="scene-error"
+                class="error scene-error"
+                role="alert"
+                aria-live="assertive"
+              ></p>
+            </div>
+          </aside>
+
+          <div
+            id="log"
+            class="log"
+            role="log"
+            aria-live="polite"
+            aria-label="Session log"
+          ></div>
+        </div>
+
+        <!-- ------- turn builder: what the players intend to do -------- -->
+        <section id="turn-builder" class="turn-builder">
+          <h2 class="turn-builder-title">What is being planned…</h2>
+
+          <div id="ready-banner" class="ready-banner" role="status" hidden>
+            All players ready
+          </div>
+
+          <div
+            id="turn-builder-log"
+            class="turn-log"
+            role="log"
+            aria-live="polite"
+            aria-label="Planned turns"
+          ></div>
+
+          <form
+            id="turn-composer"
+            class="composer turn-composer"
+            autocomplete="off"
+            hidden
+          >
+            <label class="visually-hidden" for="turn-input"
+              >Plan your turn</label
+            >
+            <input
+              type="text"
+              id="turn-input"
+              maxlength="200"
+              placeholder='"" = verbal, () = non verbal, ** = style'
+            />
+            <button
+              type="button"
+              id="turn-ready"
+              class="option ready-toggle"
+              aria-pressed="false"
+            >
+              Ready
+            </button>
+            <button
+              type="submit"
+              id="turn-send"
+              class="option"
+              style="margin-left: auto"
+            >
+              Plan
+            </button>
+            <p
+              id="turn-error"
+              class="error turn-error"
+              role="alert"
+              aria-live="assertive"
+            ></p>
+          </form>
+        </section>
+
+        <form id="composer" class="composer" autocomplete="off" hidden>
+          <label class="visually-hidden" for="text-input">Say something</label>
+          <textarea
+            id="text-input"
+            rows="2"
+            maxlength="4000"
+            placeholder="Enter to speak. Shift+Enter for a new line."
+          ></textarea>
+          <button type="submit" id="send-button" class="option">Speak</button>
+        </form>
+
+        <!-- ------- music deck: attached to the page for the administrateur
+                 only, and removed from the DOM for everyone else -------- -->
+        <div id="deck" class="deck" hidden>
+          <div class="deck-now">
+            <span class="deck-label">Now playing</span>
+            <span id="track-label">Silence.</span>
+          </div>
+
+          <div class="deck-admin">
+            <label class="visually-hidden" for="track-url">YouTube link</label>
+            <input
+              id="track-url"
+              type="url"
+              placeholder="https://www.youtube.com/watch?v=…"
+              maxlength="300"
+            />
+            <button type="button" id="track-play" class="option">Play</button>
+            <button type="button" id="track-stop">Stop</button>
+          </div>
+
+          <button type="button" id="audio-unlock" class="option" hidden>
+            Enable audio
+          </button>
+          <p
+            id="deck-error"
+            class="error deck-error"
+            role="alert"
+            aria-live="assertive"
+          ></p>
+        </div>
+
+        <!-- ------- vitals & skills: a character's own, so absent for the
+                 administrateur and removed from the DOM entirely -------- -->
+        <div id="panel-foot" class="panel-foot" hidden>
+          <div class="vitals">
+            <div
+              id="health-bar"
+              class="vital"
+              data-vital="health"
+              role="img"
+              aria-label="Health"
+            ></div>
+            <div
+              id="morale-bar"
+              class="vital"
+              data-vital="morale"
+              role="img"
+              aria-label="Morale"
+            ></div>
+          </div>
+          <button type="button" id="psyche-button" class="option psyche">
+            Skills
+          </button>
+        </div>
+
+        <div id="yt-player" class="yt-frame" aria-hidden="true"></div>
+      </section>
+
+      <!-- ---------------------------------------------- portrait modal ---- -->
+      <div id="portrait-modal" class="modal" hidden>
+        <div class="modal-backdrop" data-close="true"></div>
+        <div
+          class="modal-card"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="portrait-modal-name"
+        >
+          <button
+            type="button"
+            id="portrait-modal-close"
+            class="modal-close"
+            aria-label="Close portrait"
+          >
+            ×
+          </button>
+          <div
+            id="portrait-modal-image"
+            class="modal-portrait"
+            data-empty="true"
+            aria-hidden="true"
+          ></div>
+          <p id="portrait-modal-name" class="modal-name">—</p>
+          <p id="portrait-modal-role" class="modal-role"></p>
+        </div>
+      </div>
+      <!-- ---------------------------------------------- psyche modal ------- -->
+      <div id="psyche-modal" class="modal" hidden>
+        <div class="modal-backdrop" data-close="true"></div>
+        <div
+          class="modal-card modal-card-wide"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="psyche-modal-title"
+        >
+          <button
+            type="button"
+            id="psyche-modal-close"
+            class="modal-close"
+            aria-label="Close character sheet"
+          >
+            ×
+          </button>
+          <div id="psyche-sheet" class="psyche-sheet"></div>
+        </div>
+      </div>
+    </main>
+
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <script src="./stats/disco-skills.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

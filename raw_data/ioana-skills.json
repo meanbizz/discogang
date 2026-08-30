@@ -1,0 +1,6 @@
+{
+  "attributes": { "intellect": 3, "psyche": 5, "physique": 2, "motorics": 2 },
+  "skills": {
+    "inland-empire": { "points": 0, "signature": true }
+  }
+}

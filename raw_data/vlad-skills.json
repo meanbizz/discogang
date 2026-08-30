@@ -1,0 +1,6 @@
+{
+  "attributes": { "intellect": 3, "psyche": 1, "physique": 2, "motorics": 6 },
+  "skills": {
+    "perception": { "points": 0, "signature": true }
+  }
+}

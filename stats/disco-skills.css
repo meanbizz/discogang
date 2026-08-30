@@ -1,0 +1,437 @@
+/* ============================================================
+   Disco Elysium skill sheet — vanilla CSS component
+   All rules are namespaced under .des-sheet / .des-*
+   ============================================================ */
+
+.des-sheet {
+  --des-white: #d7dade;
+  --des-dim: #9aa1a8;
+  --des-bg: #0e1114;
+  --des-card-bg: #05070a;
+  --des-border: #2a2f36;
+  --des-accent: #c8a24a;
+  --des-font: "Trebuchet MS", "Segoe UI", Tahoma, sans-serif;
+
+  box-sizing: border-box;
+  width: 100%;
+  padding: 1rem 0.5rem;
+  font-family: var(--des-font);
+  color: var(--des-white);
+  background: var(--des-bg);
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.des-sheet *,
+.des-sheet *::before,
+.des-sheet *::after {
+  box-sizing: border-box;
+}
+
+.des-sheet ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.des-sheet h5,
+.des-sheet h6,
+.des-sheet p {
+  margin: 0;
+}
+
+/* ---------- outer stack: mobile = 4 side-by-side columns ---------- */
+
+.des-groups {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 0.25rem;
+}
+
+.des-group {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-width: 0;
+  gap: 0.5rem;
+}
+
+.des-skills {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 0.25rem;
+}
+
+/* ---------- attribute column ---------- */
+
+.des-attribute {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.des-attribute-value-row {
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.des-attribute-value {
+  font-weight: 700;
+  font-size: 2.75rem;
+  line-height: 1;
+  letter-spacing: -0.05em;
+  color: var(--des-white);
+}
+
+.des-stepper {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+}
+
+.des-stepper button {
+  padding: 0 0.35rem;
+  font-family: inherit;
+  font-size: 0.7rem;
+  line-height: 1.4;
+  color: var(--des-white);
+  background: #171b21;
+  border: 1px solid var(--des-border);
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.des-stepper button:hover:not(:disabled) {
+  background: #232a33;
+  border-color: #4a5260;
+}
+
+.des-stepper button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.des-stepper button:focus-visible,
+.des-card:focus-visible {
+  outline: 2px solid var(--des-accent);
+  outline-offset: 2px;
+}
+
+.des-attribute-pips {
+  display: none;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.des-attribute-name-long {
+  display: none;
+}
+
+.des-attribute-name-short {
+  font-size: 1.5rem;
+  font-weight: 400;
+  color: var(--des-white);
+}
+
+/* ---------- skill card ---------- */
+
+/* mobile: cards stack vertically, so height comes from width + ratio */
+.des-card {
+  position: relative;
+  flex: 0 0 auto;
+  width: 100%;
+  min-width: 0;
+  aspect-ratio: 368 / 512;
+  overflow: hidden;
+  background: var(--des-card-bg);
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+
+.des-card-art {
+  position: absolute;
+  inset: 0;
+}
+
+.des-card-art img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  color: transparent;
+}
+
+.des-card.is-inert .des-card-art {
+  filter: grayscale(1);
+}
+
+.des-card-signature {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 66%;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.des-card-signature img {
+  display: block;
+  width: 100%;
+  height: auto;
+  color: transparent;
+}
+
+.des-card-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.95) 0%,
+    rgba(0, 0, 0, 0.75) 22%,
+    rgba(0, 0, 0, 0) 60%
+  );
+  pointer-events: none;
+}
+
+.des-card-score {
+  position: absolute;
+  bottom: 28%;
+  left: 0;
+  z-index: 2;
+  width: 100%;
+  font-size: clamp(1.25rem, 3.5vw, 2.25rem);
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.9);
+  color: var(--des-white);
+}
+
+.des-card-pips {
+  position: absolute;
+  bottom: 1.4rem;
+  left: 0;
+  z-index: 3;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  width: 100%;
+  padding: 0 0.15rem;
+}
+
+.des-card-title {
+  position: absolute;
+  bottom: 0.35rem;
+  left: 50%;
+  z-index: 3;
+  width: 100%;
+  padding: 0 0.15rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  line-height: 1.05;
+  text-align: center;
+  text-transform: uppercase;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.95);
+  color: var(--des-white);
+  transform: translateX(-50%);
+}
+
+.des-card-title.is-condensed {
+  width: 83.333%;
+  transform: translateX(-50%) scaleX(0.75);
+}
+
+.des-pip {
+  display: block;
+  color: transparent;
+}
+
+.des-card-pips .des-pip {
+  width: clamp(7px, 1.6vw, 14px);
+  height: auto;
+}
+
+/* ---------- states ---------- */
+
+.des-card:hover .des-card-overlay {
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.9) 0%,
+    rgba(20, 26, 34, 0.55) 30%,
+    rgba(0, 0, 0, 0) 70%
+  );
+}
+
+.des-card.is-selected {
+  border-color: var(--des-accent);
+  box-shadow: 0 0 0 1px rgba(200, 162, 74, 0.45), 0 0 14px rgba(200, 162, 74, 0.3);
+}
+
+.des-card.is-selected .des-card-art {
+  filter: none;
+}
+
+.des-card.is-readonly {
+  cursor: default;
+}
+
+/* ---------- tooltip ---------- */
+
+.des-tooltip {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 60;
+  display: none;
+  width: max-content;
+  max-width: min(18rem, calc(100vw - 1rem));
+  padding: 0.55rem 0.7rem;
+  background: rgba(5, 7, 10, 0.97);
+  border: 1px solid var(--des-accent);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+}
+
+.des-tooltip.is-open {
+  display: block;
+}
+
+.des-tooltip-title {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--des-accent);
+}
+
+.des-tooltip-text {
+  margin-top: 0.25rem;
+  font-size: 0.8rem;
+  line-height: 1.35;
+  color: var(--des-white);
+}
+
+/* ---------- desktop ---------- */
+
+@media (min-width: 768px) {
+  .des-sheet {
+    padding: 2rem 1rem;
+  }
+
+  .des-groups {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.25rem;
+  }
+
+  .des-group {
+    flex-direction: row;
+    gap: 0.5rem;
+  }
+
+  .des-attribute-holder {
+    flex: 0 0 16.6667%;
+    max-width: 16.6667%;
+  }
+
+  .des-attribute {
+    height: 100%;
+  }
+
+  .des-attribute-value-row {
+    flex-direction: row;
+  }
+
+  .des-attribute-value {
+    font-size: 5rem;
+  }
+
+  .des-stepper {
+    position: relative;
+    top: 0.25rem;
+    flex-direction: column;
+  }
+
+  .des-stepper button {
+    font-size: 0.8rem;
+  }
+
+  .des-attribute-pips {
+    display: flex;
+  }
+
+  .des-attribute-name-long {
+    display: inline;
+    font-size: 1.25rem;
+    font-weight: 400;
+  }
+
+  .des-attribute-name-short {
+    display: none;
+  }
+
+  .des-skills {
+    flex: 1 1 auto;
+    flex-direction: row;
+    gap: 0.5rem;
+  }
+
+  /* row layout: cards share the width, height follows the ratio */
+  .des-card {
+    flex: 1 1 0;
+    width: auto;
+  }
+
+  .des-card-score {
+    bottom: 30%;
+  }
+
+  .des-card-pips {
+    bottom: 2.5rem;
+    gap: 0.25rem;
+  }
+
+  .des-card-title {
+    font-size: 0.8rem;
+    letter-spacing: -0.01em;
+    line-height: 1rem;
+  }
+
+  .des-tooltip-title {
+    font-size: 0.75rem;
+  }
+
+  .des-tooltip-text {
+    font-size: 0.875rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .des-attribute-name-long {
+    font-size: 1.5rem;
+  }
+}
+
+@media (min-width: 1536px) {
+  .des-sheet {
+    padding: 2rem 3rem;
+  }
+
+  .des-card-title {
+    font-size: 1rem;
+  }
+}
