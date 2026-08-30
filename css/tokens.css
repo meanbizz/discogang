@@ -1,0 +1,44 @@
+/* Design tokens. No selectors beyond :root — anything that paints belongs
+   in a component file. */
+
+:root {
+  /* Surfaces & ink */
+  --bg: #131311;
+  --bg-lift: #191917;
+  --text-old: #7e7e7c;
+  --text-now: #cdcac5;
+  --rule: #2a2a26;
+
+  /* Accents */
+  --option: #a8472c;
+  --option-hi: #ffece9;
+  --ready: #6fbf73;
+  --danger: #b3583c;
+
+  /* Vitals */
+  --health: #ff5f00;
+  --morale: #107494;
+
+  /* Player slot colours, 1–8. Mapped onto --slot in slots.css. */
+  --p1: #ff6f4b;
+  --p2: #ffc94a;
+  --p3: #7ee081;
+  --p4: #4dd6d0;
+  --p5: #5aa9ff;
+  --p6: #b98cff;
+  --p7: #ff7fbe;
+  --p8: #d9e04a;
+
+  /* Type */
+  --font-serif:
+    "libre-baskerville", "Libre Baskerville", Georgia, "Times New Roman", Times,
+    serif;
+  --font-mono:
+    ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono",
+    monospace;
+
+  /* Shared metrics */
+  --shell-max: 48rem;
+  --side-width: 10rem;
+  --hairline: 1px solid var(--rule);
+}

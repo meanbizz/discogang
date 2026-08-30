@@ -24,7 +24,9 @@ export const dom = {
   turnComposer: document.getElementById("turn-composer"),
   turnInput: document.getElementById("turn-input"),
   turnReady: document.getElementById("turn-ready"),
+  turnSend: document.getElementById("turn-send"),
   turnError: document.getElementById("turn-error"),
+  turnLock: document.getElementById("turn-lock"),
 
   readyBanner: document.getElementById("ready-banner"),
   importButton: document.getElementById("import-button"),

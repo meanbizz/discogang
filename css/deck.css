@@ -1,0 +1,78 @@
+/* Music deck and the offscreen YouTube iframe. */
+
+.deck {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 1rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: var(--hairline);
+  font-size: 0.9rem;
+}
+
+.deck[hidden] {
+  display: none;
+}
+
+.deck-now {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.deck-label {
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+#track-label {
+  color: var(--text-now);
+  font-style: italic;
+}
+
+.deck-admin {
+  flex: 1 1 18rem;
+  display: flex;
+  gap: 0.5rem;
+  min-width: 0;
+  margin-left: auto;
+}
+
+.deck-admin input {
+  flex: 1 1 auto;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.9rem;
+}
+
+.deck-admin button,
+#audio-unlock {
+  padding: 0.35rem 0.7rem;
+  font-size: 0.85rem;
+}
+
+.deck-error {
+  flex: 1 1 100%;
+  margin: 0;
+}
+
+/* Present for the API, invisible and untabbable. */
+.yt-frame {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  clip: rect(0 0 0 0);
+}
+
+@media (max-width: 32rem) {
+  .deck-admin {
+    margin-left: 0;
+  }
+}

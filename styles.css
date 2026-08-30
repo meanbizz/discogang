@@ -1,3 +1,24 @@
-@import "./css/base.css";
-@import "./css/components.css";
-@import "./css/modals.css";
+/* Salon — stylesheet index.
+
+   Nothing but imports. Load order is the cascade order: tokens, then the
+   base layer, then components. Media queries live in the component file
+   they belong to, so anything that touches a component is in one place. */
+
+@import url("./css/tokens.css");
+@import url("./css/base.css");
+@import url("./css/forms.css");
+@import url("./css/thumbs.css");
+@import url("./css/slots.css");
+@import url("./css/markup.css");
+
+@import url("./css/session.css");
+@import url("./css/roster.css");
+@import url("./css/stage.css");
+@import url("./css/dialogue.css");
+@import url("./css/composer.css");
+@import url("./css/turn-builder.css");
+@import url("./css/deck.css");
+@import url("./css/vitals.css");
+
+@import url("./css/modals.css");
+@import url("./css/npc.css");

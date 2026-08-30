@@ -1,0 +1,80 @@
+/* Session header bar, connection state, and the admin tool row. */
+
+.session-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: var(--hairline);
+  font-size: 0.9rem;
+}
+
+.session-meta,
+.session-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.session-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+.session-actions button {
+  padding: 0.3rem 0.65rem;
+  font-size: 0.85rem;
+}
+
+.badge {
+  padding: 0.05rem 0.5rem;
+  border: var(--hairline);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.badge[hidden] {
+  display: none;
+}
+
+.badge[data-role="admin"] {
+  border-color: var(--option);
+  color: var(--option-hi);
+}
+
+.dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--rule);
+}
+
+.dot[data-state="connecting"] {
+  background: #8a7b3c;
+}
+.dot[data-state="online"] {
+  background: #5f7a55;
+}
+.dot[data-state="error"] {
+  background: var(--option);
+}
+
+.admin-tools {
+  margin-top: 0.75rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.admin-tools[hidden] {
+  display: none;
+}
+
+@media (max-width: 32rem) {
+  .session-actions {
+    margin-left: 0;
+    width: 100%;
+  }
+}

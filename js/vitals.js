@@ -6,6 +6,9 @@ export const vitals = {
   morale: { value: 0, max: 0 },
 };
 
+const FLASH_MS = 600;
+const flashTimers = {};
+
 export function skillScore(sheetState, skillId) {
   if (!sheetState || !sheetState.attributes || !sheetState.skills) return 1;
   const groups = window.DiscoSkillSheet?.ATTRIBUTES || [];
@@ -52,4 +55,43 @@ export function refreshVitals(sheetState, fill) {
     if (state.value < 0) state.value = 0;
   });
   renderVitals();
+}
+
+function barOf(kind) {
+  return kind === "health" ? dom.healthBar : dom.moraleBar;
+}
+
+function flash(kind) {
+  const element = barOf(kind);
+  if (!element) return;
+  if (flashTimers[kind]) clearTimeout(flashTimers[kind]);
+  element.classList.remove("is-hit");
+  void element.offsetWidth;
+  element.classList.add("is-hit");
+  flashTimers[kind] = setTimeout(() => {
+    element.classList.remove("is-hit");
+    flashTimers[kind] = null;
+  }, FLASH_MS);
+}
+
+/* One step of health or morale, clamped to the sheet's ceiling.
+   direction is "gain" or "loss"; returns the actual change. */
+export function changeVital(kind, direction) {
+  const state = vitals[kind];
+  if (!state) return 0;
+  const delta = direction === "gain" ? 1 : direction === "loss" ? -1 : 0;
+  if (!delta) return 0;
+
+  const before = state.value;
+  state.value = Math.max(0, Math.min(state.max, state.value + delta));
+  renderVitals();
+  if (state.value !== before) flash(kind);
+  return state.value - before;
+}
+
+export function vitalSnapshot() {
+  return {
+    health: { value: vitals.health.value, max: vitals.health.max },
+    morale: { value: vitals.morale.value, max: vitals.morale.max },
+  };
 }

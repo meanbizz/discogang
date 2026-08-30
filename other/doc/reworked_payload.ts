@@ -45,13 +45,6 @@ export type Difficulty =
   | "godly" // 16+
   | "impossible"; // 18+
 
-export type SpeakerType =
-  | "narrator" // Descriptive narrative (no portrait, italicized)
-  | "skill" // Disco Elysium skill (auto-resolves built-in portrait)
-  | "npc" // World character (uses provided portrait)
-  | "entity" // Inanimate/surreal object (e.g., Horrific Necktie)
-  | "player"; // Spoken or internal player reaction
-
 export type D6 = 1 | 2 | 3 | 4 | 5 | 6;
 export type CheckResult = "success" | "failure";
 export type VitalChange = "gain" | "loss";
@@ -94,8 +87,6 @@ export interface DialogueNode {
   id: string;
   /** Display name (e.g. "NARRATOR", "KIM KITSURAGI", "HALF LIGHT") */
   speaker: string;
-  /** Classifies visual rendering and portrait behavior */
-  speakerType?: SpeakerType;
   /** HTML/text body of the dialogue node */
   dialogue: string;
 

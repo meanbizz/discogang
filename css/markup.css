@@ -1,0 +1,14 @@
+/* Inline speech markup, shared by the turn log and the dialogue reader:
+   "spoken" → quote, (aside) → aside, *style* → past. */
+
+.mark-quote {
+  color: var(--option);
+}
+
+.mark-aside {
+  color: var(--text-now);
+}
+
+.mark-past {
+  color: var(--text-old);
+}

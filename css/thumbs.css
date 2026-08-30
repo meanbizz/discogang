@@ -1,0 +1,45 @@
+/* Portrait thumbnails and the file/URL picker that feeds them. */
+
+.portrait-picker {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.portrait-controls {
+  min-width: 0;
+  display: grid;
+  gap: 0.3rem;
+}
+
+.portrait-controls input[type="url"] {
+  padding: 0.35rem 0.5rem;
+  font-size: 0.85rem;
+}
+
+.thumb {
+  flex: 0 0 auto;
+  width: 2.25rem;
+  height: 3.375rem;
+  display: grid;
+  place-items: center;
+  background: var(--bg) center / cover no-repeat;
+  border: var(--hairline);
+  color: var(--text-old);
+  font-size: 1rem;
+  text-transform: uppercase;
+  filter: grayscale(0.25) contrast(1.05);
+}
+
+.thumb-lg {
+  width: 5rem;
+  height: 7.5rem;
+  font-size: 1.6rem;
+}
+
+/* Initial-letter fallbacks are written as text content; the "?" only shows
+   when there is neither an image nor a letter. */
+.thumb[data-empty="true"]:empty::after {
+  content: "?";
+  opacity: 0.5;
+}

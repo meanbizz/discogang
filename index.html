@@ -132,6 +132,8 @@
         <section id="turn-builder" class="turn-builder">
           <h2 class="turn-builder-title">What is being planned…</h2>
 
+          <p id="turn-lock" class="turn-lock" role="status" hidden></p>
+
           <div id="ready-banner" class="ready-banner" role="status" hidden>
             <span class="ready-banner-text">All players ready</span>
             <button
@@ -175,14 +177,7 @@
             >
               Ready
             </button>
-            <button
-              type="submit"
-              id="turn-send"
-              class="option"
-              style="margin-left: auto"
-            >
-              Plan
-            </button>
+            <button type="submit" id="turn-send" class="option">Plan</button>
             <p
               id="turn-error"
               class="error turn-error"
@@ -198,7 +193,7 @@
           <textarea
             id="text-input"
             rows="2"
-            maxlength="4000"
+            maxlength="200000"
             placeholder="Enter to speak. Shift+Enter for a new line."
           ></textarea>
           <button type="submit" id="send-button" class="option">Speak</button>

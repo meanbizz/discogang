@@ -1,0 +1,67 @@
+/* The character strip. Slot colour arrives as --slot from slots.css. */
+
+.roster {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  overflow-x: auto;
+  padding: 0.9rem 0;
+  border-bottom: var(--hairline);
+  scrollbar-width: thin;
+}
+
+.roster-person {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: 12rem;
+  padding: 0.15rem 0.3rem;
+  background: transparent;
+  border: 1px solid transparent;
+  color: inherit;
+  font: inherit;
+  letter-spacing: normal;
+  text-align: left;
+  cursor: pointer;
+}
+
+.roster-person:hover {
+  color: inherit;
+  border-color: var(--rule);
+}
+
+.roster-name {
+  color: var(--slot, inherit);
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Slotted names keep their colour; unslotted ones (the administrateur)
+   brighten on hover and when they are you. */
+.roster-person:hover .roster-name,
+.roster-person.self .roster-name {
+  color: var(--slot, var(--text-now));
+}
+
+.roster-ready {
+  flex: 0 0 auto;
+  width: 0.4rem;
+  height: 0.4rem;
+  background: transparent;
+  border: var(--hairline);
+  border-radius: 50%;
+}
+
+.roster-ready[data-ready="true"] {
+  background: var(--ready);
+  border-color: var(--ready);
+}
+
+.roster-empty {
+  font-size: 0.9rem;
+  font-style: italic;
+}

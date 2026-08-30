@@ -1,0 +1,89 @@
+/* Health and morale bars plus the sheet button beside them. */
+
+.panel-foot {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: var(--hairline);
+}
+
+.panel-foot[hidden] {
+  display: none;
+}
+
+.vitals {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.vital {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+.vital[data-vital="health"] {
+  --vital: var(--health);
+}
+.vital[data-vital="morale"] {
+  --vital: var(--morale);
+}
+
+.vital-step {
+  width: 1.25rem;
+  height: 0.55rem;
+  background: rgba(0, 0, 0, 0.35);
+  border: var(--hairline);
+}
+
+.vital-step[data-filled="true"] {
+  background: var(--vital);
+  border-color: var(--vital);
+}
+
+/* Flashed once when a dialogue node moves a vital. */
+.vital.is-hit {
+  animation: vital-hit 560ms ease-out;
+}
+
+@keyframes vital-hit {
+  0% {
+    opacity: 0.25;
+    transform: translateX(-2px);
+  }
+  40% {
+    opacity: 1;
+    transform: translateX(2px);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vital.is-hit {
+    animation: none;
+  }
+}
+
+.psyche {
+  flex: 0 0 auto;
+  padding: 0.4rem 1.1rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 32rem) {
+  .panel-foot {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .vital-step {
+    width: 1rem;
+  }
+}

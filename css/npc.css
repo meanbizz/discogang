@@ -1,0 +1,110 @@
+/* NPC manager: form on the left, roster of NPCs on the right. */
+
+.npc-modal-card {
+  max-width: 52rem;
+  padding: 1.75rem 1.5rem;
+}
+
+.npc-modal-header {
+  margin-bottom: 1.25rem;
+  font-size: 1.05rem;
+  text-align: left;
+}
+
+.npc-subheading {
+  margin: 0 0 0.85rem;
+  color: var(--text-old);
+  font-size: 0.8rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.npc-manager-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.npc-form {
+  display: grid;
+  gap: 0.85rem;
+  padding-right: 1.25rem;
+  border-right: var(--hairline);
+}
+
+.npc-form-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+}
+
+.npc-list-wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+.npc-list {
+  display: grid;
+  gap: 0.65rem;
+  max-height: 22rem;
+  padding-right: 0.4rem;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.npc-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem;
+  background: var(--bg);
+  border: var(--hairline);
+}
+
+.npc-item .thumb {
+  flex-shrink: 0;
+  width: 2rem;
+  height: 3rem;
+}
+
+.npc-item-name {
+  flex: 1 1 auto;
+  color: var(--text-now);
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.npc-item-actions {
+  flex-shrink: 0;
+  display: flex;
+  gap: 0.35rem;
+}
+
+.npc-item-actions button {
+  padding: 0.2rem 0.5rem;
+  font-size: 0.75rem;
+}
+
+.npc-empty {
+  margin: 1rem 0;
+  color: var(--text-old);
+  font-size: 0.88rem;
+  font-style: italic;
+}
+
+/* Stack the two columns before the form gets too narrow to fill in. */
+@media (max-width: 40rem) {
+  .npc-manager-layout {
+    grid-template-columns: 1fr;
+  }
+  .npc-form {
+    padding-right: 0;
+    padding-bottom: 1.25rem;
+    border-right: none;
+    border-bottom: var(--hairline);
+  }
+}

@@ -1,0 +1,146 @@
+/* Turn planning: the plan log, the composer, the ready toggle, and the
+   all-ready banner. */
+
+.turn-builder {
+  padding-top: 1rem;
+  border-top: var(--hairline);
+}
+
+.turn-builder-title {
+  margin: 0 0 0.7rem;
+  color: var(--text-old);
+  font-size: 0.78rem;
+  font-weight: normal;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+/* Why planning is unavailable right now. */
+.turn-lock {
+  margin: 0 0 0.7rem;
+  padding: 0.3rem 0.7rem;
+  border: var(--hairline);
+  color: var(--text-old);
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.turn-lock[hidden] {
+  display: none;
+}
+
+.turn-log {
+  height: min(28vh, 11rem);
+  padding-left: 0.85rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-left: var(--hairline);
+}
+
+.turn-entry {
+  margin-bottom: 0.55rem;
+  padding-left: 0.5rem;
+  border-left: 2px solid var(--slot, transparent);
+}
+
+.turn-entry:last-child {
+  margin-bottom: 0;
+}
+
+.turn-line {
+  margin: 0;
+  color: var(--text-now);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.turn-author {
+  color: var(--slot, var(--option-hi));
+  font-size: 0.82rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.turn-empty {
+  margin: 1.2rem 0;
+  text-align: center;
+  font-size: 0.9rem;
+  font-style: italic;
+  opacity: 0.7;
+}
+
+/* Composer */
+.turn-composer {
+  margin-top: 0.8rem;
+  padding-top: 0;
+  border-top: 0;
+  flex-wrap: wrap;
+}
+
+.turn-composer .option {
+  flex: 0 0 auto;
+}
+
+/* Was an inline style on the markup. */
+.turn-composer #turn-send {
+  margin-left: auto;
+}
+
+.turn-error {
+  flex: 1 1 100%;
+  margin: 0.35rem 0 0;
+  min-height: 0;
+  font-size: 0.85rem;
+}
+
+.ready-toggle.is-ready {
+  border-color: var(--ready);
+  background: rgba(111, 191, 115, 0.16);
+  color: var(--ready);
+}
+
+.ready-toggle.is-ready:hover {
+  border-color: var(--ready);
+  background: rgba(111, 191, 115, 0.3);
+  color: var(--ready);
+}
+
+/* All-ready banner */
+.ready-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem 0.9rem;
+  margin: 0 0 0.7rem;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--ready);
+  color: var(--ready);
+  font-size: 0.75rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.ready-banner[hidden] {
+  display: none;
+}
+
+.import-turns {
+  flex: 0 0 auto;
+  padding: 0.1rem 0.7rem;
+  border-color: var(--ready);
+  background: rgba(111, 191, 115, 0.16);
+  color: var(--ready);
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.import-turns:hover {
+  border-color: var(--ready);
+  background: var(--ready);
+  color: var(--bg);
+}

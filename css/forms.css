@@ -1,0 +1,119 @@
+/* Fields, controls, buttons, and inline errors. */
+
+.field {
+  display: grid;
+  gap: 0.35rem;
+}
+
+#join-form {
+  display: grid;
+  gap: 1rem;
+}
+
+label {
+  color: var(--text-old);
+  font-size: 0.8rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.sub-label {
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  opacity: 0.75;
+}
+
+/* A paragraph of help text under a field reads as prose, not a label. */
+.field > p.sub-label {
+  margin: 0;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: none;
+}
+
+input,
+textarea,
+button {
+  font-family: inherit;
+  font-size: 1rem;
+}
+
+input[type="text"],
+input[type="url"],
+textarea {
+  width: 100%;
+  padding: 0.6rem 0.7rem;
+  background: var(--bg);
+  border: var(--hairline);
+  color: var(--text-now);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #55554f;
+}
+
+input[type="file"] {
+  max-width: 100%;
+  color: var(--text-old);
+  font-size: 0.9rem;
+}
+
+input:disabled,
+textarea:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+textarea {
+  min-height: 3.5rem;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+:focus-visible {
+  outline: 1px solid var(--option-hi);
+  outline-offset: 2px;
+}
+
+button {
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: var(--hairline);
+  color: var(--text-old);
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition:
+    color 90ms linear,
+    border-color 90ms linear,
+    background-color 90ms linear;
+}
+
+button:hover {
+  color: var(--text-now);
+  border-color: var(--text-old);
+}
+
+button.option {
+  border-color: var(--option);
+  background: rgba(126, 66, 44, 0.22);
+  color: var(--option-hi);
+}
+
+button.option:hover {
+  border-color: var(--option);
+  background: var(--option);
+  color: var(--option-hi);
+}
+
+button[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.error {
+  margin: 0.5rem 0 0;
+  min-height: 1.4em;
+  color: var(--danger);
+  font-size: 0.9rem;
+}

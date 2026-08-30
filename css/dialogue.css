@@ -1,0 +1,167 @@
+/* Dialogue rounds: speaker lines, skill-check banners, vitals notes,
+   choice buttons, and the administrateur's raw payload echo. */
+
+.entry-speaker {
+  margin: 0 0 0.25rem;
+  color: var(--option-hi);
+  font-size: 0.72rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.entry.dialogue:not(.current) .entry-speaker {
+  color: var(--text-old);
+}
+
+/* Skill check */
+.check {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.7rem;
+  margin: 0 0 0.5rem;
+  padding: 0.25rem 0.6rem;
+  border-left: 2px solid var(--rule);
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.check[data-result="success"] {
+  border-left-color: var(--ready);
+}
+.check[data-result="failure"] {
+  border-left-color: var(--option);
+}
+
+.check-skill {
+  color: var(--text-now);
+}
+
+.check-target,
+.check-dice {
+  opacity: 0.8;
+}
+
+.check-verdict {
+  margin-left: auto;
+}
+
+.check[data-result="success"] .check-verdict {
+  color: var(--ready);
+}
+.check[data-result="failure"] .check-verdict {
+  color: var(--option);
+}
+
+/* Snake eyes and double sixes get shouted. */
+.check[data-crit="true"] .check-verdict {
+  font-weight: 700;
+  letter-spacing: 0.2em;
+}
+
+/* Vitals effect */
+.vitals-note {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.8rem;
+  margin: 0.45rem 0 0;
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.vitals-note-item[data-vital="health"] {
+  color: var(--health);
+}
+.vitals-note-item[data-vital="morale"] {
+  color: var(--morale);
+}
+
+/* Choices */
+.entry-choices {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.75rem;
+}
+
+button.choice {
+  padding: 0.4rem 0.7rem;
+  border-color: var(--rule);
+  background: rgba(126, 66, 44, 0.12);
+  color: var(--option-hi);
+  font-size: 0.95rem;
+  line-height: 1.4;
+  letter-spacing: normal;
+  text-align: left;
+}
+
+button.choice:hover:not(:disabled) {
+  border-color: var(--option);
+  background: rgba(126, 66, 44, 0.3);
+  color: var(--option-hi);
+}
+
+button.choice:disabled {
+  opacity: 0.4;
+}
+
+/* The path taken stays legible after the rest grey out. */
+button.choice.is-chosen {
+  border-color: var(--option);
+  background: rgba(126, 66, 44, 0.34);
+  color: var(--option-hi);
+  opacity: 1;
+}
+
+button.choice.is-chosen::before {
+  content: "▸ ";
+}
+
+button.choice.continue {
+  justify-self: start;
+  padding: 0.3rem 1.1rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.dialogue-end {
+  margin: 0.9rem 0;
+  text-align: center;
+  font-size: 0.8rem;
+  font-style: italic;
+  letter-spacing: 0.14em;
+  opacity: 0.65;
+}
+
+/* Raw payload echo — administrateur's own log only. */
+.entry.raw .entry-label {
+  margin: 0 0 0.3rem;
+  color: var(--option-hi);
+  font-size: 0.68rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.entry.raw .entry-body {
+  max-height: 12rem;
+  padding: 0.5rem 0.6rem;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 1px dashed var(--rule);
+  color: var(--text-old);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+@media (max-width: 32rem) {
+  .check {
+    font-size: 0.66rem;
+  }
+  .check-verdict {
+    margin-left: 0;
+  }
+}

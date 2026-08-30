@@ -109,6 +109,33 @@ export function paintThumb(element, person) {
   }
 }
 
+/* "spoken" → quote, (aside) → aside, *style* → past.
+   Text only: every piece lands through createTextNode/textContent. */
+export function paintMarkup(target, text) {
+  const source = String(text == null ? "" : text);
+  const pattern = /"[^"]*"|\([^)]*\)|\*[^*]*\*/g;
+  let cursor = 0;
+  let match;
+
+  while ((match = pattern.exec(source))) {
+    if (match.index > cursor) {
+      target.appendChild(
+        document.createTextNode(source.slice(cursor, match.index)),
+      );
+    }
+    const head = match[0].charAt(0);
+    const piece = document.createElement("span");
+    piece.className =
+      head === '"' ? "mark-quote" : head === "(" ? "mark-aside" : "mark-past";
+    piece.textContent = match[0];
+    target.appendChild(piece);
+    cursor = match.index + match[0].length;
+  }
+  if (cursor < source.length) {
+    target.appendChild(document.createTextNode(source.slice(cursor)));
+  }
+}
+
 export function copyText(text, done) {
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(text).then(

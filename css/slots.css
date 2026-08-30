@@ -1,0 +1,46 @@
+/* Player slot colours.
+
+   Each slotted element gets --slot once; the roster, turn log, and any
+   future slot-aware component then read var(--slot) with their own
+   fallback instead of repeating eight rules apiece. */
+
+.roster-person[data-slot="1"],
+.turn-entry[data-slot="1"],
+.turn-author[data-slot="1"] {
+  --slot: var(--p1);
+}
+.roster-person[data-slot="2"],
+.turn-entry[data-slot="2"],
+.turn-author[data-slot="2"] {
+  --slot: var(--p2);
+}
+.roster-person[data-slot="3"],
+.turn-entry[data-slot="3"],
+.turn-author[data-slot="3"] {
+  --slot: var(--p3);
+}
+.roster-person[data-slot="4"],
+.turn-entry[data-slot="4"],
+.turn-author[data-slot="4"] {
+  --slot: var(--p4);
+}
+.roster-person[data-slot="5"],
+.turn-entry[data-slot="5"],
+.turn-author[data-slot="5"] {
+  --slot: var(--p5);
+}
+.roster-person[data-slot="6"],
+.turn-entry[data-slot="6"],
+.turn-author[data-slot="6"] {
+  --slot: var(--p6);
+}
+.roster-person[data-slot="7"],
+.turn-entry[data-slot="7"],
+.turn-author[data-slot="7"] {
+  --slot: var(--p7);
+}
+.roster-person[data-slot="8"],
+.turn-entry[data-slot="8"],
+.turn-author[data-slot="8"] {
+  --slot: var(--p8);
+}

@@ -1,3 +1,5 @@
+/* Modal scaffolding, shared by the portrait, psyche, and NPC dialogs. */
+
 .modal {
   position: fixed;
   inset: 0;
@@ -6,69 +8,79 @@
   place-items: center;
   padding: 1.25rem;
 }
-.modal[hidden] { display: none; }
+
+.modal[hidden] {
+  display: none;
+}
+
 .modal-backdrop {
   position: absolute;
   inset: 0;
   background: rgba(10, 10, 9, 0.82);
 }
+
 .modal-card {
   position: relative;
   width: auto;
   max-width: 100%;
   padding: 2rem 1.25rem 1.25rem;
   background: var(--bg-lift);
-  border: 1px solid var(--rule);
+  border: var(--hairline);
   text-align: center;
 }
+
 .modal-card-wide {
   width: min(96vw, 88rem);
   max-height: 92vh;
-  overflow-y: auto;
   padding: 2.25rem 0.75rem 1rem;
+  overflow-y: auto;
   text-align: left;
 }
+
 .modal-card-wide .modal-name {
-  text-align: center;
   margin-bottom: 0.5rem;
+  text-align: center;
 }
-.psyche-sheet {
-  width: 100%;
-}
+
 .modal-close {
   position: absolute;
   top: 0.4rem;
   right: 0.4rem;
+  z-index: 1;
   padding: 0 0.4rem;
   border-color: transparent;
   font-size: 1.25rem;
   line-height: 1.4;
-  z-index: 1;
 }
+
+/* Portrait modal */
 .modal-portrait {
   width: min(78vw, 22rem, 52vh);
   aspect-ratio: 2 / 3;
   height: auto;
   margin: 0 auto 1rem;
-  border: 1px solid var(--rule);
-  background: var(--bg) center / contain no-repeat;
   display: grid;
   place-items: center;
+  background: var(--bg) center / contain no-repeat;
+  border: var(--hairline);
   color: var(--text-old);
   font-size: 4rem;
   text-transform: uppercase;
 }
+
 .modal-portrait[data-empty="true"]:empty::after {
   content: "?";
   opacity: 0.5;
 }
+
 .modal-name {
   margin: 0;
   color: var(--text-now);
+  font-size: 0.95rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  font-size: 0.95rem;
 }
+
 .modal-role {
   margin: 0.35rem 0 0;
   color: var(--option-hi);
@@ -77,101 +89,11 @@
   text-transform: uppercase;
 }
 
-/* NPC Modal Specifics */
-.npc-modal-card {
-  max-width: 52rem;
-  padding: 1.75rem 1.5rem;
-}
-.npc-modal-header {
-  margin-bottom: 1.25rem;
-  text-align: left;
-  font-size: 1.05rem;
-}
-.npc-subheading {
-  margin: 0 0 0.85rem;
-  font-size: 0.8rem;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--text-old);
-}
-.npc-manager-layout {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
-  align-items: start;
-}
-.npc-form {
-  display: grid;
-  gap: 0.85rem;
-  padding-right: 1.25rem;
-  border-right: 1px solid var(--rule);
-}
-.npc-form-actions {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  margin-top: 0.4rem;
-}
-.npc-list-wrapper {
-  display: flex;
-  flex-direction: column;
-}
-.npc-list {
-  display: grid;
-  gap: 0.65rem;
-  max-height: 22rem;
-  overflow-y: auto;
-  padding-right: 0.4rem;
-  scrollbar-width: thin;
-}
-.npc-item {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.5rem;
-  border: 1px solid var(--rule);
-  background: var(--bg);
-}
-.npc-item .thumb {
-  width: 2rem;
-  height: 3rem;
-  flex-shrink: 0;
-}
-.npc-item-name {
-  flex: 1 1 auto;
-  font-size: 0.9rem;
-  color: var(--text-now);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.npc-item-actions {
-  display: flex;
-  gap: 0.35rem;
-  flex-shrink: 0;
-}
-.npc-item-actions button {
-  padding: 0.2rem 0.5rem;
-  font-size: 0.75rem;
-}
-.npc-empty {
-  font-style: italic;
-  font-size: 0.88rem;
-  color: var(--text-old);
-  margin: 1rem 0;
+/* Psyche modal */
+.psyche-sheet {
+  width: 100%;
 }
 
-@media (max-width: 40rem) {
-  .npc-manager-layout {
-    grid-template-columns: 1fr;
-  }
-  .npc-form {
-    padding-right: 0;
-    border-right: none;
-    border-bottom: 1px solid var(--rule);
-    padding-bottom: 1.25rem;
-  }
-}
 @media (max-width: 32rem) {
   .modal-portrait {
     font-size: 3.25rem;

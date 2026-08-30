@@ -17,11 +17,13 @@ import {
   roomFromHash,
   randomRoomCode,
   copyText,
+  paintMarkup,
 } from "./utils.js";
 import { rejectImageFile, uploadImage, probeImage } from "./upload.js";
 import * as audio from "./audio.js";
 import * as vitals from "./vitals.js";
 import * as modals from "./modals.js";
+import * as dialogue from "./dialogue.js";
 import { NetworkManager } from "./network.js";
 
 /* ---------------- Application State ---------------- */
@@ -38,6 +40,8 @@ let stagedPortrait = null;
 let stagedSheet = null;
 let sheetState = null;
 let importResetTimer = null;
+let dialoguePayload = null;
+let dialogueLive = false;
 
 function setStatus(state, text) {
   dom.statusDot.setAttribute("data-state", state);
@@ -53,9 +57,10 @@ const network = new NetworkManager({
   onStatus: setStatus,
   onSystemNote: systemNote,
   onHostStarted: (selfId, hostProfile) => {
-    roster.set(selfId, hostProfile);
+    roster.set(selfId, Object.assign({ done: false }, hostProfile));
     renderRoster();
   },
+
   onPeerDrop: (peerId) => {
     roster.delete(peerId);
     renderRoster();
@@ -68,6 +73,7 @@ const network = new NetworkManager({
       const name = cleanName(data.profile?.name) || "Unnamed";
       const joiningAdmin = isAdminName(name);
       const previous = roster.get(connection.peer);
+
       roster.set(connection.peer, {
         id: connection.peer,
         name,
@@ -75,9 +81,11 @@ const network = new NetworkManager({
         admin: joiningAdmin,
         slot: joiningAdmin ? 0 : previous?.slot || network.nextSlot(roster),
         ready: false,
+        done: false,
       });
 
       renderRoster();
+
       connection.send({
         type: "welcome",
         id: connection.peer,
@@ -86,9 +94,12 @@ const network = new NetworkManager({
         track: audio.getCurrentTrack(),
         scene,
         npcs,
+        dialogue: dialoguePayload,
       });
+
       connection.send(rosterPayload());
       network.broadcast(rosterPayload(), connection.peer);
+
       return;
     }
 
@@ -131,6 +142,26 @@ const network = new NetworkManager({
       return;
     }
 
+    if (data.type === "dialogue-done") {
+      if (!person || person.admin) return;
+      person.done = true;
+      renderRoster();
+      network.broadcast(rosterPayload());
+
+      return;
+    }
+
+    if (data.type === "dialogue") {
+      if (!person?.admin) return;
+
+      const payload = dialogue.cleanPayload(data.payload);
+      if (!payload) return;
+
+      openDialogueRound(payload);
+
+      return;
+    }
+
     if (data.type === "track-request") {
       if (!person?.admin) return;
       const videoId = data.track
@@ -163,6 +194,7 @@ const network = new NetworkManager({
       );
       applyScene(data.scene);
       if (Array.isArray(data.npcs)) setNpcs(data.npcs);
+      applyDialogue(dialogue.cleanPayload(data.dialogue));
       const incoming =
         data.track && audio.parseVideoId(data.track.videoId)
           ? {
@@ -188,6 +220,7 @@ const network = new NetworkManager({
           admin: isAdminName(name),
           slot,
           ready: Boolean(raw.ready),
+          done: Boolean(raw.done),
         });
       });
       renderRoster();
@@ -219,6 +252,24 @@ const network = new NetworkManager({
 
     if (data.type === "npcs") {
       setNpcs(data.npcs);
+      return;
+    }
+
+    if (data.type === "dialogue") {
+      applyDialogue(dialogue.cleanPayload(data.payload));
+
+      return;
+    }
+
+    if (data.type === "turns") {
+      replaceTurnLog(
+        (Array.isArray(data.turns) ? data.turns : [])
+
+          .map(normalizeEntry)
+
+          .filter(Boolean),
+      );
+
       return;
     }
 
@@ -266,6 +317,7 @@ function normalizeEntry(raw) {
 function renderRoster() {
   dom.roster.textContent = "";
   renderReadyBanner();
+  refreshPlanningLock();
 
   const people = [];
   roster.forEach((person) => {
@@ -343,6 +395,14 @@ function renderEntry(entry) {
   wrapper.className = "entry current";
   if (entry.system) wrapper.classList.add("system");
 
+  if (entry.raw) {
+    wrapper.classList.add("raw");
+    const label = document.createElement("p");
+    label.className = "entry-label";
+    label.textContent = "Turn payload sent";
+    wrapper.appendChild(label);
+  }
+
   const body = document.createElement("p");
   body.className = "entry-body";
   body.textContent = entry.text;
@@ -369,30 +429,6 @@ function replaceLog(entries) {
 }
 
 /* ---------------- Turn Builder ---------------- */
-
-function paintMarkup(target, text) {
-  const pattern = /"[^"]*"|\([^)]*\)|\*[^*]*\*/g;
-  let cursor = 0;
-  let match;
-
-  while ((match = pattern.exec(text))) {
-    if (match.index > cursor) {
-      target.appendChild(
-        document.createTextNode(text.slice(cursor, match.index)),
-      );
-    }
-    const head = match[0].charAt(0);
-    const piece = document.createElement("span");
-    piece.className =
-      head === '"' ? "mark-quote" : head === "(" ? "mark-aside" : "mark-past";
-    piece.textContent = match[0];
-    target.appendChild(piece);
-    cursor = match.index + match[0].length;
-  }
-  if (cursor < text.length) {
-    target.appendChild(document.createTextNode(text.slice(cursor)));
-  }
-}
 
 function slotOf(personId, authorName) {
   let found = personId ? roster.get(personId) : null;
@@ -460,6 +496,184 @@ function renderTurnEmptyState() {
   dom.turnLog.appendChild(placeholder);
 }
 
+/* ---------------- Dialogue Rounds ---------------- */
+
+dialogue.setHooks({
+  onFinish: () => {
+    reportDialogueDone();
+
+    refreshPlanningLock();
+  },
+});
+
+function countScene() {
+  let players = 0;
+  let done = 0;
+
+  roster.forEach((person) => {
+    if (person.admin) return;
+
+    players += 1;
+
+    if (person.done) done += 1;
+  });
+
+  return { players, done };
+}
+
+function planningUnlocked() {
+  if (!dialogueLive) return true;
+
+  const tally = countScene();
+
+  return tally.players > 0 && tally.done === tally.players;
+}
+
+function refreshPlanningLock() {
+  const locked = !planningUnlocked();
+
+  if (dom.turnInput) dom.turnInput.disabled = locked;
+
+  if (dom.turnSend) dom.turnSend.disabled = locked;
+
+  if (dom.turnReady) dom.turnReady.disabled = locked;
+
+  if (dom.turnComposer) dom.turnComposer.classList.toggle("is-locked", locked);
+
+  if (!dom.turnLock) return;
+
+  if (!locked) {
+    dom.turnLock.hidden = true;
+
+    dom.turnLock.textContent = "";
+
+    return;
+  }
+
+  const tally = countScene();
+
+  dom.turnLock.hidden = false;
+  dom.turnLock.textContent = !dialogue.isFinished()
+    ? "Read your scene to its end before planning."
+    : `Waiting on the others — ${tally.done} of ${tally.players} have finished the scene.`;
+}
+
+function reportDialogueDone() {
+  if (isAdmin) return;
+
+  if (network.isHost) {
+    const me = roster.get(network.selfId);
+
+    if (me) me.done = true;
+
+    renderRoster();
+    network.broadcast(rosterPayload());
+
+    return;
+  }
+
+  if (network.upstream && network.upstream.open) {
+    network.upstream.send({ type: "dialogue-done" });
+  }
+}
+
+/* Everyone's side of a new round: keep the payload, run my own tree. */
+
+function applyDialogue(payload) {
+  dialoguePayload = payload || null;
+
+  dialogueLive = Boolean(dialoguePayload);
+
+  if (!dialogueLive) {
+    dialogue.reset();
+
+    refreshPlanningLock();
+
+    return;
+  }
+
+  if (isAdmin) {
+    dialogue.reset();
+
+    refreshPlanningLock();
+
+    return;
+  }
+
+  const mine = dialogue.pickTree(dialoguePayload, network.selfId, profile.name);
+
+  if (!mine) {
+    dialogue.reset();
+
+    systemNote("No scene was written for you this round.");
+    reportDialogueDone();
+    refreshPlanningLock();
+
+    return;
+  }
+
+  dialogue.start(mine);
+  refreshPlanningLock();
+}
+
+/* Host only: a payload arrived, so the round restarts — plans are cleared,
+
+   ready and finished flags drop, and everybody gets the trees. */
+
+function openDialogueRound(payload) {
+  roster.forEach((person) => {
+    if (person.admin) return;
+
+    person.done = false;
+
+    person.ready = false;
+  });
+
+  if (!isAdmin) {
+    selfReady = false;
+
+    paintReadyButton();
+  }
+
+  replaceTurnLog([]);
+
+  network.broadcast({ type: "turns", turns: [] });
+
+  network.broadcast({ type: "dialogue", payload });
+
+  applyDialogue(payload);
+
+  renderRoster();
+
+  network.broadcast(rosterPayload());
+}
+
+/* Administrateur only: echo the raw payload locally, then push it out. */
+
+function publishDialogue(payload, raw) {
+  renderEntry({ text: raw, at: Date.now(), raw: true });
+
+  if (network.isHost) {
+    openDialogueRound(payload);
+
+    return;
+  }
+
+  if (network.upstream && network.upstream.open) {
+    network.upstream.send({ type: "dialogue", payload });
+
+    dialoguePayload = payload;
+
+    dialogueLive = true;
+
+    refreshPlanningLock();
+
+    return;
+  }
+
+  systemNote("Not connected — that payload went nowhere.");
+}
+
 /* ---------------- Scene & NPCs ---------------- */
 
 function renderScene() {
@@ -516,6 +730,8 @@ function removeNpc(id) {
 
 function setSelfReady(next) {
   if (isAdmin) return;
+  if (!planningUnlocked()) return;
+
   selfReady = Boolean(next);
   paintReadyButton();
 
@@ -533,6 +749,20 @@ function setSelfReady(next) {
 
 function shareText(text) {
   if (!isAdmin) return;
+
+  const attempt = dialogue.parsePayload(text);
+  if (attempt.payload) {
+    publishDialogue(attempt.payload, attempt.raw);
+
+    return;
+  }
+
+  if (attempt.error) {
+    systemNote(attempt.error);
+
+    return;
+  }
+
   const body = cleanText(text);
   if (!body) return;
 
@@ -556,6 +786,11 @@ function shareText(text) {
 
 function shareTurn(text) {
   if (isAdmin) return false;
+  if (!planningUnlocked()) {
+    dom.turnError.textContent = "The scene is still playing out.";
+    return false;
+  }
+
   const body = cleanText(text);
   if (body.length < TURN_MIN_LENGTH) {
     dom.turnError.textContent = `A plan needs at least ${TURN_MIN_LENGTH} characters.`;
@@ -625,6 +860,11 @@ function connect(room, name, portrait) {
   paintReadyButton();
   dom.turnError.textContent = "";
 
+  dialoguePayload = null;
+  dialogueLive = false;
+  dialogue.reset();
+  refreshPlanningLock();
+
   applyScene({ image: null });
   sheetState = isAdmin ? null : window.DiscoSkillSheet?.normalize(stagedSheet);
   if (modals.getSheetInstance())
@@ -647,6 +887,11 @@ function leave() {
   modals.closePortrait();
   modals.closePsyche();
   modals.closeNpcModal();
+
+  dialogue.reset();
+  dialoguePayload = null;
+  dialogueLive = false;
+
   sheetState = null;
   stagedSheet = null;
   if (modals.getSheetInstance()) modals.getSheetInstance().setState(null, true);
@@ -686,6 +931,7 @@ function leave() {
   renderTurnEmptyState();
   applyScene({ image: null });
   setStatus("offline", "Offline");
+  refreshPlanningLock();
   dom.nameInput.focus();
 }
 
@@ -1081,6 +1327,7 @@ window.addEventListener("beforeunload", () => network.disconnect());
   renderScene();
   renderTurnEmptyState();
   paintReadyButton();
+  refreshPlanningLock();
   dom.nameInput.focus();
   setStatus("offline", "Offline");
 })();

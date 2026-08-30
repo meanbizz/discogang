@@ -1,0 +1,93 @@
+/* Scene image beside the session log, and the plain log entries.
+   Dialogue-specific entry parts live in dialogue.css. */
+
+.stage {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.25rem;
+  padding: 1rem 0;
+}
+
+.stage-side {
+  flex: 0 0 var(--side-width);
+  width: var(--side-width);
+  display: grid;
+  gap: 0.5rem;
+}
+
+.stage-side[hidden] {
+  display: none;
+}
+
+.scene-thumb {
+  width: var(--side-width);
+  height: 15rem;
+  padding: 0;
+  overflow: hidden;
+  font-size: 3rem;
+  cursor: pointer;
+}
+
+.scene-thumb:hover {
+  border-color: var(--text-old);
+}
+
+.log {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: min(50vh, 24rem);
+  padding: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.entry {
+  margin-bottom: 0.9rem;
+  color: var(--text-old);
+}
+
+.entry:last-child {
+  margin-bottom: 0;
+}
+
+/* The newest entry is the loud one. */
+.entry.current {
+  color: var(--text-now);
+}
+
+.entry-body {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.entry.system .entry-body {
+  font-size: 0.95rem;
+  font-style: italic;
+  opacity: 0.85;
+}
+
+/* System notes never take the spotlight, even when they are last. */
+.entry.system.current .entry-body {
+  color: var(--text-old);
+}
+
+.log-empty {
+  margin: 2rem 0;
+  text-align: center;
+  font-style: italic;
+  opacity: 0.7;
+}
+
+@media (max-width: 40rem) {
+  .stage {
+    flex-direction: column;
+    align-items: center;
+  }
+  .stage-side {
+    flex: 0 0 auto;
+  }
+  .log {
+    width: 100%;
+  }
+}
