@@ -16,7 +16,7 @@
   </head>
   <body>
     <main class="shell">
-      <!-- ------------------------------------------------ join ------------ -->
+      <!-- Join Section -->
       <section id="join-panel" class="panel">
         <form id="join-form" autocomplete="off">
           <div class="field">
@@ -84,11 +84,10 @@
         </form>
       </section>
 
-      <!-- ---------------------------------------------- session ----------- -->
+      <!-- Session Section -->
       <section id="session-panel" class="panel" hidden>
         <div class="session-bar">
           <div class="session-meta">
-            <!-- present only for the administrateur -->
             <span id="role-label" class="badge" data-role="admin" hidden
               >Administrateur</span
             >
@@ -107,10 +106,8 @@
           </div>
         </div>
 
-        <!-- roster sits at the top of the log box -->
         <div id="roster" class="roster" aria-label="Characters"></div>
 
-        <!-- scene on the left, log on the right -->
         <div class="stage">
           <aside class="stage-side">
             <button
@@ -158,12 +155,10 @@
           ></div>
         </div>
 
-        <!-- ------- turn builder: what the players intend to do -------- -->
+        <!-- Turn Builder -->
         <section id="turn-builder" class="turn-builder">
           <h2 class="turn-builder-title">What is being planned…</h2>
 
-          <!-- present only for the administrateur; the Import button copies
-               the planned turns to the clipboard -->
           <div id="ready-banner" class="ready-banner" role="status" hidden>
             <span class="ready-banner-text">All players ready</span>
             <button
@@ -224,6 +219,7 @@
           </form>
         </section>
 
+        <!-- Admin Chat Composer -->
         <form id="composer" class="composer" autocomplete="off" hidden>
           <label class="visually-hidden" for="text-input">Say something</label>
           <textarea
@@ -235,8 +231,7 @@
           <button type="submit" id="send-button" class="option">Speak</button>
         </form>
 
-        <!-- ------- music deck: attached to the page for the administrateur
-                 only, and removed from the DOM for everyone else -------- -->
+        <!-- Music Deck -->
         <div id="deck" class="deck" hidden>
           <div class="deck-now">
             <span class="deck-label">Now playing</span>
@@ -266,8 +261,11 @@
           ></p>
         </div>
 
-        <!-- ------- vitals & skills: a character's own, so absent for the
-                 administrateur and removed from the DOM entirely -------- -->
+        <div id="admin-tools" class="admin-tools" hidden>
+          <button type="button" id="npc-button" class="option">NPCs</button>
+        </div>
+
+        <!-- Character Vitals -->
         <div id="panel-foot" class="panel-foot" hidden>
           <div class="vitals">
             <div
@@ -293,7 +291,7 @@
         <div id="yt-player" class="yt-frame" aria-hidden="true"></div>
       </section>
 
-      <!-- ---------------------------------------------- portrait modal ---- -->
+      <!-- Portrait Modal -->
       <div id="portrait-modal" class="modal" hidden>
         <div class="modal-backdrop" data-close="true"></div>
         <div
@@ -320,7 +318,8 @@
           <p id="portrait-modal-role" class="modal-role"></p>
         </div>
       </div>
-      <!-- ---------------------------------------------- psyche modal ------- -->
+
+      <!-- Psyche Modal -->
       <div id="psyche-modal" class="modal" hidden>
         <div class="modal-backdrop" data-close="true"></div>
         <div
@@ -340,11 +339,110 @@
           <div id="psyche-sheet" class="psyche-sheet"></div>
         </div>
       </div>
+
+      <!-- NPC Modal -->
+      <div id="npc-modal" class="modal" hidden>
+        <div class="modal-backdrop" data-close="true"></div>
+        <div
+          class="modal-card modal-card-wide npc-modal-card"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="npc-modal-title"
+        >
+          <button
+            type="button"
+            id="npc-modal-close"
+            class="modal-close"
+            aria-label="Close NPC manager"
+          >
+            ×
+          </button>
+
+          <h2 id="npc-modal-title" class="modal-name npc-modal-header">
+            Manage Non-Player Characters
+          </h2>
+
+          <div class="npc-manager-layout">
+            <form id="npc-form" class="npc-form" autocomplete="off">
+              <h3 id="npc-form-heading" class="npc-subheading">Add NPC</h3>
+              <input type="hidden" id="npc-id" value="" />
+
+              <div class="field">
+                <label for="npc-name-input">Name</label>
+                <input
+                  id="npc-name-input"
+                  type="text"
+                  placeholder="NPC Name"
+                  maxlength="24"
+                  required
+                />
+              </div>
+
+              <div class="field">
+                <label for="npc-image-input">Thumbnail</label>
+                <div class="portrait-picker">
+                  <div
+                    id="npc-portrait-preview"
+                    class="thumb thumb-lg"
+                    data-empty="true"
+                    aria-hidden="true"
+                  ></div>
+                  <div class="portrait-controls">
+                    <input
+                      id="npc-image-input"
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/gif"
+                    />
+                    <label class="sub-label" for="npc-image-url"
+                      >or image address</label
+                    >
+                    <input
+                      id="npc-image-url"
+                      type="url"
+                      inputmode="url"
+                      placeholder="https://…/npc.jpg"
+                      maxlength="2048"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div class="npc-form-actions">
+                <button type="submit" id="npc-submit-button" class="option">
+                  Save NPC
+                </button>
+                <button
+                  type="button"
+                  id="npc-cancel-button"
+                  class="npc-cancel-btn"
+                  hidden
+                >
+                  Cancel
+                </button>
+              </div>
+              <p
+                id="npc-form-error"
+                class="error"
+                role="alert"
+                aria-live="assertive"
+              ></p>
+            </form>
+
+            <div class="npc-list-wrapper">
+              <h3 class="npc-subheading">Current NPCs</h3>
+              <div id="npc-list" class="npc-list" role="list"></div>
+            </div>
+          </div>
+        </div>
+      </div>
     </main>
 
+    <!-- Global external scripts -->
     <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
     <script src="./stats/disco-skills.js"></script>
-    <script src="app.js"></script>
+
+    <!-- Refactored Entry Point -->
+    <script type="module" src="./js/main.js"></script>
   </body>
 </html>

@@ -1,0 +1,62 @@
+:root {
+  --bg: #131311;
+  --bg-lift: #191917;
+  --text-old: #7e7e7c;
+  --text-now: #cdcac5;
+  --option: #a8472c;
+  --option-hi: #ffece9;
+  --rule: #2a2a26;
+  --health: #ff5f00;
+  --morale: #107494;
+  --ready: #6fbf73;
+  --p1: #ff6f4b;
+  --p2: #ffc94a;
+  --p3: #7ee081;
+  --p4: #4dd6d0;
+  --p5: #5aa9ff;
+  --p6: #b98cff;
+  --p7: #ff7fbe;
+  --p8: #d9e04a;
+
+  --font-serif:
+    "libre-baskerville", "Libre Baskerville", Georgia, "Times New Roman", Times,
+    serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  padding: 2rem 1.25rem 3rem;
+  background: var(--bg);
+  color: var(--text-old);
+  font-family: var(--font-serif);
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  text-rendering: optimizeLegibility;
+}
+
+.shell {
+  max-width: 48rem;
+  margin: 0 auto;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
