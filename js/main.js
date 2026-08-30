@@ -131,13 +131,6 @@ const network = new NetworkManager({
       return;
     }
 
-    if (data.type === "scene-request") {
-      if (!person?.admin) return;
-      applyScene(data.scene);
-      network.broadcast({ type: "scene", scene });
-      return;
-    }
-
     if (data.type === "track-request") {
       if (!person?.admin) return;
       const videoId = data.track
@@ -470,29 +463,12 @@ function renderTurnEmptyState() {
 /* ---------------- Scene & NPCs ---------------- */
 
 function renderScene() {
-  paintThumb(dom.sceneThumb, { portrait: scene.image });
+  if (dom.sceneThumb) paintThumb(dom.sceneThumb, { portrait: scene.image });
 }
 
 function applyScene(next) {
   scene = cleanScene(next);
   renderScene();
-}
-
-function pushScene(next) {
-  if (!isAdmin) return;
-  const candidate = cleanScene(next);
-
-  if (network.isHost) {
-    applyScene(candidate);
-    network.broadcast({ type: "scene", scene });
-    return;
-  }
-  applyScene(candidate);
-  if (network.upstream && network.upstream.open) {
-    network.upstream.send({ type: "scene-request", scene: candidate });
-    return;
-  }
-  dom.sceneError.textContent = "Not connected.";
 }
 
 function setNpcs(list) {
@@ -631,7 +607,7 @@ function connect(room, name, portrait) {
   setPresent(anchors.deck, dom.deck, isAdmin);
   setPresent(anchors.adminTools, dom.adminTools, isAdmin);
   setPresent(anchors.composer, dom.composer, isAdmin);
-  setPresent(anchors.sceneTools, dom.sceneTools, isAdmin);
+  setPresent(anchors.stageSide, dom.stageSide, !isAdmin);
   setPresent(anchors.turnComposer, dom.turnComposer, !isAdmin);
   setPresent(anchors.panelFoot, dom.panelFoot, !isAdmin);
   setPresent(anchors.readyBanner, dom.readyBanner, isAdmin);
@@ -693,9 +669,6 @@ function leave() {
   paintReadyButton();
 
   if (dom.deckError) dom.deckError.textContent = "";
-  dom.sceneError.textContent = "";
-  dom.sceneImageInput.value = "";
-  dom.sceneImageUrl.value = "";
   if (dom.audioUnlock) dom.audioUnlock.hidden = true;
   if (dom.trackLabel) dom.trackLabel.textContent = "Silence.";
   dom.roleLabel.hidden = true;
@@ -703,7 +676,7 @@ function leave() {
   setPresent(anchors.deck, dom.deck, false);
   setPresent(anchors.adminTools, dom.adminTools, false);
   setPresent(anchors.composer, dom.composer, false);
-  setPresent(anchors.sceneTools, dom.sceneTools, false);
+  setPresent(anchors.stageSide, dom.stageSide, false);
   setPresent(anchors.turnComposer, dom.turnComposer, false);
   setPresent(anchors.panelFoot, dom.panelFoot, false);
   setPresent(anchors.readyBanner, dom.readyBanner, false);
@@ -887,57 +860,11 @@ dom.turnInput.addEventListener("keydown", (event) => {
 dom.turnReady.addEventListener("click", () => setSelfReady(!selfReady));
 dom.importButton.addEventListener("click", exportTurns);
 
-dom.sceneThumb.addEventListener("click", () =>
-  modals.openImage("Scene", scene.image, ""),
-);
-
-dom.sceneImageInput.addEventListener("change", () => {
-  const file = dom.sceneImageInput.files?.[0];
-  dom.sceneError.textContent = "";
-  if (!file) return;
-
-  const rejection = rejectImageFile(file);
-  if (rejection) {
-    dom.sceneImageInput.value = "";
-    dom.sceneError.textContent = rejection;
-    return;
-  }
-  dom.sceneError.textContent = "Uploading…";
-  uploadImage(file, (url, error) => {
-    dom.sceneImageInput.value = "";
-    if (error) {
-      dom.sceneError.textContent = error;
-      return;
-    }
-    dom.sceneError.textContent = "";
-    dom.sceneImageUrl.value = url;
-    pushScene({ image: url });
-  });
-});
-
-dom.sceneImageUrl.addEventListener("change", () => {
-  dom.sceneError.textContent = "";
-  const raw = dom.sceneImageUrl.value.trim();
-  if (!raw) {
-    pushScene({ image: null });
-    return;
-  }
-  const url = cleanImageUrl(raw);
-  if (!url) {
-    dom.sceneError.textContent = "Use a full https image address.";
-    return;
-  }
-  dom.sceneError.textContent = "Checking…";
-  probeImage(url, (ok) => {
-    if (!ok) {
-      dom.sceneError.textContent = "That address did not load.";
-      return;
-    }
-    dom.sceneError.textContent = "";
-    dom.sceneImageUrl.value = url;
-    pushScene({ image: url });
-  });
-});
+if (dom.sceneThumb) {
+  dom.sceneThumb.addEventListener("click", () =>
+    modals.openImage("Scene", scene.image, ""),
+  );
+}
 
 if (dom.trackPlay) {
   dom.trackPlay.addEventListener("click", () => {

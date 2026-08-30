@@ -109,7 +109,7 @@
         <div id="roster" class="roster" aria-label="Characters"></div>
 
         <div class="stage">
-          <aside class="stage-side">
+          <aside id="stage-side" class="stage-side">
             <button
               type="button"
               id="scene-thumb"
@@ -117,33 +117,6 @@
               data-empty="true"
               aria-label="Open the scene image"
             ></button>
-
-            <div id="scene-tools" class="scene-tools">
-              <label class="visually-hidden" for="scene-image-input"
-                >Scene image</label
-              >
-              <input
-                id="scene-image-input"
-                type="file"
-                accept="image/png,image/jpeg,image/webp,image/gif"
-              />
-              <label class="visually-hidden" for="scene-image-url"
-                >Scene image address</label
-              >
-              <input
-                id="scene-image-url"
-                type="url"
-                inputmode="url"
-                placeholder="https://…/scene.jpg"
-                maxlength="2048"
-              />
-              <p
-                id="scene-error"
-                class="error scene-error"
-                role="alert"
-                aria-live="assertive"
-              ></p>
-            </div>
           </aside>
 
           <div

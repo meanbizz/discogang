@@ -29,11 +29,8 @@ export const dom = {
   readyBanner: document.getElementById("ready-banner"),
   importButton: document.getElementById("import-button"),
 
+  stageSide: document.getElementById("stage-side"),
   sceneThumb: document.getElementById("scene-thumb"),
-  sceneTools: document.getElementById("scene-tools"),
-  sceneImageInput: document.getElementById("scene-image-input"),
-  sceneImageUrl: document.getElementById("scene-image-url"),
-  sceneError: document.getElementById("scene-error"),
 
   panelFoot: document.getElementById("panel-foot"),
   healthBar: document.getElementById("health-bar"),
@@ -81,7 +78,7 @@ export const anchors = {
   deck: document.createComment("deck"),
   adminTools: document.createComment("admin-tools"),
   composer: document.createComment("composer"),
-  sceneTools: document.createComment("scene-tools"),
+  stageSide: document.createComment("stage-side"),
   turnComposer: document.createComment("turn-composer"),
   panelFoot: document.createComment("panel-foot"),
   readyBanner: document.createComment("ready-banner"),
@@ -111,7 +108,7 @@ export function setPresent(anchor, node, present) {
 detach(anchors.deck, dom.deck);
 detach(anchors.adminTools, dom.adminTools);
 detach(anchors.composer, dom.composer);
-detach(anchors.sceneTools, dom.sceneTools);
+detach(anchors.stageSide, dom.stageSide);
 detach(anchors.turnComposer, dom.turnComposer);
 detach(anchors.panelFoot, dom.panelFoot);
 detach(anchors.readyBanner, dom.readyBanner);

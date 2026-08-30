@@ -289,6 +289,9 @@ button[disabled] {
   display: grid;
   gap: 0.5rem;
 }
+.stage-side[hidden] {
+  display: none;
+}
 .scene-thumb {
   width: 10rem;
   height: 15rem;
@@ -300,21 +303,6 @@ button[disabled] {
 .scene-thumb:hover {
   border-color: var(--text-old);
 }
-.scene-tools {
-  display: grid;
-  gap: 0.25rem;
-}
-.scene-tools input[type="file"] {
-  font-size: 0.78rem;
-}
-.scene-tools input[type="url"] {
-  padding: 0.3rem 0.4rem;
-  font-size: 0.8rem;
-}
-.scene-error {
-  font-size: 0.8rem;
-  min-height: 0;
-}
 .log {
   flex: 1 1 auto;
   min-width: 0;
@@ -323,6 +311,7 @@ button[disabled] {
   padding: 0;
   overscroll-behavior: contain;
 }
+
 .entry {
   margin-bottom: 0.9rem;
   color: var(--text-old);
