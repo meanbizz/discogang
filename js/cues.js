@@ -20,10 +20,10 @@ const FADE_CLASS = "is-fading";
 /* Overlay art, held in memory from boot so the verdict never waits on a
    fetch at the moment the tape stops. */
 const CHECK_ART = [
-  "/images/check-success-background.png",
-  "/images/check-failure-background.png",
-  "/images/check-success-title.svg",
-  "/images/check-failure-title.svg",
+  "../images/check-success-background.png",
+  "../images/check-failure-background.png",
+  "../images/check-success-title.svg",
+  "../images/check-failure-title.svg",
 ];
 
 const artHeld = [];
@@ -38,7 +38,7 @@ export function preloadAll() {
   if (artHeld.length) return;
 
   const wanted = CHECK_ART.slice();
-  for (let i = 1; i <= 6; i += 1) wanted.push("/images/dice/" + i + ".svg");
+  for (let i = 1; i <= 6; i += 1) wanted.push("../images/dice/" + i + ".svg");
 
   wanted.forEach((src) => {
     const image = new Image();
@@ -87,7 +87,7 @@ function stopTape() {
 function paintDie(image, value) {
   if (!image) return;
   if (value) {
-    image.src = "/images/dice/" + value + ".svg";
+    image.src = "../images/dice/" + value + ".svg";
     image.hidden = false;
     return;
   }
@@ -112,12 +112,12 @@ function showVerdict(check, result) {
   host.dataset.result = result;
   if (dom.checkOverlayScene) {
     dom.checkOverlayScene.style.backgroundImage =
-      'url("/images/check-' + result + '-background.png")';
+      'url("../images/check-' + result + '-background.png")';
   }
   paintDie(dom.checkDie1, check.dice1);
   paintDie(dom.checkDie2, check.dice2);
   if (dom.checkOverlayTitle) {
-    dom.checkOverlayTitle.src = "/images/check-" + result + "-title.svg";
+    dom.checkOverlayTitle.src = "../images/check-" + result + "-title.svg";
   }
 
   host.classList.remove("is-in", "is-out");
