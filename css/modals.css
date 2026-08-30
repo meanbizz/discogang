@@ -77,7 +77,7 @@
   position: absolute;
   inset: -5%;
   z-index: -2;
-  background: url("/images/portrait-frame.png") center / 100% 100% no-repeat;
+  background: url("../images/portrait-frame.png") center / 100% 100% no-repeat;
   pointer-events: none;
 }
 

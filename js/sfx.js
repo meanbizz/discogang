@@ -17,15 +17,15 @@
 import { TIMING } from "./timing.js";
 
 export const JINGLE_SRC = {
-  intellect: "/sounds/IntellectJingle.mp3",
-  psyche: "/sounds/PsyJingle.mp3",
-  physique: "/sounds/PhysicalJingle.mp3",
-  motorics: "/sounds/MotoricsJingle.mp3",
+  intellect: "../sounds/IntellectJingle.mp3",
+  psyche: "../sounds/PsyJingle.mp3",
+  physique: "../sounds/PhysicalJingle.mp3",
+  motorics: "../sounds/MotoricsJingle.mp3",
 };
 
 export const ROLL_SRC = {
-  success: "/sounds/RollSuccess.mp3",
-  failure: "/sounds/RollFailure.mp3",
+  success: "../sounds/RollSuccess.mp3",
+  failure: "../sounds/RollFailure.mp3",
 };
 
 const cache = {};

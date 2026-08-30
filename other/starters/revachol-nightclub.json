@@ -1,0 +1,144 @@
+{
+  "Danaerys": {
+    "root": "arrival",
+    "nodes": {
+      "arrival": {
+        "speaker": "Narrator",
+        "dialogue": "Rain has stopped, but the street hasn't agreed to it yet. Water runs down the gutter in long brown ribbons, carrying cigarette filters toward a drain that gave up years ago.<p>Above a steel door: a neon sign. **N O X**. The *O* is dead. It has been dead for a long time, and nobody inside has ever thought about it.</p><p>The bass comes up through the pavement rather than through the air. You feel it in your shins before your ears admit it exists.</p>",
+        "next": "the-door"
+      },
+      "the-door": {
+        "speaker": "Narrator",
+        "dialogue": "A man stands in front of the door the way a boulder stands in front of a cave — not guarding, exactly. *Being* the obstacle.<p>He is enormous in the shoulders and precise in the hands. Shaved scalp, wet with mist. A bomber jacket that has been mended, not replaced. A little strip of tape on his lapel with a name written in marker: **GLEM**.</p>",
+        "next": "glem-speaks"
+      },
+      "glem-speaks": {
+        "speaker": "Glem",
+        "dialogue": "(He does not look up. He is scraping something off his thumbnail.)<br>\"Line's the line. Door's the door.\"<p>(A pause. He finally raises his eyes, and takes both of you in — one long, unhurried inventory, the way a man reads a weather report for a day he's already decided to work.)</p>\"...Huh.\"",
+        "next": "inland-check"
+      },
+      "inland-check": {
+        "speaker": "Inland Empire",
+        "dialogue": "*This door is not a door tonight. It is a mouth, and it has been chewing since ten o'clock.*<p>*Something in there wants to be found. Not by him. He's just the tooth. Something further in, past the red light, sitting very still and waiting for you specifically.*</p>*You will know it when the music changes.*",
+        "skillCheck": {
+          "skill": "inland-empire",
+          "difficulty": "easy",
+          "result": "success",
+          "diceRoll": { "dice1": 4, "dice2": 3 },
+          "modifier": 0
+        },
+        "vitals": { "morale": "gain" },
+        "next": "the-queue"
+      },
+      "the-queue": {
+        "speaker": "Narrator",
+        "dialogue": "Behind the velvet rope — which is not velvet, and is in fact a length of orange mooring line — eleven people are being patient in the cold.<p>A girl in a plastic raincoat reapplies lipstick using the reflection in a parked motor carriage. Two boys in matching corduroy pretend not to be brothers. Somebody near the back is quietly, methodically drunk.</p><p>Nobody talks to Glem. There is a two-metre radius around him that the queue respects like a religious rule.</p>",
+        "next": "glem-again"
+      },
+      "glem-again": {
+        "speaker": "Glem",
+        "dialogue": "(He shifts his weight. The pavement creaks. He tucks his hands into his armpits — cold, but unwilling to admit it in front of the line.)<p>\"Whatever it is,\" he says to no one, to the wet street, to the dead *O* above his head, \"you can do it out here or you can not do it. Those're the two.\"</p>",
+        "next": "taking-it-in"
+      },
+      "taking-it-in": {
+        "speaker": "Narrator",
+        "dialogue": "The mist is thickening again. Somewhere behind the steel door, the music drops into something slower, something with a heartbeat in it.<p>You are standing in the street outside NOX. Nothing has happened yet. Everything is still possible, in the exhausting way that everything always is.</p>",
+        "options": [
+          {
+            "id": "watch-glem",
+            "label": "(Watch Glem a little longer.)",
+            "next": "watch-glem-node"
+          },
+          {
+            "id": "watch-sign",
+            "label": "(Look up at the dead letter in the sign.)",
+            "next": "watch-sign-node"
+          },
+          {
+            "id": "just-stand",
+            "label": "(Say nothing. Let the bass work on your shins.)"
+          }
+        ]
+      },
+      "watch-glem-node": {
+        "speaker": "Narrator",
+        "dialogue": "His knuckles are scarred in the flat, dull way of a man who hits things that don't move much. But his boots are polished. *Polished.* In this weather.<p>He notices you noticing. He does not react. That, somehow, is the reaction.</p>"
+      },
+      "watch-sign-node": {
+        "speaker": "Inland Empire",
+        "dialogue": "*N—X.* A gap where a letter should be. A held breath in the middle of a word.<p>*You could fall through a gap like that.*</p>"
+      }
+    }
+  },
+  "Snyde": {
+    "root": "arrival",
+    "nodes": {
+      "arrival": {
+        "speaker": "Narrator",
+        "dialogue": "The street smells of three things at once: wet asphalt, frying oil from somewhere two buildings east, and the sour-sweet chemical breath of a club exhaling through a vent grate at ankle height.<p>Neon overhead. **N O X**, minus the *O*. The dead tube still ticks faintly as it tries to strike and fails.</p>",
+        "next": "the-door"
+      },
+      "the-door": {
+        "speaker": "Narrator",
+        "dialogue": "The doorway is a slab of grey steel with a repainted dent in it, roughly waist-height, roughly the shape of a shoulder.<p>In front of it stands the largest static object on this street that is technically a person. Shaved head, mended bomber jacket, tape on the lapel: **GLEM**, in marker, in his own handwriting.</p>",
+        "next": "perception-check"
+      },
+      "perception-check": {
+        "speaker": "Perception (Sight)",
+        "dialogue": "You take him apart without touching him.<p><ul><li>Left ear: swollen, old. He has been grabbed by the head before, professionally.</li><li>Right jacket pocket: sags. Something short and dense. Not a gun — no grip shape. A roll of coins, maybe.</li><li>Boots: mirror-polished, and *dry*, when the street is not. He arrived by carriage, or he was let in the back at some point tonight.</li><li>His eyes track the queue in a slow left-to-right sweep every eleven seconds. Trained. Bored. Consistent.</li></ul></p>*And: a second door. Painted the same grey, four metres to the right, half-hidden by a stack of crates. No handle on this side.*",
+        "skillCheck": {
+          "skill": "perception",
+          "difficulty": "medium",
+          "result": "success",
+          "diceRoll": { "dice1": 5, "dice2": 2 },
+          "modifier": 0
+        },
+        "vitals": { "morale": "gain" },
+        "next": "glem-speaks"
+      },
+      "glem-speaks": {
+        "speaker": "Glem",
+        "dialogue": "\"Line's the line. Door's the door.\"<p>(He says it flat, worn smooth by repetition — a phrase that stopped being sentences a thousand nights ago.)</p>(Then the eleven-second sweep reaches you, and stops early. He holds it. One beat too long.)<br>\"...Huh.\"",
+        "next": "the-queue"
+      },
+      "the-queue": {
+        "speaker": "Narrator",
+        "dialogue": "Eleven people wait behind an orange mooring rope pretending to be a velvet one. A girl in a plastic raincoat does her lipstick in a car window. Two boys in matching corduroy stand a deliberate metre apart.<p>Nobody stands within two metres of Glem. It's not written down anywhere. Everyone knows it.</p>",
+        "next": "glem-again"
+      },
+      "glem-again": {
+        "speaker": "Glem",
+        "dialogue": "(He rolls his neck. Something in it clicks audibly, twice.)<p>\"Whatever it is,\" he tells the street, \"you can do it out here, or you can not do it. Those're the two.\"</p>(The thing in his right pocket shifts when he moves. It chinks.)",
+        "next": "taking-it-in"
+      },
+      "taking-it-in": {
+        "speaker": "Narrator",
+        "dialogue": "Behind the steel, the music drops into something slower. Through the ankle-height vent, the sound arrives with a faint delay, like the building is speaking twice.<p>You are outside NOX. Nothing has been decided. The rain is thinking about coming back.</p>",
+        "options": [
+          {
+            "id": "listen",
+            "label": "(Listen to what's leaking out of the vent.)",
+            "next": "listen-node"
+          },
+          {
+            "id": "second-door",
+            "label": "(Keep an eye on that second grey door.)",
+            "next": "second-door-node"
+          },
+          {
+            "id": "nothing",
+            "label": "(Do nothing. Observe. Wait.)"
+          }
+        ]
+      },
+      "listen-node": {
+        "speaker": "Perception (Hearing)",
+        "dialogue": "Under the bass: a woman laughing in the register people use when they are not amused. Glass on glass. And once — briefly — a man's voice raised, then cut off very cleanly, as if a hand went over it.<p>*Somebody in there is already having a worse night than you.*</p>"
+      },
+      "second-door-node": {
+        "speaker": "Narrator",
+        "dialogue": "The crates in front of it are stacked wrong — too neat, too far from the wall. Room enough for a person to stand behind them and not be seen from the queue.<p>The paint at the door's edge is chipped bright silver. Recently, and often, opened.</p>"
+      }
+    }
+  }
+}
