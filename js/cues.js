@@ -112,14 +112,17 @@ function showVerdict(check, result) {
 
   host.dataset.result = result;
   if (dom.checkOverlayScene) {
-    dom.checkOverlayScene.style.backgroundImage =
-      'url("../images/check-' + result + '-background.png")';
+    const resultUrl = new URL(
+      `images/check-${result}-background.png`,
+      window.location.href,
+    ).href;
+    dom.checkOverlayScene.style.backgroundImage = `url("${resultUrl}")`;
   }
   paintDie(dom.checkDie1, check.dice1);
   paintDie(dom.checkDie2, check.dice2);
   if (dom.checkOverlayTitle) {
     dom.checkOverlayTitle.src = new URL(
-      "../images/check-" + result + "-title.svg",
+      "images/check-" + result + "-title.svg",
       window.location.href,
     ).href;
   }
