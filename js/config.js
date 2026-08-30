@@ -34,18 +34,23 @@ export const RETRY_DELAY_MS = 1200;
 
 /* Narrator voice-over.
 
-   endpoint is the text-to-speech service; modelId is the voice it speaks
-   with. narratorNames are the speaker names, lowercased, that earn a line its
-   play button.
+   endpoint is the Cloudflare Worker that fronts the speech service; it holds
+   the key and sends the CORS headers the browser insists on, so token and
+   backend stay empty here. Emptying them is not cosmetic: it keeps the
+   Authorization and model headers off the request, which is what keeps the
+   preflight to content-type alone.
 
-   The token below is readable by anyone who loads this page. Point endpoint
-   at a server of your own that holds the key instead, and leave token empty,
-   the moment this is more than a private table. */
+   modelId is the voice, and travels in the body as reference_id — the Worker
+   passes the body through untouched, so changing a voice is a change here and
+   nowhere else.
+
+   narratorNames are the speaker names, lowercased, that earn a line its play
+   button. */
 export const NARRATION = {
-  endpoint: "https://api.fish.audio/v1/tts",
-  token: "sk-fish-PHhjnnF26J603vHKzCZSkahuCVZ61N-JrVZQ8em4aaU",
+  endpoint: "https://fish-tts.segalyair11.workers.dev/",
+  token: "",
+  backend: "",
   modelId: "dce36baf20c14deb95d7377a2d661b4c",
-  backend: "speech-1.6",
   format: "mp3",
   volume: 0.9,
   maxChars: 2000,
