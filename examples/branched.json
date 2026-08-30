@@ -1,0 +1,142 @@
+{
+  "Detective Harrier": {
+    "root": "yard_intro_narrator",
+    "nodes": {
+      "yard_intro_narrator": {
+        "id": "yard_intro_narrator",
+        "speaker": "NARRATOR",
+        "speakerType": "narrator",
+        "dialogue": "A freezing sea-breeze drifts through the chain-link fence. Snow gathers in the tire ruts behind the Whirling-in-Rags. The air smells of cheap motor oil and industrial grease.",
+        "next": "yard_kim_comment"
+      },
+
+      "yard_kim_comment": {
+        "id": "yard_kim_comment",
+        "speaker": "KIM KITSURAGI",
+        "speakerType": "npc",
+        "portrait": "https://res.cloudinary.com/w9puemf3/image/upload/v1/portraits/kim_kitsuragi.png",
+        "dialogue": "The Lieutenant adjusts the collar of his orange bomber jacket and glances toward the fence. <br><br>\"Looks like fresh tire tracks, officer. Someone pulled an heavy vehicle in here within the last twelve hours.\"",
+        "next": "yard_perception_check"
+      },
+
+      "yard_perception_check": {
+        "id": "yard_perception_check",
+        "speaker": "PERCEPTION (SIGHT)",
+        "speakerType": "skill",
+        "dialogue": "Deep tread patterns cut into the slush. Heavy treads — an eight-wheeled FALN 'Kugel' transport, or something modified with off-road chains.",
+        "skillCheck": {
+          "skill": "perception",
+          "difficulty": "medium",
+          "result": "success",
+          "diceRoll": { "dice1": 4, "dice2": 5 },
+          "modifier": 2
+        },
+        "options": [
+          {
+            "id": "opt_investigate_tracks",
+            "label": "\"Let's take a plaster cast of those treads before the snow covers them.\"",
+            "next": "branch_tracks_kim"
+          },
+          {
+            "id": "opt_talk_necktie",
+            "label": "Grip your Horrific Necktie and whisper: 'What do you make of this, bratan?'",
+            "next": "branch_necktie_speaks"
+          },
+          {
+            "id": "opt_shrug",
+            "label": "\"Tires, snow, misery. Just another Tuesday in Revachol West.\"",
+            "next": "branch_shrug_narrator"
+          }
+        ]
+      },
+
+      "branch_tracks_kim": {
+        "id": "branch_tracks_kim",
+        "speaker": "KIM KITSURAGI",
+        "speakerType": "npc",
+        "portrait": "https://res.cloudinary.com/w9puemf3/image/upload/v1/portraits/kim_kitsuragi.png",
+        "dialogue": "He nods once, reaching into his pocket for a notebook and a ballpoint pen. \"Good instinct. We don't have plaster, but I can sketch the tread profile for the RCM database.\"",
+        "vitals": {
+          "morale": "gain"
+        },
+        "next": "branch_tracks_interfacing"
+      },
+
+      "branch_tracks_interfacing": {
+        "id": "branch_tracks_interfacing",
+        "speaker": "INTERFACING",
+        "speakerType": "skill",
+        "dialogue": "The symmetry in his sketch is pristine. You can almost feel the cold steel gear-shifter of the mystery vehicle in your palms. It was accelerating fast when it left.",
+        "options": [
+          {
+            "id": "opt_wrapup_kim",
+            "label": "\"Alright Lieutenant, let's keep moving.\"",
+            "next": "node_conclusion"
+          }
+        ]
+      },
+
+      "branch_necktie_speaks": {
+        "id": "branch_necktie_speaks",
+        "speaker": "HORRIFIC NECKTIE",
+        "speakerType": "entity",
+        "portrait": "https://res.cloudinary.com/w9puemf3/image/upload/v1/portraits/horrific_necktie.png",
+        "dialogue": "<em>'Bratan!'</em> the garish polyester pattern seems to writhe around your throat. <em>'The tracks are a distraction! The real action is inside the dumpster! Beautiful, fermented alcohol bottles waiting to be reclaimed!'</em>",
+        "next": "branch_necktie_inland"
+      },
+
+      "branch_necktie_inland": {
+        "id": "branch_necktie_inland",
+        "speaker": "INLAND EMPIRE",
+        "speakerType": "skill",
+        "dialogue": "He isn't wrong. A strange psychic aura radiates from behind the steel recycling bin. A dark, vibrating hum.",
+        "next": "branch_necktie_volition"
+      },
+
+      "branch_necktie_volition": {
+        "id": "branch_necktie_volition",
+        "speaker": "VOLITION",
+        "speakerType": "skill",
+        "dialogue": "Stop talking to your clothing in front of your junior officer. He is literally watching your mouth twitch.",
+        "vitals": {
+          "morale": "loss"
+        },
+        "options": [
+          {
+            "id": "opt_snap_out",
+            "label": "[Clear your throat] \"Just thinking out loud, Kim.\"",
+            "next": "node_conclusion"
+          }
+        ]
+      },
+
+      "branch_shrug_narrator": {
+        "id": "branch_shrug_narrator",
+        "speaker": "NARRATOR",
+        "speakerType": "narrator",
+        "dialogue": "The cold seeps deep into your boots. Revachol does not care about your fatigue, but for a moment, the world is quiet.",
+        "options": [
+          {
+            "id": "opt_shrug_end",
+            "label": "[Step back into the warmth of the hostel]",
+            "next": "node_conclusion"
+          }
+        ]
+      },
+
+      "node_conclusion": {
+        "id": "node_conclusion",
+        "speaker": "NARRATOR",
+        "speakerType": "narrator",
+        "dialogue": "The investigation in the yard concludes. The snow continues to fall in steady, silent flakes.",
+        "options": [
+          {
+            "id": "opt_exit_scene",
+            "label": "[Return to free play]",
+            "next": null
+          }
+        ]
+      }
+    }
+  }
+}

@@ -11,7 +11,6 @@
   var ADMIN_NAME = "administrateur";
   var MAX_MESSAGE_LENGTH = 4000;
   var MAX_NAME_LENGTH = 24;
-  var MAX_SCENE_NAME_LENGTH = 48;
   var HISTORY_LIMIT = 200;
   var TURN_LIMIT = 120;
   var TURN_MIN_LENGTH = 3;
@@ -63,6 +62,7 @@
     turnError: document.getElementById("turn-error"),
 
     readyBanner: document.getElementById("ready-banner"),
+    importButton: document.getElementById("import-button"),
 
     sceneThumb: document.getElementById("scene-thumb"),
     sceneTools: document.getElementById("scene-tools"),
@@ -110,10 +110,11 @@
   var profile = { name: "", portrait: null };
   var roomId = "";
   var currentTrack = null; // { videoId, startedAt } | null
-  var scene = { name: "", image: null }; // owned by the administrateur
+  var scene = { image: null }; // owned by the administrateur
   var stagedPortrait = null;
   var stagedSheet = null; // parsed from an uploaded stats file, if any
   var modalReturnFocus = null;
+  var importResetTimer = null; // resets the Import button label after a copy
 
   var sheet = null; // DiscoSkillSheet instance, built on first open
   var sheetState = null; // this player's own stats
@@ -256,10 +257,8 @@
   }
 
   function cleanScene(raw) {
-    if (!raw || typeof raw !== "object") return { name: "", image: null };
-    return {
-      image: cleanImageUrl(raw.image),
-    };
+    if (!raw || typeof raw !== "object") return { image: null };
+    return { image: cleanImageUrl(raw.image) };
   }
 
   function isAdminName(name) {
@@ -371,7 +370,7 @@
   }
 
   function openScene() {
-    openImage(scene.name || "The scene", scene.image, "");
+    openImage(scene.image, "");
   }
 
   function closePortrait() {
@@ -388,7 +387,7 @@
   /* ---------------- scene ---------------- */
 
   function renderScene() {
-    paintThumb(dom.sceneThumb, { name: scene.name, portrait: scene.image });
+    paintThumb(dom.sceneThumb, { portrait: scene.image });
   }
 
   function applyScene(next) {
@@ -740,6 +739,81 @@
     renderTurn(entry);
   }
 
+  /* Import: the planned turns, as plain text, for the administrateur's
+     clipboard. Built from turnEntries rather than scraped from the DOM, so
+     the copy matches the host's authoritative log exactly. */
+
+  var IMPORT_HEADING = "# Actions planned by players:";
+
+  function turnTranscript() {
+    var lines = turnEntries.map(function (entry) {
+      return entry.author + " — " + entry.text;
+    });
+    return IMPORT_HEADING + "\n" + lines.join("\n");
+  }
+
+  // execCommand fallback: navigator.clipboard needs a secure context, which a
+  // room served over plain http will not have.
+  function copyByCarrier(text) {
+    var carrier = document.createElement("textarea");
+    carrier.value = text;
+    carrier.setAttribute("readonly", "readonly");
+    carrier.style.position = "fixed";
+    carrier.style.top = "-1000px";
+    carrier.style.opacity = "0";
+    document.body.appendChild(carrier);
+
+    var restore = document.activeElement;
+    var ok = false;
+    try {
+      carrier.select();
+      ok = document.execCommand("copy");
+    } catch (error) {
+      ok = false;
+    }
+    carrier.remove();
+    if (restore && restore.focus) restore.focus();
+    return ok;
+  }
+
+  function copyText(text, done) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(
+        function () {
+          done(true);
+        },
+        function () {
+          done(copyByCarrier(text));
+        },
+      );
+      return;
+    }
+    done(copyByCarrier(text));
+  }
+
+  function resetImportButton() {
+    if (importResetTimer) {
+      clearTimeout(importResetTimer);
+      importResetTimer = null;
+    }
+    dom.importButton.textContent = "Import";
+  }
+
+  function flashImportButton(label) {
+    if (importResetTimer) clearTimeout(importResetTimer);
+    dom.importButton.textContent = label;
+    importResetTimer = setTimeout(resetImportButton, 1600);
+  }
+
+  // The banner is only in the document for the administrateur; the guard is
+  // there so nothing else can reach the export either.
+  function exportTurns() {
+    if (!isAdmin) return;
+    copyText(turnTranscript(), function (ok) {
+      flashImportButton(ok ? "Copied ✓" : "Copy failed");
+    });
+  }
+
   function systemNote(text) {
     renderEntry({ system: true, text: text, at: Date.now() });
   }
@@ -1081,6 +1155,15 @@
           return;
         }
 
+        if (data.type === "scene-request") {
+          // The scene is an administrateur privilege, enforced here where it
+          // is owned; the host's copy is the one everybody paints.
+          if (!person || !person.admin) return;
+          applyScene(data.scene);
+          broadcast({ type: "scene", scene: scene });
+          return;
+        }
+
         if (data.type === "track-request") {
           if (!person || !person.admin) return;
           var videoId = data.track ? parseVideoId(data.track.videoId) : null;
@@ -1367,7 +1450,7 @@
     paintReadyButton();
     dom.turnError.textContent = "";
 
-    applyScene({ name: "", image: null });
+    applyScene({ image: null });
     sheetState = isAdmin ? null : DiscoSkillSheet.normalize(stagedSheet);
     if (sheet) sheet.setState(sheetState, true);
     refreshVitals(true);
@@ -1420,8 +1503,10 @@
     dom.turnLog.textContent = "";
     dom.turnInput.value = "";
     dom.turnError.textContent = "";
+
     selfReady = false;
     paintReadyButton();
+    resetImportButton();
 
     dom.deckError.textContent = "";
     dom.sceneError.textContent = "";
@@ -1440,7 +1525,7 @@
     dom.statsInput.value = "";
     refreshVitals(true);
     renderTurnEmptyState();
-    applyScene({ name: "", image: null });
+    applyScene({ image: null });
     setStatus("offline", "Offline");
     dom.nameInput.focus();
   }
@@ -1651,6 +1736,8 @@
     setSelfReady(!selfReady);
   });
 
+  dom.importButton.addEventListener("click", exportTurns);
+
   /* scene: viewable by everyone, editable by the administrateur alone */
 
   dom.sceneThumb.addEventListener("click", openScene);
@@ -1676,7 +1763,7 @@
       }
       dom.sceneError.textContent = "";
       dom.sceneImageUrl.value = url;
-      pushScene({ name: scene.name, image: url });
+      pushScene({ image: url });
     });
   });
 
@@ -1684,7 +1771,7 @@
     dom.sceneError.textContent = "";
     var raw = dom.sceneImageUrl.value.trim();
     if (!raw) {
-      pushScene({ name: scene.name, image: null });
+      pushScene({ image: null });
       return;
     }
 

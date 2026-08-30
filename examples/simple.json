@@ -1,0 +1,58 @@
+{
+  "Vlad": {
+    "root": "step_1_narrator",
+    "nodes": {
+      "step_1_narrator": {
+        "id": "step_1_narrator",
+        "speaker": "NARRATOR",
+        "speakerType": "narrator",
+        "dialogue": "You step out into the courtyard behind the Whirling-in-Rags. The cold sea wind cuts immediately through your flare-cut trousers.",
+        "next": "step_2_skillcheck"
+      },
+
+      "step_2_skillcheck": {
+        "id": "step_2_skillcheck",
+        "speaker": "SHIVERS",
+        "speakerType": "skill",
+        "dialogue": "A shiver travels from the base of your spine up into your skull. Somewhere four blocks south, across the iced-over canal, a heavy iron crane swings in the dark.",
+        "skillCheck": {
+          "skill": "shivers",
+          "difficulty": "medium",
+          "result": "success",
+          "diceRoll": { "dice1": 4, "dice2": 5 },
+          "modifier": 2
+        },
+        "next": "step_3_npc"
+      },
+
+      "step_3_npc": {
+        "id": "step_3_npc",
+        "speaker": "KIM KITSURAGI",
+        "speakerType": "npc",
+        "portrait": "https://res.cloudinary.com/w9puemf3/image/upload/v1/portraits/kim_kitsuragi.png",
+        "dialogue": "\"Are you alright, officer? You went completely rigid for a second there.\"",
+        "next": "step_4_entity"
+      },
+
+      "step_4_entity": {
+        "id": "step_4_entity",
+        "speaker": "HORRIFIC NECKTIE",
+        "speakerType": "entity",
+        "portrait": "https://res.cloudinary.com/w9puemf3/image/upload/v1/portraits/horrific_necktie.png",
+        "dialogue": "<em>'Don't answer him, bratan! Keep your poker face! We're tapping into the frequency of the cosmos!'</em>",
+        "vitals": {
+          "morale": "gain"
+        },
+        "next": "step_5_conclusion"
+      },
+
+      "step_5_conclusion": {
+        "id": "step_5_conclusion",
+        "speaker": "NARRATOR",
+        "speakerType": "narrator",
+        "dialogue": "You blink away the trance and nod at the Lieutenant. The city goes quiet again.",
+        "next": null
+      }
+    }
+  }
+}

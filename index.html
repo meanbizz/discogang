@@ -162,8 +162,18 @@
         <section id="turn-builder" class="turn-builder">
           <h2 class="turn-builder-title">What is being planned…</h2>
 
+          <!-- present only for the administrateur; the Import button copies
+               the planned turns to the clipboard -->
           <div id="ready-banner" class="ready-banner" role="status" hidden>
-            All players ready
+            <span class="ready-banner-text">All players ready</span>
+            <button
+              type="button"
+              id="import-button"
+              class="import-turns"
+              title="Copy the planned turns to the clipboard"
+            >
+              Import
+            </button>
           </div>
 
           <div

@@ -577,7 +577,13 @@ button[disabled] {
   background: rgba(111, 191, 115, 0.3);
 }
 
+/* the banner carries the administrateur's Import button at its end */
 .ready-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem 0.9rem;
   margin: 0 0 0.7rem;
   padding: 0.3rem 0.7rem;
   border: 1px solid var(--ready);
@@ -589,6 +595,22 @@ button[disabled] {
 }
 .ready-banner[hidden] {
   display: none;
+}
+
+.import-turns {
+  flex: 0 0 auto;
+  padding: 0.1rem 0.7rem;
+  border-color: var(--ready);
+  color: var(--ready);
+  background: rgba(111, 191, 115, 0.16);
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.import-turns:hover {
+  border-color: var(--ready);
+  color: var(--bg);
+  background: var(--ready);
 }
 
 /* deck — only ever in the document for the administrateur */
