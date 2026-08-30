@@ -1,4 +1,5 @@
-/* Health and morale bars plus the sheet button beside them. */
+/* Health and morale bars plus the sheet button beside them.
+   The is-hit flash is animated in animations.css. */
 
 .panel-foot {
   display: flex;
@@ -42,32 +43,6 @@
 .vital-step[data-filled="true"] {
   background: var(--vital);
   border-color: var(--vital);
-}
-
-/* Flashed once when a dialogue node moves a vital. */
-.vital.is-hit {
-  animation: vital-hit 560ms ease-out;
-}
-
-@keyframes vital-hit {
-  0% {
-    opacity: 0.25;
-    transform: translateX(-2px);
-  }
-  40% {
-    opacity: 1;
-    transform: translateX(2px);
-  }
-  100% {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .vital.is-hit {
-    animation: none;
-  }
 }
 
 .psyche {

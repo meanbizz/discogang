@@ -24,6 +24,8 @@ import * as audio from "./audio.js";
 import * as vitals from "./vitals.js";
 import * as modals from "./modals.js";
 import * as dialogue from "./dialogue.js";
+import * as cues from "./cues.js";
+import { applyTiming } from "./timing.js";
 import { NetworkManager } from "./network.js";
 
 /* ---------------- Application State ---------------- */
@@ -1395,6 +1397,11 @@ window.addEventListener("beforeunload", () => network.disconnect());
 
 /* ---------------- Bootstrap ---------------- */
 (function bootstrap() {
+  /* Timings onto :root first, so the stylesheet and the JS timers agree from
+     the very first frame. */
+  applyTiming();
+  /* Cues and verdict art into memory now, so a roll never waits on a fetch. */
+  cues.preloadAll();
   vitals.refreshVitals(null, true);
   renderScene();
   renderTurnEmptyState();

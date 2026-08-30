@@ -1,32 +1,41 @@
-/* Sound cues for dialogue rounds.
+/* Sound cues for dialogue rounds — playback only.
 
-   One jingle per attribute, plus the two roll clips. Timings come from the
-   clip's own duration when the browser reports it and from FALLBACK_MS when
-   it does not, so a blocked or missing file never strands the visual
-   sequence that hangs off these callbacks. */
+   One jingle per attribute, plus the two roll clips. Every file is pulled
+   into memory once, up front, so a cue never waits on the network at the
+   moment it is needed.
 
-const JINGLE_SRC = {
+   Jingles and rolls sit on separate channels: a skill's voice can keep
+   ringing while the dice are already rolling, so neither cue has to wait for
+   the other to clear.
+
+   Nothing here decides when a cue fires — that belongs to cues.js, and every
+   number this file leans on comes from timing.js. Timings come from the
+   clip's own duration when the browser reports it and from
+   TIMING.sound.fallbackMs when it does not, so a blocked or missing file
+   never strands the visual sequence that hangs off these callbacks. */
+
+import { TIMING } from "./timing.js";
+
+export const JINGLE_SRC = {
   intellect: "/sounds/IntellectJingle.mp3",
   psyche: "/sounds/PsyJingle.mp3",
   physique: "/sounds/PhysicalJingle.mp3",
   motorics: "/sounds/MotoricsJingle.mp3",
 };
 
-const ROLL_SRC = {
+export const ROLL_SRC = {
   success: "/sounds/RollSuccess.mp3",
   failure: "/sounds/RollFailure.mp3",
 };
 
-/* Every cue in this file plays at this level — a quarter under the old 0.7. */
-const VOLUME = 0.525;
-const FALLBACK_MS = 1600;
-const METADATA_WAIT_MS = 600;
-/* Kept for callers that want a cue shortly before a clip runs out. */
-const LEAD_MS = 500;
-
 const cache = {};
-let timers = [];
-let voice = null;
+
+/* One slot per kind of cue. Starting a jingle no longer cuts a roll short,
+   and the other way round. */
+const channels = {
+  jingle: { voice: null, timers: [] },
+  roll: { voice: null, timers: [] },
+};
 
 function own(map, key) {
   return (
@@ -36,34 +45,51 @@ function own(map, key) {
 
 function clip(src) {
   if (!cache[src]) {
-    const audio = new Audio(src);
+    const audio = new Audio();
     audio.preload = "auto";
+    audio.src = src;
+    try {
+      audio.load();
+    } catch (error) {
+      /* nothing to fetch yet */
+    }
     cache[src] = audio;
   }
   /* Set every time, so a cached clip picks up the current level. */
-  cache[src].volume = VOLUME;
+  cache[src].volume = TIMING.sound.volume;
   return cache[src];
 }
 
-function clearTimers() {
-  for (let i = 0; i < timers.length; i += 1) clearTimeout(timers[i]);
-  timers = [];
+/* Called once at boot: fetches and decodes every cue so the first roll of the
+   session is as prompt as the tenth. Loading needs no user gesture — only
+   playback does. */
+export function preloadAll() {
+  Object.keys(JINGLE_SRC).forEach((key) => clip(JINGLE_SRC[key]));
+  Object.keys(ROLL_SRC).forEach((key) => clip(ROLL_SRC[key]));
 }
 
-function stopVoice() {
-  if (!voice) return;
+function clearTimers(channel) {
+  for (let i = 0; i < channel.timers.length; i += 1) {
+    clearTimeout(channel.timers[i]);
+  }
+  channel.timers = [];
+}
+
+function stopChannel(channel) {
+  clearTimers(channel);
+  if (!channel.voice) return;
   try {
-    voice.pause();
-    voice.currentTime = 0;
+    channel.voice.pause();
+    channel.voice.currentTime = 0;
   } catch (error) {
     /* nothing to rewind */
   }
-  voice = null;
+  channel.voice = null;
 }
 
 export function stopAll() {
-  clearTimers();
-  stopVoice();
+  stopChannel(channels.jingle);
+  stopChannel(channels.roll);
 }
 
 function durationMs(audio) {
@@ -71,13 +97,14 @@ function durationMs(audio) {
   return isFinite(seconds) && seconds > 0 ? seconds * 1000 : 0;
 }
 
-/* hooks.onLead fires LEAD_MS before the end, hooks.onEnd just after it. */
-function run(src, hooks) {
-  clearTimers();
-  stopVoice();
+/* hooks.onLead fires TIMING.sound.leadMs before the end, hooks.onEnd just
+   after it. With preloadAll behind us the metadata is already in hand, so
+   both timers are armed on the same tick the clip starts. */
+function run(channel, src, hooks) {
+  stopChannel(channel);
 
   const audio = clip(src);
-  voice = audio;
+  channel.voice = audio;
   try {
     audio.currentTime = 0;
   } catch (error) {
@@ -91,11 +118,13 @@ function run(src, hooks) {
   const arm = () => {
     if (armed) return;
     armed = true;
-    const total = durationMs(audio) || FALLBACK_MS;
+    const total = durationMs(audio) || TIMING.sound.fallbackMs;
     if (hooks.onLead) {
-      timers.push(setTimeout(hooks.onLead, Math.max(0, total - LEAD_MS)));
+      channel.timers.push(
+        setTimeout(hooks.onLead, Math.max(0, total - TIMING.sound.leadMs)),
+      );
     }
-    if (hooks.onEnd) timers.push(setTimeout(hooks.onEnd, total + 60));
+    if (hooks.onEnd) channel.timers.push(setTimeout(hooks.onEnd, total + 60));
   };
 
   if (audio.readyState >= 1) {
@@ -103,7 +132,7 @@ function run(src, hooks) {
     return;
   }
   audio.addEventListener("loadedmetadata", arm, { once: true });
-  timers.push(setTimeout(arm, METADATA_WAIT_MS));
+  channel.timers.push(setTimeout(arm, TIMING.sound.metadataWaitMs));
 }
 
 export function playJingle(attribute, onEnd) {
@@ -111,10 +140,10 @@ export function playJingle(attribute, onEnd) {
     if (onEnd) onEnd();
     return;
   }
-  run(JINGLE_SRC[attribute], { onEnd: onEnd || null });
+  run(channels.jingle, JINGLE_SRC[attribute], { onEnd: onEnd || null });
 }
 
 export function playRoll(result, onLead, onEnd) {
   const src = result === "success" ? ROLL_SRC.success : ROLL_SRC.failure;
-  run(src, { onLead: onLead || null, onEnd: onEnd || null });
+  run(channels.roll, src, { onLead: onLead || null, onEnd: onEnd || null });
 }

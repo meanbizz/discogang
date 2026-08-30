@@ -1,5 +1,6 @@
 /* Scene image beside the session log, and the plain log entries.
-   Dialogue-specific entry parts live in dialogue.css. */
+   Dialogue-specific entry parts live in dialogue.css; the roll tape and the
+   fades it drives live in animations.css. */
 
 .stage {
   display: flex;
@@ -42,49 +43,6 @@
   padding: 0 2rem 4rem 3.5rem;
   overflow-y: auto;
   overscroll-behavior: contain;
-}
-
-/* A rolled check runs the panel texture past like tape. The class is held
-   for as long as the roll clip plays, then dropped by the reader. */
-.log.is-rolling {
-  background-repeat: repeat-y;
-  animation: log-tape 220ms linear infinite;
-}
-
-@keyframes log-tape {
-  from {
-    background-position: 0 0;
-  }
-  to {
-    background-position: 0 -420px;
-  }
-}
-
-/* While the tape rolls, nothing but the texture is legible: the entries and
-   the scene portrait drop out, then fade back in once the reader removes the
-   class — which is the same moment the verdict lands. */
-.entry,
-.stage-side .scene-thumb {
-  transition: opacity 220ms linear;
-}
-
-.log.is-rolling .entry,
-.log.is-rolling .entry.dialogue:not(.current) {
-  opacity: 0;
-}
-
-.stage-side.is-rolling .scene-thumb {
-  opacity: 0;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .log.is-rolling {
-    animation: none;
-  }
-  .entry,
-  .stage-side .scene-thumb {
-    transition: none;
-  }
 }
 
 .entry {

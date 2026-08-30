@@ -1,6 +1,9 @@
 /* Dialogue rounds: the one-line speaker/verdict/body row, vitals notes,
    choice buttons, the check overlay, and the administrateur's raw payload
-   echo. */
+   echo.
+
+   Static appearance only — every keyframe and transition these classes take
+   part in lives in animations.css. */
 
 /* SPEAKER [Medium 10+: success] — body, all on one line. */
 .entry-line {
@@ -121,34 +124,11 @@ button.choice.continue {
   color: white;
 }
 
-/* Terminal choice: nothing follows it, so the row bows out. */
-.entry-choices.is-fading {
-  animation: choice-fade 420ms ease forwards;
-  pointer-events: none;
-}
-
-@keyframes choice-fade {
-  from {
-    opacity: 1;
-    transform: none;
-  }
-  to {
-    opacity: 0;
-    transform: translateY(-4px);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .entry-choices.is-fading {
-    animation: none;
-    opacity: 0;
-  }
-}
-
 /* ---------------- Check verdict overlay ---------------- */
 
-/* Fades in over the whole viewport, then the mask slides so the card is
-   wiped away from the left edge rightwards. */
+/* Sits over the whole viewport, transparent until cues.js fades it in. The
+   mask is parked off to the right so the wipe in animations.css has somewhere
+   to travel from. */
 .check-overlay {
   position: fixed;
   inset: 0;
@@ -200,6 +180,8 @@ button.choice.continue {
   display: grid;
   justify-items: center;
   gap: 1.25rem;
+  margin-top: auto;
+  margin-bottom: 96px;
 }
 
 .check-overlay-dice {
@@ -215,47 +197,6 @@ button.choice.continue {
 .check-overlay-title {
   width: clamp(13rem, 40vw, 32rem);
   height: auto;
-}
-
-.check-overlay.is-in {
-  animation: check-in 220ms ease forwards;
-}
-
-.check-overlay.is-out {
-  animation: check-wipe 700ms linear forwards;
-}
-
-@keyframes check-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes check-wipe {
-  from {
-    opacity: 1;
-    -webkit-mask-position: 100% 0;
-    mask-position: 100% 0;
-  }
-  to {
-    opacity: 1;
-    -webkit-mask-position: 0% 0;
-    mask-position: 0% 0;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .check-overlay.is-in {
-    animation: none;
-    opacity: 1;
-  }
-  .check-overlay.is-out {
-    animation: none;
-    opacity: 0;
-  }
 }
 
 /* Raw payload echo — administrateur's own log only. */

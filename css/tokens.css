@@ -53,4 +53,16 @@
   --shell-max: 48rem;
   --side-width: 10rem;
   --hairline: 1px solid var(--rule);
+
+  /* Motion. Fallbacks only: js/timing.js rewrites all of these on :root at
+     boot, so change the numbers there. They are duplicated here so the sheet
+     still animates correctly if the module never runs. Consumed by
+     animations.css. */
+  --dur-entry-fade: 150ms;
+  --dur-choice-fade: 420ms;
+  --dur-tape-cycle: 220ms;
+  --dur-verdict-in: 220ms;
+  --dur-verdict-out: 700ms;
+  --dur-vital-flash: 560ms;
+  --tape-step: 420px;
 }

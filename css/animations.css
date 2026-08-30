@@ -1,0 +1,162 @@
+/* Every animation in the app.
+
+   Nothing here decides when a class arrives — that is cues.js. All this layer
+   does is say what a class looks like while it is on, and for how long. Each
+   duration comes from a --dur-* token: tokens.css holds the fallbacks and
+   js/timing.js rewrites the same properties on :root at boot, so the numbers
+   in that module are the ones that count.
+
+   Load this last, after the component files. */
+
+/* ---------------- Log tape (rolled check) ---------------- */
+
+/* The panel texture runs past like tape. The class goes on the same frame the
+   node arrives and comes off when the verdict lands. */
+.log.is-rolling {
+  background-repeat: repeat-y;
+  animation: log-tape var(--dur-tape-cycle) linear infinite;
+}
+
+@keyframes log-tape {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 0 calc(-1 * var(--tape-step));
+  }
+}
+
+/* While the tape rolls, nothing but the texture is legible: the standing
+   entries and the scene portrait drop out on a quick fade, then fade back in
+   once the reader removes the class — which is the same moment the verdict
+   lands. An entry appended mid-roll is born at zero, so it never flashes
+   before the tape has it.
+
+   Hidden entries take no clicks either: a Continue button nobody can see
+   cannot be hit ahead of the verdict. */
+.entry,
+.stage-side .scene-thumb {
+  transition: opacity var(--dur-entry-fade) linear;
+}
+
+.log.is-rolling .entry,
+.log.is-rolling .entry.dialogue:not(.current) {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.stage-side.is-rolling .scene-thumb {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ---------------- Terminal choice row ---------------- */
+
+/* Nothing follows it, so the row bows out. */
+.entry-choices.is-fading {
+  animation: choice-fade var(--dur-choice-fade) ease forwards;
+  pointer-events: none;
+}
+
+@keyframes choice-fade {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+/* ---------------- Check verdict overlay ---------------- */
+
+/* Fades in over the whole viewport, then the mask slides so the card is wiped
+   away from the left edge rightwards. The mask itself is set up in
+   dialogue.css; only its travel belongs here. */
+.check-overlay.is-in {
+  animation: check-in var(--dur-verdict-in) ease forwards;
+}
+
+.check-overlay.is-out {
+  animation: check-wipe var(--dur-verdict-out) linear forwards;
+}
+
+@keyframes check-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes check-wipe {
+  from {
+    opacity: 1;
+    -webkit-mask-position: 100% 0;
+    mask-position: 100% 0;
+  }
+  to {
+    opacity: 1;
+    -webkit-mask-position: 0% 0;
+    mask-position: 0% 0;
+  }
+}
+
+/* ---------------- Vitals ---------------- */
+
+/* Flashed once when a dialogue node moves a vital. */
+.vital.is-hit {
+  animation: vital-hit var(--dur-vital-flash) ease-out;
+}
+
+@keyframes vital-hit {
+  0% {
+    opacity: 0.25;
+    transform: translateX(-2px);
+  }
+  40% {
+    opacity: 1;
+    transform: translateX(2px);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---------------- Reduced motion ---------------- */
+
+/* Every end state the animations above would have reached, held still. The
+   JS timers are untouched: the sequence still advances on the same schedule,
+   it just does not move. */
+@media (prefers-reduced-motion: reduce) {
+  .log.is-rolling {
+    animation: none;
+  }
+
+  .entry,
+  .stage-side .scene-thumb {
+    transition: none;
+  }
+
+  .entry-choices.is-fading {
+    animation: none;
+    opacity: 0;
+  }
+
+  .check-overlay.is-in {
+    animation: none;
+    opacity: 1;
+  }
+
+  .check-overlay.is-out {
+    animation: none;
+    opacity: 0;
+  }
+
+  .vital.is-hit {
+    animation: none;
+  }
+}

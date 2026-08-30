@@ -1,12 +1,15 @@
 import { dom } from "./dom.js";
 import { VITAL_SKILL } from "./config.js";
+import { TIMING } from "./timing.js";
 
 export const vitals = {
   health: { value: 0, max: 0 },
   morale: { value: 0, max: 0 },
 };
 
-const FLASH_MS = 600;
+/* The class comes off just after the animation ends; both numbers live in
+   timing.js. */
+const FLASH_CLEAR_MS = TIMING.vitals.flashMs + TIMING.vitals.clearBufferMs;
 const flashTimers = {};
 
 export function skillScore(sheetState, skillId) {
@@ -71,7 +74,7 @@ function flash(kind) {
   flashTimers[kind] = setTimeout(() => {
     element.classList.remove("is-hit");
     flashTimers[kind] = null;
-  }, FLASH_MS);
+  }, FLASH_CLEAR_MS);
 }
 
 /* One step of health or morale, clamped to the sheet's ceiling.

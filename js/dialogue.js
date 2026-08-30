@@ -3,12 +3,15 @@
    Ingests the administrateur's TurnResolutionPayload, hands each player the
    tree that belongs to them, and walks it one node at a time inside the
    session log. Everything crossing the wire is rebuilt field by field, so a
-   peer can only ever contribute the shapes this reader already understands. */
+   peer can only ever contribute the shapes this reader already understands.
+
+   This file says what happened; cues.js says how long it takes and what it
+   sounds like. No duration and no animation class belongs here. */
 
 import { dom } from "./dom.js";
 import { paintMarkup } from "./utils.js";
 import * as vitals from "./vitals.js";
-import * as sfx from "./sfx.js";
+import * as cues from "./cues.js";
 
 export const DIFFICULTY_TARGET = {
   trivial: 6,
@@ -40,19 +43,6 @@ const BODY_MAX = 4000;
 const SKILL_ART_BASE =
   "https://disco-elysium-skill-editor.netlify.app/_next/static/media";
 
-const FADE_MS = 420;
-
-/* Verdict overlay beats. IN and OUT mirror the animations in dialogue.css. */
-const TAPE_CLASS = "is-rolling";
-const OVERLAY_IN_MS = 220;
-const OVERLAY_HOLD_MS = 1300;
-const OVERLAY_OUT_MS = 700;
-
-/* The verdict lands when the roll clip finishes, not before it. This is the
-   backstop for a clip that never reports itself at all: sfx arms its own
-   fallback by ~2.3s, so this only ever fires when nothing else did. */
-const VERDICT_FALLBACK_MS = 3000;
-
 let tree = null;
 let cursor = null;
 let active = false;
@@ -60,7 +50,6 @@ let finished = true;
 let steps = 0;
 const vitalsSpent = new Set();
 let hooks = { onFinish: null, onSkillArt: null };
-let overlayTimers = [];
 
 /* ---------------- Small helpers ---------------- */
 
@@ -442,9 +431,7 @@ export function reset() {
   finished = true;
   steps = 0;
   vitalsSpent.clear();
-  sfx.stopAll();
-  stopTape();
-  hideCheckOverlay();
+  cues.reset();
   emitArt(null);
 }
 
@@ -471,142 +458,6 @@ function finish() {
   if (finished) return;
   finished = true;
   if (hooks.onFinish) hooks.onFinish();
-}
-
-/* Plays the fade class out, then drops the node. The timer is the fallback
-   for browsers that never fire animationend. */
-function fadeAway(node, done) {
-  if (!node) {
-    if (done) done();
-    return;
-  }
-  let settled = false;
-  const settle = () => {
-    if (settled) return;
-    settled = true;
-    node.remove();
-    if (done) done();
-  };
-  node.addEventListener("animationend", settle, { once: true });
-  setTimeout(settle, FADE_MS + 120);
-  node.classList.add("is-fading");
-}
-
-/* ---------------- Roll cues ---------------- */
-
-function clearOverlayTimers() {
-  for (let i = 0; i < overlayTimers.length; i += 1) {
-    clearTimeout(overlayTimers[i]);
-  }
-  overlayTimers = [];
-}
-
-/* The tape class rides on the log and on the scene column, so the texture
-   scrolls while the entries and the portrait are held out of sight. */
-function startTape() {
-  if (dom.log) {
-    dom.log.classList.remove(TAPE_CLASS);
-    void dom.log.offsetWidth;
-    dom.log.classList.add(TAPE_CLASS);
-  }
-  if (dom.stageSide) dom.stageSide.classList.add(TAPE_CLASS);
-}
-
-function stopTape() {
-  if (dom.log) dom.log.classList.remove(TAPE_CLASS);
-  if (dom.stageSide) dom.stageSide.classList.remove(TAPE_CLASS);
-}
-
-function hideCheckOverlay() {
-  clearOverlayTimers();
-  const host = dom.checkOverlay;
-  if (!host) return;
-  host.classList.remove("is-in", "is-out");
-  host.hidden = true;
-}
-
-/* A face only shows when there is a real die behind it. */
-function paintDie(image, value) {
-  if (!image) return;
-  if (value) {
-    image.src = "/images/dice/" + value + ".svg";
-    image.hidden = false;
-    return;
-  }
-  image.removeAttribute("src");
-  image.hidden = true;
-}
-
-/* Fades in over the whole viewport, holds, then wipes away left to right. */
-function showCheckOverlay(check, result) {
-  const host = dom.checkOverlay;
-  if (!host) return;
-  clearOverlayTimers();
-
-  host.dataset.result = result;
-  if (dom.checkOverlayScene) {
-    dom.checkOverlayScene.style.backgroundImage =
-      'url("/images/check-' + result + '-background.png")';
-  }
-  paintDie(dom.checkDie1, check.dice1);
-  paintDie(dom.checkDie2, check.dice2);
-  if (dom.checkOverlayTitle) {
-    dom.checkOverlayTitle.src = "/images/check-" + result + "-title.svg";
-  }
-
-  host.classList.remove("is-in", "is-out");
-  host.hidden = false;
-  void host.offsetWidth;
-  host.classList.add("is-in");
-
-  overlayTimers.push(
-    setTimeout(() => {
-      host.classList.remove("is-in");
-      host.classList.add("is-out");
-      overlayTimers.push(
-        setTimeout(() => {
-          host.classList.remove("is-out");
-          host.hidden = true;
-        }, OVERLAY_OUT_MS),
-      );
-    }, OVERLAY_IN_MS + OVERLAY_HOLD_MS),
-  );
-}
-
-/* The log texture runs past like tape for as long as the roll clip plays.
-   The verdict lands the moment that clip ends — never over the top of the
-   rolling tape — or on the fallback timer if the clip never reports itself. */
-function runCheckSequence(check) {
-  const result = check.result === "success" ? "success" : "failure";
-  startTape();
-
-  let shown = false;
-  const reveal = () => {
-    if (shown) return;
-    shown = true;
-    stopTape();
-    showCheckOverlay(check, result);
-  };
-
-  sfx.playRoll(result, null, reveal);
-  overlayTimers.push(setTimeout(reveal, VERDICT_FALLBACK_MS));
-}
-
-/* A skill speaking plays its attribute's jingle; a check with a verdict waits
-   for that jingle to clear before starting the tape. */
-function playCues(voice, check) {
-  const attribute = voice ? voice.attribute : null;
-  const rolled = Boolean(check && check.result);
-
-  if (attribute && rolled) {
-    sfx.playJingle(attribute, () => runCheckSequence(check));
-    return;
-  }
-  if (attribute) {
-    sfx.playJingle(attribute, null);
-    return;
-  }
-  if (rolled) runCheckSequence(check);
 }
 
 /* [Medium 10+: success] — sits inside the speaker line. The dice breakdown
@@ -697,7 +548,7 @@ function renderOptions(host, options) {
         return;
       }
       /* Nothing follows this choice — let it fade before the scene closes. */
-      fadeAway(host, () => finish());
+      cues.fadeOutAndRemove(host, () => finish());
     });
     host.appendChild(button);
   });
@@ -744,6 +595,10 @@ function renderNode(id) {
     findSkill(node.speaker) ||
     (node.skillCheck ? findSkill(node.skillCheck.skill) : null);
 
+  /* A rolled node hides its own arrival: cues.beginRoll runs the tape on this
+     frame, so the incoming entry is already invisible when it lands. */
+  if (node.skillCheck && node.skillCheck.result) cues.beginRoll();
+
   const article = document.createElement("article");
   article.className = "entry dialogue current";
   article.dataset.node = id;
@@ -788,7 +643,7 @@ function renderNode(id) {
 
   appendToLog(article);
   emitArt(voice ? voice.art : null);
-  playCues(voice, node.skillCheck);
+  cues.playNode(voice, node.skillCheck);
 
   const choices = document.createElement("div");
   choices.className = "entry-choices";
