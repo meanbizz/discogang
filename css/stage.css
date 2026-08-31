@@ -65,17 +65,6 @@
   overflow-wrap: anywhere;
 }
 
-.entry.system .entry-body {
-  font-size: 0.95rem;
-  font-style: italic;
-  opacity: 0.85;
-}
-
-/* System notes never take the spotlight, even when they are last. */
-.entry.system.current .entry-body {
-  color: var(--text-old);
-}
-
 .log-empty {
   margin: 2rem 0;
   text-align: center;

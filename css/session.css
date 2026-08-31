@@ -62,19 +62,49 @@
   background: var(--option);
 }
 
+/* NPCs, Export, Load. The file input is visually hidden and clicked from
+   the Load button, so the row never shows a bare browse control. */
 .admin-tools {
   margin-top: 0.75rem;
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   justify-content: flex-end;
+  gap: 0.5rem;
 }
 
 .admin-tools[hidden] {
   display: none;
 }
 
+.admin-tools button {
+  padding: 0.35rem 0.8rem;
+  font-size: 0.85rem;
+}
+
+/* Whatever the last save or load had to say. Takes the whole row so the
+   buttons above it never shuffle. */
+.session-note {
+  flex: 1 1 100%;
+  margin: 0.35rem 0 0;
+  min-height: 1.2em;
+  color: var(--text-old);
+  font-size: 0.8rem;
+  font-style: italic;
+  text-align: right;
+}
+
 @media (max-width: 32rem) {
   .session-actions {
     margin-left: 0;
     width: 100%;
+  }
+
+  .admin-tools {
+    justify-content: flex-start;
+  }
+
+  .session-note {
+    text-align: left;
   }
 }

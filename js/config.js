@@ -1,3 +1,5 @@
+import { NARRATION_ENDPOINT } from "/js/secrets/secrets.js";
+
 export const ROOM_PREFIX = "de-salon-";
 export const ADMIN_NAME = "administrateur";
 export const MAX_MESSAGE_LENGTH = 4000;
@@ -6,6 +8,10 @@ export const HISTORY_LIMIT = 200;
 export const TURN_LIMIT = 120;
 export const TURN_MIN_LENGTH = 3;
 export const PLAYER_SLOTS = 8;
+/* Dialogue rounds held for the session save: every payload the
+   administrateur has sent, oldest dropped first. Each round carries every
+   character's tree, so this list is the table's whole dialogue history. */
+export const DIALOGUE_ROUND_LIMIT = 64;
 
 export const ROOM_CODE_LENGTH = 8;
 export const ROOM_CODE_ALPHABET = "abcdefghijkmnpqrstuvwxyz23456789";
@@ -47,7 +53,7 @@ export const RETRY_DELAY_MS = 1200;
    narratorNames are the speaker names, lowercased, that earn a line its play
    button. */
 export const NARRATION = {
-  endpoint: "https://fish-tts.segalyair11.workers.dev/",
+  endpoint: NARRATION_ENDPOINT,
   token: "",
   backend: "",
   modelId: "dce36baf20c14deb95d7377a2d661b4c",

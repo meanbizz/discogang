@@ -98,13 +98,14 @@ function fetchClip(text, signal) {
   if (NARRATION.token) headers.Authorization = "Bearer " + NARRATION.token;
   if (NARRATION.backend) headers.model = NARRATION.backend;
 
+  const cleanedText = text.replaceAll("*", "");
   return fetch(NARRATION.endpoint, {
     method: "POST",
     mode: "cors",
     signal,
     headers,
     body: JSON.stringify({
-      text,
+      text: cleanedText,
       reference_id: NARRATION.modelId,
       format: NARRATION.format,
       normalize: true,

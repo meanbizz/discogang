@@ -5,6 +5,12 @@
    session log. Everything crossing the wire is rebuilt field by field, so a
    peer can only ever contribute the shapes this reader already understands.
 
+   Two ways in. start() plays a round live — one node at a time, choices to
+   press, cues firing, vitals spent. renderRound() writes a round that is
+   already over back into the log as a transcript: the same lines, nothing to
+   press, nothing spent, no sound. The caller decides which rounds those are
+   and what to say about them; this file only writes the scene.
+
    This file says what happened; cues.js says how long it takes and what it
    sounds like. No duration and no animation class belongs here. */
 
@@ -38,6 +44,10 @@ const KEY_MAX = 120;
 const SPEAKER_MAX = 48;
 const LABEL_MAX = 240;
 const BODY_MAX = 4000;
+
+/* How far a restored entry is held back from the live scene. Inline on
+   purpose: the stylesheet knows nothing about transcripts. */
+const HISTORY_OPACITY = "0.78";
 
 /* Card art lives with the skill sheet's assets; the sheet exposes the file
    names on DiscoSkillSheet.ATTRIBUTES, so only the base needs repeating. */
@@ -533,7 +543,9 @@ function paintSpeakButton(button, state) {
   button.setAttribute("aria-pressed", key === "playing" ? "true" : "false");
 }
 
-function speakButton(node) {
+/* speakKey names the clip for narration.js. A live node and the same node in
+   a restored round carry different keys, so one cannot stop the other. */
+function speakButton(speakKey, text) {
   const button = document.createElement("button");
   button.type = "button";
   button.className = "entry-speak";
@@ -541,7 +553,7 @@ function speakButton(node) {
 
   button.addEventListener("click", (event) => {
     event.stopPropagation();
-    narration.toggle("node:" + node.id, node.dialogue, (state) => {
+    narration.toggle(speakKey, text, (state) => {
       paintSpeakButton(button, state);
     });
   });
@@ -549,7 +561,12 @@ function speakButton(node) {
   return button;
 }
 
-function renderVitals(effect, nodeId) {
+/* The ±1 note under a line. apply is what separates a scene being played from
+   a scene being read back: a transcript shows the same note without touching
+   anybody's health or morale. */
+function vitalsNote(effect, nodeId, apply) {
+  if (!effect) return null;
+
   const spent = vitalsSpent.has(nodeId);
   const note = document.createElement("p");
   note.className = "vitals-note";
@@ -559,7 +576,7 @@ function renderVitals(effect, nodeId) {
     const direction = effect[field];
     if (!direction) return;
     const kind = VITAL_OF[field];
-    if (!spent) vitals.changeVital(kind, direction);
+    if (apply && !spent) vitals.changeVital(kind, direction);
 
     const item = document.createElement("span");
     item.className = "vitals-note-item";
@@ -571,8 +588,67 @@ function renderVitals(effect, nodeId) {
     any = true;
   });
 
-  vitalsSpent.add(nodeId);
+  if (apply) vitalsSpent.add(nodeId);
   return any ? note : null;
+}
+
+/* A speaker that names a skill drives both its colour and the scene
+   thumbnail; a bare check falls back to the skill being rolled. */
+function voiceOf(node) {
+  return (
+    findSkill(node.speaker) ||
+    (node.skillCheck ? findSkill(node.skillCheck.skill) : null)
+  );
+}
+
+/* The line itself: speaker, verdict tag, body, and the narrator's play
+   button. Nothing interactive hangs off it — a live node and a restored one
+   are the same article, and only what is appended after differs. */
+function buildEntry(node, voice, speakKey) {
+  const article = document.createElement("article");
+  article.className = "entry dialogue";
+  article.dataset.node = node.id;
+  if (node.skillCheck && node.skillCheck.result) {
+    article.dataset.result = node.skillCheck.result;
+  }
+
+  /* Speaker, check verdict, and body all live on one line. */
+  const lead = document.createElement("p");
+  lead.className = "entry-line";
+
+  if (node.speaker) {
+    const speaker = document.createElement("span");
+    speaker.className = "entry-speaker";
+    if (voice) speaker.dataset.attribute = voice.attribute;
+    speaker.textContent = node.speaker;
+    lead.appendChild(speaker);
+  }
+
+  if (node.skillCheck) {
+    if (lead.childNodes.length) {
+      lead.appendChild(document.createTextNode(" "));
+    }
+    lead.appendChild(checkTag(node.skillCheck));
+  }
+
+  if (lead.childNodes.length && node.dialogue) {
+    lead.appendChild(document.createTextNode(" — "));
+  }
+
+  const body = document.createElement("span");
+  body.className = "entry-body";
+  paintMarkup(body, node.dialogue);
+  lead.appendChild(body);
+
+  /* Only the narrator's lines are offered aloud. */
+  if (node.dialogue && narration.isNarrator(node.speaker)) {
+    article.dataset.narrated = "true";
+    lead.appendChild(document.createTextNode(" "));
+    lead.appendChild(speakButton(speakKey, node.dialogue));
+  }
+
+  article.appendChild(lead);
+  return article;
 }
 
 function renderOptions(host, options) {
@@ -633,64 +709,17 @@ function renderNode(id) {
   }
   cursor = id;
 
-  /* A speaker that names a skill drives both its colour and the scene
-     thumbnail; a bare check falls back to the skill being rolled. */
-  const voice =
-    findSkill(node.speaker) ||
-    (node.skillCheck ? findSkill(node.skillCheck.skill) : null);
+  const voice = voiceOf(node);
 
   /* A rolled node hides its own arrival: cues.beginRoll runs the tape on this
      frame, so the incoming entry is already invisible when it lands. */
   if (node.skillCheck && node.skillCheck.result) cues.beginRoll();
 
-  const article = document.createElement("article");
-  article.className = "entry dialogue current";
-  article.dataset.node = id;
-  if (node.skillCheck && node.skillCheck.result) {
-    article.dataset.result = node.skillCheck.result;
-  }
+  const article = buildEntry(node, voice, "node:" + node.id);
+  article.classList.add("current");
 
-  /* Speaker, check verdict, and body all live on one line. */
-  const lead = document.createElement("p");
-  lead.className = "entry-line";
-
-  if (node.speaker) {
-    const speaker = document.createElement("span");
-    speaker.className = "entry-speaker";
-    if (voice) speaker.dataset.attribute = voice.attribute;
-    speaker.textContent = node.speaker;
-    lead.appendChild(speaker);
-  }
-
-  if (node.skillCheck) {
-    if (lead.childNodes.length) {
-      lead.appendChild(document.createTextNode(" "));
-    }
-    lead.appendChild(checkTag(node.skillCheck));
-  }
-
-  if (lead.childNodes.length && node.dialogue) {
-    lead.appendChild(document.createTextNode(" — "));
-  }
-
-  const body = document.createElement("span");
-  body.className = "entry-body";
-  paintMarkup(body, node.dialogue);
-  lead.appendChild(body);
-
-  /* Only the narrator's lines are offered aloud. */
-  if (node.dialogue && narration.isNarrator(node.speaker)) {
-    article.dataset.narrated = "true";
-    lead.appendChild(document.createTextNode(" "));
-    lead.appendChild(speakButton(node));
-  }
-
-  article.appendChild(lead);
-
-  if (node.vitals) {
-    const note = renderVitals(node.vitals, id);
-    if (note) article.appendChild(note);
-  }
+  const note = vitalsNote(node.vitals, id, true);
+  if (note) article.appendChild(note);
 
   appendToLog(article);
   emitArt(voice ? voice.art : null);
@@ -710,4 +739,105 @@ function renderNode(id) {
   }
 
   dom.log.scrollTop = dom.log.scrollHeight;
+}
+
+/* ---------------- Restored history ---------------- */
+
+/* Every node a round could reach, root first, each one once. A save records
+   the trees, not which fork was taken, so a restored round shows both sides
+   of a choice — the scene as it was written rather than as it was walked. */
+function transcript(walked) {
+  if (!walked || !walked.nodes) return [];
+
+  const out = [];
+  const seen = {};
+  const queue = [walked.root];
+
+  while (queue.length && out.length < MAX_NODES) {
+    const id = queue.shift();
+    if (!id || own(seen, id)) continue;
+    const node = pick(walked.nodes, id);
+    if (!node) continue;
+
+    seen[id] = true;
+    out.push(node);
+
+    const branches = [];
+    if (node.next) branches.push(node.next);
+    for (let i = 0; i < node.options.length; i += 1) {
+      if (node.options[i].next) branches.push(node.options[i].next);
+    }
+    /* Depth first, so a fork's own line stays directly under it. */
+    for (let j = branches.length - 1; j >= 0; j -= 1) {
+      queue.unshift(branches[j]);
+    }
+  }
+  return out;
+}
+
+/* A choice row that has already been made: the labels are there to read, and
+   nothing can be pressed. */
+function pastChoices(options) {
+  const host = document.createElement("div");
+  host.className = "entry-choices";
+  host.dataset.spent = "true";
+  options.forEach((option) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "choice";
+    button.disabled = true;
+    button.textContent = option.label;
+    host.appendChild(button);
+  });
+  return host;
+}
+
+/* Whether a round holds a scene for this reader at all. The caller asks
+   before it says anything about the round, so a player is never promised a
+   scene that is not there. */
+export function hasTreeFor(round, selfId, name) {
+  return Boolean(round && round.payload && pickTree(round.payload, selfId, name));
+}
+
+/* Writes one round that is already over back into the log: the same lines as
+   the live scene, with nothing to press, no cues, no vitals spent a second
+   time and no scene art claimed. The reader is untouched — this is a
+   transcript, not a replay, so isFinished and the planning lock do not move.
+
+   round is one entry of the history session.js holds: { id, at, payload }.
+   Returns how many lines were written, 0 when this round holds no tree for
+   this reader. */
+export function renderRound(round, selfId, name) {
+  if (!dom.log || !round || !round.payload) return 0;
+
+  const mine = pickTree(round.payload, selfId, name);
+  if (!mine) return 0;
+
+  const nodes = transcript(mine);
+  if (!nodes.length) return 0;
+
+  const stamp = round.id ? String(round.id) : "past";
+
+  for (let i = 0; i < nodes.length; i += 1) {
+    const node = nodes[i];
+    const article = buildEntry(
+      node,
+      voiceOf(node),
+      "past:" + stamp + ":" + node.id,
+    );
+    article.dataset.history = "true";
+    article.style.opacity = HISTORY_OPACITY;
+
+    const note = vitalsNote(node.vitals, node.id, false);
+    if (note) article.appendChild(note);
+
+    if (node.options.length) {
+      article.appendChild(pastChoices(node.options));
+    }
+
+    appendToLog(article);
+  }
+
+  dom.log.scrollTop = dom.log.scrollHeight;
+  return nodes.length;
 }

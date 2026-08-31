@@ -54,6 +54,12 @@ export const dom = {
   deckError: document.getElementById("deck-error"),
   audioUnlock: document.getElementById("audio-unlock"),
 
+  // Session save files — administrateur only
+  sessionExport: document.getElementById("session-export"),
+  sessionLoad: document.getElementById("session-load"),
+  sessionFile: document.getElementById("session-file"),
+  sessionNote: document.getElementById("session-note"),
+
   // Skill-check verdict overlay
   checkOverlay: document.getElementById("check-overlay"),
   checkOverlayScene: document.getElementById("check-overlay-scene"),

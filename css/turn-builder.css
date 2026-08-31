@@ -15,8 +15,10 @@
   text-transform: uppercase;
 }
 
+/* Twice the standing height: plans now survive the scene that follows them,
+   so there is more to read back through. */
 .turn-log {
-  height: min(28vh, 11rem);
+  height: min(56vh, 22rem);
   padding: 0.6rem 0.85rem;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -26,12 +28,25 @@
 
 .turn-entry {
   margin-bottom: 0.55rem;
-  padding-left: 0.5rem;
-  border-left: 2px solid var(--slot, transparent);
 }
 
 .turn-entry:last-child {
   margin-bottom: 0;
+}
+
+/* Plans from a scene that has already played out stay on the board, only
+   quieter — the author's colour still names who said what. */
+.turn-entry[data-stale="true"] {
+  opacity: 0.5;
+}
+
+/* One round's plans, ruled off from the next. The flag sits on the last plan
+   of a round as that round closes, so the rule falls between groups rather
+   than under every entry. A trailing rule at the foot of the log would be
+   ruling off nothing, so the last entry never draws one. */
+.turn-entry[data-round-end="true"]:not(:last-child) {
+  padding-bottom: 0.55rem;
+  border-bottom: var(--hairline);
 }
 
 .turn-line {

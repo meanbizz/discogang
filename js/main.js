@@ -4,7 +4,9 @@ import {
   TURN_MIN_LENGTH,
   STATS_MAX_BYTES,
   PLAYER_SLOTS,
+  DIALOGUE_ROUND_LIMIT,
 } from "./config.js";
+
 import { dom, anchors, setPresent } from "./dom.js";
 import {
   uid,
@@ -25,6 +27,7 @@ import * as vitals from "./vitals.js";
 import * as modals from "./modals.js";
 import * as dialogue from "./dialogue.js";
 import * as cues from "./cues.js";
+import * as session from "./session.js";
 import { applyTiming } from "./timing.js";
 import { NetworkManager } from "./network.js";
 
@@ -44,7 +47,13 @@ let stagedSheet = null;
 let sheetState = null;
 let importResetTimer = null;
 let dialoguePayload = null;
+/* Every round sent this session, oldest first — the dialogue history a save
+   is written from. */
+let dialogueRounds = [];
 let dialogueLive = false;
+/* A save is read once per session, into an untouched room. This is what
+   remembers that it happened. */
+let sessionRestored = false;
 
 function setStatus(state, text) {
   dom.statusDot.setAttribute("data-state", state);
@@ -98,6 +107,11 @@ const network = new NetworkManager({
         scene,
         npcs,
         dialogue: dialoguePayload,
+        rounds: dialogueRounds,
+        /* A round on record is not the same as a scene in progress. After a
+           restore this is false, and a joining player reads the history
+           instead of having it played at them. */
+        live: dialogueLive,
       });
 
       connection.send(rosterPayload());
@@ -160,8 +174,20 @@ const network = new NetworkManager({
       const payload = dialogue.cleanPayload(data.payload);
       if (!payload) return;
 
-      openDialogueRound(payload);
+      openDialogueRound(payload, data.roundId, data.at);
 
+      return;
+    }
+
+    if (data.type === "session-load") {
+      if (!person?.admin) return;
+
+      const loaded = session.clean(data.session);
+      if (!loaded) return;
+
+      applySession(loaded);
+      /* The administrateur applied it before sending it. */
+      network.broadcast({ type: "session", session: loaded }, connection.peer);
       return;
     }
 
@@ -185,6 +211,19 @@ const network = new NetworkManager({
   onGuestReceiveData: (data) => {
     if (data.type === "welcome") {
       if (typeof data.id === "string") network.selfId = data.id;
+
+      /* The history comes first: the log is about to be rebuilt from entries
+         that may name these rounds, and a marker can only offer its payload
+         if the round it names is already in hand. */
+      replaceRounds(data.rounds, data.dialogue);
+
+      /* The room says which of the two kinds of payload this is. A live one
+         is the scene being played right now and is handed to the reader; a
+         round merely on record — the state a restored session is in — is read
+         back as transcript along with everything before it. */
+      const current = dialogue.cleanPayload(data.dialogue);
+      const live = Boolean(data.live) && Boolean(current);
+
       replaceLog(
         (Array.isArray(data.entries) ? data.entries : [])
           .map(normalizeEntry)
@@ -197,7 +236,23 @@ const network = new NetworkManager({
       );
       applyScene(data.scene);
       if (Array.isArray(data.npcs)) setNpcs(data.npcs);
-      applyDialogue(dialogue.cleanPayload(data.dialogue));
+
+      if (dialogueRounds.length) {
+        showDialogueHistory(
+          live ? dialogueRounds.slice(0, -1) : dialogueRounds,
+          "on record",
+        );
+      }
+
+      if (live) {
+        applyDialogue(current);
+      } else {
+        dialoguePayload = current || session.latestPayload(dialogueRounds);
+        dialogueLive = false;
+        dialogue.reset();
+        refreshPlanningLock();
+      }
+
       const incoming =
         data.track && audio.parseVideoId(data.track.videoId)
           ? {
@@ -259,7 +314,10 @@ const network = new NetworkManager({
     }
 
     if (data.type === "dialogue") {
-      applyDialogue(dialogue.cleanPayload(data.payload));
+      const payload = dialogue.cleanPayload(data.payload);
+
+      rememberRound(payload, data.roundId, data.at);
+      applyDialogue(payload);
 
       return;
     }
@@ -273,6 +331,12 @@ const network = new NetworkManager({
           .filter(Boolean),
       );
 
+      return;
+    }
+
+    if (data.type === "session") {
+      const loaded = session.clean(data.session);
+      if (loaded) applySession(loaded);
       return;
     }
 
@@ -312,6 +376,14 @@ function normalizeEntry(raw) {
     text,
     at: Number(raw.at) || Date.now(),
     system: Boolean(raw.system),
+    /* Plans from a scene that has already played out stay faded. */
+    stale: Boolean(raw.stale),
+    /* Set on the last plan of a round as that round closes — the rule in the
+       plan log falls under it. */
+    roundEnd: Boolean(raw.roundEnd),
+    /* A restored round's marker keeps the round's name wherever it travels,
+       so no peer writes the same marker twice. */
+    roundId: typeof raw.roundId === "string" ? raw.roundId.slice(0, 64) : "",
   };
 }
 
@@ -463,6 +535,17 @@ function renderEntry(entry) {
     wrapper.appendChild(rawCopyButton(entry.text));
   }
 
+  /* A restored round is one short line in the log; the payload itself stays
+     in dialogueRounds, reachable through the copy button rather than sitting
+     in an entry where cleanText would truncate it. */
+  if (entry.roundId && isAdmin) {
+    const held = dialogueRounds.find((round) => round.id === entry.roundId);
+    if (held) {
+      wrapper.classList.add("raw");
+      wrapper.appendChild(rawCopyButton(JSON.stringify(held.payload, null, 2)));
+    }
+  }
+
   const body = document.createElement("p");
   body.className = "entry-body";
   body.textContent = entry.text;
@@ -525,6 +608,11 @@ function renderTurn(entry) {
   const wrapper = document.createElement("article");
   wrapper.className = "turn-entry";
   wrapper.dataset.slot = slot;
+  if (entry.stale) wrapper.dataset.stale = "true";
+  if (entry.roundEnd) wrapper.dataset.roundEnd = "true";
+
+  wrapper.appendChild(line);
+
   wrapper.appendChild(line);
 
   const pinned =
@@ -572,6 +660,85 @@ dialogue.setHooks({
     renderScene();
   },
 });
+
+/* ---------------- Dialogue history ---------------- */
+
+/* Rounds are named where they are written and keep that name everywhere they
+   travel, which is what makes this safe to call more than once for the same
+   round: the host broadcasts a round back to the administrateur that sent it,
+   and an unnamed round would land in the list twice. */
+function rememberRound(payload, roundId, at) {
+  if (!payload) return null;
+
+  const id =
+    typeof roundId === "string" && roundId ? roundId.slice(0, 64) : uid();
+  for (let i = 0; i < dialogueRounds.length; i += 1) {
+    if (dialogueRounds[i].id === id) return dialogueRounds[i];
+  }
+
+  const round = { id, at: Number(at) || Date.now(), payload };
+  dialogueRounds.push(round);
+  while (dialogueRounds.length > DIALOGUE_ROUND_LIMIT) dialogueRounds.shift();
+  /* The room has moved on; a save cannot be dropped over it now. */
+  refreshLoadButton();
+  return round;
+}
+
+/* A history handed over wholesale — from a welcome, or from a save. */
+function replaceRounds(rounds, fallbackPayload) {
+  dialogueRounds = session.cleanRounds(rounds, fallbackPayload || null);
+}
+
+/* Rounds that are already over, put back where they can be used.
+
+   Each one leaves a real log entry — committed, not just painted — so it
+   travels to a joining player through the ordinary welcome, survives a log
+   rebuild, and lands in the next save. The entry carries the round's name,
+   which is what stops a second pass writing it twice: markers already in the
+   log are left alone.
+
+   Under each marker, a player gets that round's scene as transcript: nothing
+   to press, no cues, no vitals spent twice. The administrateur gets the
+   payload on the marker's copy button instead, so any round of the run can be
+   sent again rather than only the last.
+
+   note is what the markers call themselves: "restored" from a save, "on
+   record" from a welcome. */
+function showDialogueHistory(rounds, note) {
+  if (!Array.isArray(rounds) || !rounds.length) return;
+
+  const already = new Set();
+  logEntries.forEach((entry) => {
+    if (entry.roundId) already.add(entry.roundId);
+  });
+
+  let scenes = 0;
+  let mine = 0;
+
+  rounds.forEach((round, index) => {
+    if (!round || !round.payload) return;
+
+    if (isAdmin) return;
+
+    if (dialogue.hasTreeFor(round, network.selfId, profile.name)) mine += 1;
+    scenes += dialogue.renderRound(round, network.selfId, profile.name);
+  });
+
+  /* A save records trees by character name; the peer ids in it are long dead.
+     A player the save never knew therefore has nothing to read, and is told
+     so rather than left staring at a bare list of rounds. */
+  if (!isAdmin && !mine) {
+    systemNote(
+      "No scene in this history was written for " +
+        (profile.name || "you") +
+        " — the rounds above are the table's, not yours.",
+    );
+    return;
+  }
+  if (!isAdmin && !scenes) {
+    systemNote("Those rounds hold no readable lines for you.");
+  }
+}
 
 function countScene() {
   let players = 0;
@@ -683,16 +850,44 @@ function applyDialogue(payload) {
   refreshPlanningLock();
 }
 
-/* Host only: a payload arrived, so the round restarts — plans are cleared,
+/* A new scene no longer clears the board. The standing plans simply recede,
+   so the table can still read what was planned last round — and the round
+   after that. TURN_LIMIT is what prunes them now, nothing else.
 
-   ready and finished flags drop, and everybody gets the trees. */
+   The last plan of the round being closed is also where the rule between
+   rounds goes. A round nobody planned for closes without one, so two quiet
+   rounds in a row cannot stack two rules on the same entry. */
+function ageTurnLog() {
+  let touched = false;
+  let last = null;
 
-function openDialogueRound(payload) {
+  turnEntries.forEach((entry) => {
+    if (!entry.stale) {
+      entry.stale = true;
+      last = entry;
+      touched = true;
+    }
+  });
+
+  if (last && !last.roundEnd) {
+    last.roundEnd = true;
+    touched = true;
+  }
+
+  if (touched) replaceTurnLog(turnEntries);
+}
+
+/* Host only: a payload arrived, so the round restarts — plans age, ready and
+   finished flags drop, and everybody gets the trees. The round joins the
+   history here, under the name it was published with. */
+
+function openDialogueRound(payload, roundId, at) {
+  const round = rememberRound(payload, roundId, at);
+
   roster.forEach((person) => {
     if (person.admin) return;
 
     person.done = false;
-
     person.ready = false;
   });
 
@@ -702,32 +897,44 @@ function openDialogueRound(payload) {
     paintReadyButton();
   }
 
-  replaceTurnLog([]);
+  ageTurnLog();
 
-  network.broadcast({ type: "turns", turns: [] });
-
-  network.broadcast({ type: "dialogue", payload });
+  network.broadcast({ type: "turns", turns: turnEntries });
+  network.broadcast({
+    type: "dialogue",
+    payload,
+    roundId: round ? round.id : null,
+    at: round ? round.at : null,
+  });
 
   applyDialogue(payload);
-
   renderRoster();
 
   network.broadcast(rosterPayload());
 }
 
-/* Administrateur only: echo the raw payload locally, then push it out. */
+/* Administrateur only: echo the raw payload locally, then push it out.
+
+   The round is named here, where it was written, and keeps that name through
+   the host and back again — so the copy the host broadcasts to everyone,
+   this desk included, is recognised as the round already held. */
 
 function publishDialogue(payload, raw) {
   renderEntry({ text: raw, at: Date.now(), raw: true });
 
+  const roundId = uid();
+  const at = Date.now();
+
   if (network.isHost) {
-    openDialogueRound(payload);
+    openDialogueRound(payload, roundId, at);
 
     return;
   }
 
   if (network.upstream && network.upstream.open) {
-    network.upstream.send({ type: "dialogue", payload });
+    network.upstream.send({ type: "dialogue", payload, roundId, at });
+
+    rememberRound(payload, roundId, at);
 
     dialoguePayload = payload;
 
@@ -891,7 +1098,24 @@ function shareTurn(text) {
 
 function exportTurns() {
   if (!isAdmin) return;
-  const lines = turnEntries.map((e) => `${e.author} — ${e.text}`);
+
+  /* Only what was planned for the round in progress. Anything stale belongs
+     to a scene that has already played out — or to a restored save — and was
+     imported once already; sending it again would hand the same plans to the
+     writer twice. */
+  const fresh = turnEntries.filter((entry) => !entry.stale);
+
+  if (importResetTimer) clearTimeout(importResetTimer);
+
+  if (!fresh.length) {
+    dom.importButton.textContent = "Nothing new";
+    importResetTimer = setTimeout(() => {
+      dom.importButton.textContent = "Import";
+    }, 1600);
+    return;
+  }
+
+  const lines = fresh.map((e) => `${e.author} — ${e.text}`);
   const transcript = `# Actions planned by players:\n${lines.join("\n")}`;
   copyText(transcript, (ok) => {
     if (importResetTimer) clearTimeout(importResetTimer);
@@ -900,6 +1124,171 @@ function exportTurns() {
       dom.importButton.textContent = "Import";
     }, 1600);
   });
+}
+
+/* ---------------- Session Save & Load ---------------- */
+
+let sessionNoteTimer = null;
+
+function noteSession(text) {
+  if (!dom.sessionNote) return;
+  dom.sessionNote.textContent = text;
+  if (sessionNoteTimer) clearTimeout(sessionNoteTimer);
+  sessionNoteTimer = setTimeout(() => {
+    dom.sessionNote.textContent = "";
+  }, 4000);
+}
+
+/* Load is a first move, not a command.
+
+   A save replaces the room wholesale and holds no record of who had already
+   read what, so it is only ever read into a room that has not started: no
+   round sent, no save read. Once either has happened the button stays shut for
+   the rest of the session, and leaving and rejoining is what reopens it. */
+function loadAllowed() {
+  return isAdmin && !sessionRestored && !dialogueRounds.length;
+}
+
+/* Paints the button only — the click path and loadSession both check for
+   themselves. */
+function refreshLoadButton() {
+  if (!dom.sessionLoad) return;
+
+  const allowed = loadAllowed();
+  dom.sessionLoad.disabled = !allowed;
+  dom.sessionLoad.dataset.locked = allowed ? "false" : "true";
+  dom.sessionLoad.setAttribute("aria-disabled", allowed ? "false" : "true");
+  dom.sessionLoad.title = allowed
+    ? "Restore a session from a .json save"
+    : sessionRestored
+      ? "A save has already been read this session."
+      : "The room has started — a save only loads into an untouched room.";
+}
+
+function exportSession() {
+  if (!isAdmin) return;
+
+  const people = [];
+  roster.forEach((person) => people.push(person));
+
+  const snap = session.snapshot({
+    room: roomId,
+    people,
+    entries: logEntries,
+    turns: turnEntries,
+    npcs,
+    scene,
+    dialogue: dialoguePayload,
+    rounds: dialogueRounds,
+  });
+
+  noteSession(
+    session.download(snap)
+      ? "Session written to a save file."
+      : "That save could not be written.",
+  );
+}
+
+/* Returning players get their old colour back by name — the peer ids in a
+   save are long dead, the names usually are not. Host only: slots are the
+   host's to hand out. */
+function restoreSlots(people) {
+  if (!network.isHost || !Array.isArray(people) || !people.length) return;
+
+  let touched = false;
+  people.forEach((saved) => {
+    if (saved.admin || !saved.slot) return;
+    roster.forEach((person) => {
+      if (person.admin || person.name !== saved.name) return;
+      if (person.slot === saved.slot) return;
+      person.slot = saved.slot;
+      touched = true;
+    });
+  });
+
+  if (!touched) return;
+  renderRoster();
+  network.broadcast(rosterPayload());
+}
+
+/* Every plan in a save belongs to a round that is already over, whichever
+   round was live when the file was written. They come back faded so the next
+   Import cannot pick them up, and the last of them carries the rule that
+   separates the restored run from whatever is planned next. Boundaries
+   already inside the save are left where they are. */
+function restoredTurns(entries) {
+  entries.forEach((entry) => {
+    entry.stale = true;
+  });
+  const last = entries[entries.length - 1];
+  if (last) last.roundEnd = true;
+  return entries;
+}
+
+/* Everyone's side of a restore. It only ever lands in a room where nothing
+   has happened yet, so the whole run is written into a clean log: one entry
+   per round for the table, the administrateur's payloads on their copy
+   buttons, each player's own scenes as transcript underneath. Those entries
+   are real, so a player joining later receives them in the ordinary welcome
+   and the next Export carries the sessions before this one as well as this
+   one.
+
+   Nothing replays. The reader stays closed and planning stays open, since a
+   save holds no record of who had already read their scene to the end — which
+   is also why this may only happen once. */
+function applySession(snap) {
+  if (!snap) return;
+
+  replaceRounds(snap.rounds, snap.dialogue);
+  /* The last round held is the current one, so "current" and the history
+     below can never disagree. */
+  dialoguePayload =
+    session.latestPayload(dialogueRounds) || snap.dialogue || null;
+  dialogueLive = false;
+  dialogue.reset();
+
+  replaceLog((snap.entries || []).map(normalizeEntry).filter(Boolean));
+  replaceTurnLog(
+    restoredTurns((snap.turns || []).map(normalizeEntry).filter(Boolean)),
+  );
+  setNpcs(snap.npcs);
+
+  applyScene(snap.scene);
+
+  showDialogueHistory(dialogueRounds, "restored");
+  sessionRestored = true;
+
+  restoreSlots(snap.people);
+  renderRoster();
+  refreshPlanningLock();
+  refreshSpeakLock();
+  refreshLoadButton();
+}
+
+/* Administrateur only: apply it here, then push it to the table. */
+function loadSession(snap) {
+  if (!isAdmin || !snap) return;
+  if (!loadAllowed()) {
+    refreshLoadButton();
+    noteSession(
+      "A save only loads into an untouched room. Leave and rejoin to read one.",
+    );
+    return;
+  }
+
+  applySession(snap);
+
+  if (network.isHost) {
+    network.broadcast({ type: "session", session: snap });
+    noteSession("Session restored for the table.");
+    return;
+  }
+  if (network.upstream && network.upstream.open) {
+    network.upstream.send({ type: "session-load", session: snap });
+    noteSession("Session restored for the table.");
+    return;
+  }
+  noteSession("Restored here only — nothing was sent.");
 }
 
 function connect(room, name, portrait) {
@@ -933,10 +1322,13 @@ function connect(room, name, portrait) {
   dom.turnError.textContent = "";
 
   dialoguePayload = null;
+  dialogueRounds = [];
   dialogueLive = false;
+  sessionRestored = false;
   dialogue.reset();
   refreshPlanningLock();
   refreshSpeakLock();
+  refreshLoadButton();
 
   applyScene({ image: null });
   sheetState = isAdmin ? null : window.DiscoSkillSheet?.normalize(stagedSheet);
@@ -963,7 +1355,9 @@ function leave() {
 
   dialogue.reset();
   dialoguePayload = null;
+  dialogueRounds = [];
   dialogueLive = false;
+  sessionRestored = false;
 
   sheetState = null;
   stagedSheet = null;
@@ -987,6 +1381,9 @@ function leave() {
   paintReadyButton();
 
   if (dom.deckError) dom.deckError.textContent = "";
+  if (dom.sessionNote) dom.sessionNote.textContent = "";
+  if (dom.sessionFile) dom.sessionFile.value = "";
+
   if (dom.audioUnlock) dom.audioUnlock.hidden = true;
   if (dom.trackLabel) dom.trackLabel.textContent = "Silence.";
   dom.roleLabel.hidden = true;
@@ -1006,6 +1403,7 @@ function leave() {
   setStatus("offline", "Offline");
   refreshPlanningLock();
   refreshSpeakLock();
+  refreshLoadButton();
   dom.nameInput.focus();
 }
 
@@ -1179,6 +1577,40 @@ dom.turnInput.addEventListener("keydown", (event) => {
 
 dom.turnReady.addEventListener("click", () => setSelfReady(!selfReady));
 dom.importButton.addEventListener("click", exportTurns);
+
+if (dom.sessionExport) {
+  dom.sessionExport.addEventListener("click", exportSession);
+}
+
+/* The file input is hidden; Load is what the administrateur actually presses.
+   It is a first move only — loadAllowed decides whether the picker opens at
+   all. */
+if (dom.sessionLoad && dom.sessionFile) {
+  dom.sessionLoad.addEventListener("click", () => {
+    if (!loadAllowed()) {
+      refreshLoadButton();
+      noteSession("A save only loads into an untouched room.");
+      return;
+    }
+    /* Clearing the value first is what lets the same file be picked twice. */
+    dom.sessionFile.value = "";
+    dom.sessionFile.click();
+  });
+
+  dom.sessionFile.addEventListener("change", () => {
+    const file = dom.sessionFile.files?.[0];
+    if (!file) return;
+    noteSession("Reading that save…");
+    session.readFile(file, (snap, error) => {
+      dom.sessionFile.value = "";
+      if (error) {
+        noteSession(error);
+        return;
+      }
+      loadSession(snap);
+    });
+  });
+}
 
 if (dom.sceneThumb) {
   dom.sceneThumb.addEventListener("click", () =>
@@ -1408,6 +1840,7 @@ window.addEventListener("beforeunload", () => network.disconnect());
   paintReadyButton();
   refreshPlanningLock();
   refreshSpeakLock();
+  refreshLoadButton();
   dom.nameInput.focus();
   setStatus("offline", "Offline");
 })();

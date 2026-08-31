@@ -130,8 +130,7 @@
 
         <!-- Turn Builder -->
         <section id="turn-builder" class="turn-builder">
-          <h2 class="turn-builder-title">What is being planned…</h2>
-
+          <h2 class="turn-builder-title">What is being planned</h2>
           <p id="turn-lock" class="lock-note" role="status" hidden></p>
 
           <div id="ready-banner" class="ready-banner" role="status" hidden>
@@ -153,6 +152,11 @@
             aria-live="polite"
             aria-label="Planned turns"
           ></div>
+          <p style="margin: 0; margin-top: 4px; font-size: 14px; text-align: center">
+            <span class="mark-quote">"Goodbye."</span> = Verbal ●
+            <span class="mark-aside">(runs)</span> = Non Verbal ●
+            <span class="mark-fast">*fast*</span> = Style
+          </p>
 
           <form
             id="turn-composer"
@@ -167,7 +171,7 @@
               type="text"
               id="turn-input"
               maxlength="200"
-              placeholder='"" = verbal, () = non verbal, ** = style'
+              placeholder="Write a chunk of your plan here..."
             />
             <button
               type="button"
@@ -235,6 +239,39 @@
 
         <div id="admin-tools" class="admin-tools" hidden>
           <button type="button" id="npc-button" class="option">NPCs</button>
+
+          <button
+            type="button"
+            id="session-export"
+            class="option"
+            title="Download the whole session as a .json save"
+          >
+            Export
+          </button>
+          <button
+            type="button"
+            id="session-load"
+            class="option"
+            title="Restore a session from a .json save"
+          >
+            Load
+          </button>
+          <label class="visually-hidden" for="session-file"
+            >Session save file</label
+          >
+          <input
+            id="session-file"
+            class="visually-hidden"
+            type="file"
+            accept="application/json,.json"
+          />
+
+          <p
+            id="session-note"
+            class="session-note"
+            role="status"
+            aria-live="polite"
+          ></p>
         </div>
 
         <!-- Character Vitals -->

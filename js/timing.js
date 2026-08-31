@@ -32,7 +32,7 @@ export const TIMING = {
      far the texture travels in that turn. Together they set how fast it
      appears to scroll. Neither affects rollMs. */
   tape: {
-    rollMs: 1400,
+    rollMs: 1200,
     cycleMs: 220,
     stepPx: 420,
   },
