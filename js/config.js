@@ -1,6 +1,6 @@
 /* Every tunable number and name the session runs on. */
 
-import { NARRATION_ENDPOINT } from "/js/secrets/secrets.js";
+import { NARRATION_ENDPOINT } from "./secrets/secrets.js";
 
 export const ROOM_PREFIX = "de-salon-";
 export const ADMIN_NAME = "administrateur";
