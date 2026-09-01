@@ -1,3 +1,5 @@
+/* js/audio/sfx.js */
+
 /* Sound cues — playback only. One jingle per attribute plus the two roll
    clips, pulled into memory up front so a cue never waits on the network.
 

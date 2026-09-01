@@ -1,3 +1,5 @@
+/* js/app/state.js */
+
 /* The session's shared state and the small readings taken from it. Nothing
    here touches the DOM or the network. */
 
@@ -10,6 +12,10 @@ export const state = {
   logEntries: [],
   turnEntries: [],
   npcs: [],
+  /* Every item the game knows: name, image, description. */
+  items: [],
+  /* Who carries what: character name -> { item name: count }. */
+  inventories: {},
   selfReady: false,
   profile: { name: "", portrait: null },
   roomId: "",

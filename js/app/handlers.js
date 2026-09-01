@@ -16,6 +16,7 @@ import * as dialogue from "../dialogue/dialogue.js";
 import * as music from "../audio/music.js";
 import * as session from "../export/session.js";
 import { latestPayload } from "../export/rounds.js";
+import { cleanOps } from "../inventory/items.js";
 import { state, normalizeEntry, rosterPayload } from "./state.js";
 import { network, setHandlers, broadcast } from "./net.js";
 import {
@@ -31,6 +32,7 @@ import {
 import { refreshPlanningLock } from "./locks.js";
 import { applyScene, setNpcs } from "./scene.js";
 import { applySession } from "./save.js";
+import { commitOps, inventoryPayload, setInventory } from "./inventory.js";
 import {
   acceptChoice,
   applyDialogue,
@@ -68,6 +70,9 @@ function onHostReceiveData(connection, data) {
       track: music.getCurrentTrack(),
       scene: state.scene,
       npcs: state.npcs,
+      /* The catalogue and every bag, so a joiner can read their pockets. */
+      items: state.items,
+      inventories: state.inventories,
       dialogue: state.dialoguePayload,
       /* Each round carries what was chosen in it, so a joiner inherits the
          whole record and not just the trees. */
@@ -156,6 +161,24 @@ function onHostReceiveData(connection, data) {
     return;
   }
 
+  /* Items move here and nowhere else, so every bag agrees with this one. */
+  if (data.type === "inventory-ops") {
+    if (!person?.admin) return;
+    const ops = cleanOps(data.ops);
+    if (!ops) return;
+    commitOps(ops);
+    return;
+  }
+
+  /* The administrateur edited the catalogue, which can rename what people
+     already carry, so the whole thing is adopted and passed on. */
+  if (data.type === "inventory-state") {
+    if (!person?.admin) return;
+    setInventory(data.items, data.inventories);
+    broadcast(inventoryPayload(), connection.peer);
+    return;
+  }
+
   if (data.type === "session-load") {
     if (!person?.admin) return;
     const loaded = session.clean(data.session);
@@ -209,6 +232,7 @@ function onWelcome(data) {
   );
   applyScene(data.scene);
   if (Array.isArray(data.npcs)) setNpcs(data.npcs);
+  setInventory(data.items, data.inventories);
 
   if (state.dialogueRounds.length) {
     showDialogueHistory(
@@ -300,6 +324,11 @@ function onGuestReceiveData(data) {
 
   if (data.type === "npcs") {
     setNpcs(data.npcs);
+    return;
+  }
+
+  if (data.type === "inventory") {
+    setInventory(data.items, data.inventories);
     return;
   }
 

@@ -1,4 +1,6 @@
-/* Health and morale bars plus the sheet button beside them.
+/* css/vitals.css */
+
+/* Health and morale bars plus the two buttons beside them.
    The is-hit flash is animated in animations.css. */
 
 .panel-foot {
@@ -43,6 +45,12 @@
 .vital-step[data-filled="true"] {
   background: var(--vital);
   border-color: var(--vital);
+}
+
+.panel-foot-actions {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 0.5rem;
 }
 
 .psyche {

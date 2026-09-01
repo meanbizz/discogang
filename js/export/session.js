@@ -1,5 +1,7 @@
+/* js/export/session.js */
+
 /* Session saves: one JSON document holding what a room has said, planned and
-   drawn, plus every dialogue payload sent this session.
+   drawn, every dialogue payload sent this session, and every item in play.
 
    A save is untrusted input whoever wrote it, so every field is rebuilt here.
    Deliberately absent: the music track, whose startedAt means nothing hours
@@ -16,10 +18,11 @@ import {
   sanitizeRoomCode,
 } from "../utils.js";
 import { cleanPayload } from "../dialogue/sanitize.js";
+import { cleanItems, cleanInventories } from "../inventory/items.js";
 import { cleanRounds, latestPayload, ROUND_ID_MAX } from "./rounds.js";
 
 export const SESSION_KIND = "salon-session";
-export const SESSION_VERSION = 2;
+export const SESSION_VERSION = 3;
 
 const MAX_PEOPLE = 32;
 const MAX_NPCS = 64;
@@ -55,7 +58,8 @@ function cleanEntries(raw, limit) {
 }
 
 /* A saved peer id means nothing in a later session, but a name still does —
-   the app uses these to hand returning players their old colour. */
+   the app uses these to hand returning players their old colour, and bags are
+   keyed by the same names. */
 function cleanPerson(raw) {
   if (!raw || typeof raw !== "object") return null;
   const name = cleanName(raw.name);
@@ -104,6 +108,8 @@ export function snapshot(state) {
     entries: cleanEntries(source.entries, HISTORY_LIMIT),
     turns: cleanEntries(source.turns, TURN_LIMIT),
     npcs: cleanNpcs(source.npcs),
+    items: cleanItems(source.items),
+    inventories: cleanInventories(source.inventories),
     scene: cleanScene(source.scene),
     rounds,
     dialogue: cleanPayload(source.dialogue) || latestPayload(rounds),
@@ -127,6 +133,9 @@ export function clean(raw) {
     entries: cleanEntries(raw.entries, HISTORY_LIMIT),
     turns: cleanEntries(raw.turns, TURN_LIMIT),
     npcs: cleanNpcs(raw.npcs),
+    /* Empty for any save written before items were kept. */
+    items: cleanItems(raw.items),
+    inventories: cleanInventories(raw.inventories),
     scene: cleanScene(raw.scene),
     rounds,
     dialogue: cleanPayload(raw.dialogue) || latestPayload(rounds),

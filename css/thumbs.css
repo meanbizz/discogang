@@ -1,4 +1,7 @@
-/* Portrait thumbnails and the picker that feeds them.
+/* css/thumbs.css */
+
+/* Portrait thumbnails, the enlarged portrait, item squares, and the picker
+   that feeds them.
 
    Layering, back to front: the element's own surface, the frame (::before),
    the portrait (::after), then the initial-letter fallback paintThumb writes
@@ -38,9 +41,11 @@
   filter: grayscale(0.25) contrast(1.05);
 }
 
-/* The frame stands slightly proud of the portrait and sits underneath it.
-   Scene art is not a portrait, so it keeps its bare box. */
-.thumb:not(.scene-thumb)::before {
+/* One frame rule for every framed face, whatever its size: it stands slightly
+   proud of the portrait and sits underneath it. Scene art and item squares are
+   not portraits, so they keep their bare box. */
+.thumb:not(.scene-thumb)::before,
+.modal-portrait::before {
   content: "";
   position: absolute;
   inset: -8%;
@@ -49,7 +54,13 @@
   pointer-events: none;
 }
 
-.thumb::after {
+/* The enlarged portrait hugs its box a little tighter. */
+.modal-portrait::before {
+  inset: -5%;
+}
+
+.thumb::after,
+.modal-portrait::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -66,6 +77,7 @@
 }
 
 /* The question mark reads dimmer than a real initial. */
-.thumb[data-mark="unknown"] {
+.thumb[data-mark="unknown"],
+.modal-portrait[data-mark="unknown"] {
   color: #4a4a47;
 }

@@ -1,3 +1,5 @@
+/* js/dom.js */
+
 /* Every element the app touches, looked up once, plus the anchors that let
    whole regions be detached and put back. */
 
@@ -90,6 +92,31 @@ export const dom = {
   npcCancelButton: document.getElementById("npc-cancel-button"),
   npcFormError: document.getElementById("npc-form-error"),
   npcList: document.getElementById("npc-list"),
+
+  // Inventory — the player's own pockets
+  inventoryButton: document.getElementById("inventory-button"),
+  inventoryModal: document.getElementById("inventory-modal"),
+  inventoryModalClose: document.getElementById("inventory-modal-close"),
+  inventoryGrid: document.getElementById("inventory-grid"),
+  inventoryEmpty: document.getElementById("inventory-empty"),
+  inventoryTooltip: document.getElementById("inventory-tooltip"),
+
+  // Items — administrateur only
+  itemsButton: document.getElementById("items-button"),
+  itemsModal: document.getElementById("items-modal"),
+  itemsModalClose: document.getElementById("items-modal-close"),
+  itemForm: document.getElementById("item-form"),
+  itemFormHeading: document.getElementById("item-form-heading"),
+  itemKeyInput: document.getElementById("item-key"),
+  itemNameInput: document.getElementById("item-name-input"),
+  itemDescInput: document.getElementById("item-description-input"),
+  itemImageInput: document.getElementById("item-image-input"),
+  itemImageUrl: document.getElementById("item-image-url"),
+  itemImagePreview: document.getElementById("item-image-preview"),
+  itemSubmitButton: document.getElementById("item-submit-button"),
+  itemCancelButton: document.getElementById("item-cancel-button"),
+  itemFormError: document.getElementById("item-form-error"),
+  itemList: document.getElementById("item-list"),
 };
 
 export const anchors = {

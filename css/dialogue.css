@@ -157,7 +157,8 @@ button.choice.is-chosen::before {
   content: "▸ ";
 }
 
-/* Continue is not one of the choices, so it keeps its slab. */
+/* Continue is not one of the choices, so it keeps its slab. The reader may
+   overwrite these two colours inline with the voice waiting on the far side. */
 button.choice.continue {
   justify-self: start;
   width: 100%;
@@ -167,14 +168,15 @@ button.choice.continue {
   background: var(--option);
   color: white;
   font-size: 23px;
-  text-align: center;
+  text-align: left;
   text-transform: uppercase;
 }
 
+/* Hover keeps whatever the slab was painted, so an inline tint survives it. */
 button.choice.continue:hover:not(:disabled) {
-  border-color: var(--option);
-  background: var(--option);
+  border-color: inherit;
   color: var(--option-hi);
+  filter: brightness(1.15);
 }
 
 /* ---------------- Check verdict overlay ---------------- */

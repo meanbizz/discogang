@@ -1,4 +1,8 @@
-/* Modal scaffolding, shared by the portrait, psyche, and NPC dialogs. */
+/* css/modal.css */
+
+/* Modal scaffolding, shared by the portrait, psyche, NPC, inventory and item
+   dialogs. The portrait's own framing lives in thumbs.css, beside the
+   thumbnails it matches. */
 
 .modal {
   position: fixed;
@@ -53,8 +57,7 @@
   line-height: 1.4;
 }
 
-/* Portrait modal. Same back-to-front order as the thumbnails: surface,
-   frame, portrait, fallback letter. */
+/* Portrait modal. Same layering as the thumbnails; thumbs.css paints it. */
 .modal-portrait {
   position: relative;
   isolation: isolate;
@@ -71,32 +74,8 @@
   text-transform: uppercase;
 }
 
-/* Same frame as the thumbnails, hugging the enlarged portrait's box. */
-.modal-portrait::before {
-  content: "";
-  position: absolute;
-  inset: -5%;
-  z-index: -2;
-  background: url("../images/portrait-frame.png") center / 100% 100% no-repeat;
-  pointer-events: none;
-}
-
-.modal-portrait::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: var(--portrait, none) center / cover no-repeat;
-  pointer-events: none;
-}
-
-.modal-portrait[data-mark="unknown"] {
-  color: #4a4a47;
-}
-
 .modal-name {
   margin: 0;
-  padding-top: 2rem;
   color: var(--text-now);
   font-size: 0.95rem;
   letter-spacing: 0.12em;

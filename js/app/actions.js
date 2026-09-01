@@ -1,7 +1,7 @@
 /* js/app/actions.js */
 
 /* What the two seats can actually do: ready up, speak, plan, and lift the
-   plans and the choices to the clipboard. */
+   plans, the choices and the items to the clipboard. */
 
 import { TURN_MIN_LENGTH } from "../config.js";
 import { dom } from "../dom.js";
@@ -13,11 +13,13 @@ import {
   commit,
   commitTurn,
   paintReadyButton,
+  renderEntry,
   renderRoster,
   systemNote,
 } from "./views.js";
 import { planningUnlocked } from "./locks.js";
 import { currentRound, publishDialogue } from "./rounds.js";
+import { publishOps, usedItemLines } from "./inventory.js";
 
 export function setSelfReady(next) {
   if (state.isAdmin) return;
@@ -37,7 +39,7 @@ export function setSelfReady(next) {
 }
 
 /* A payload takes precedence over prose: whatever parses as a turn is
-   published as one. */
+   published as one. Items move before the trees that mention them. */
 export function shareText(text) {
   if (!state.isAdmin) return;
   if (!everyoneReady()) {
@@ -46,8 +48,10 @@ export function shareText(text) {
   }
 
   const attempt = dialogue.parsePayload(text);
-  if (attempt.payload) {
-    publishDialogue(attempt.payload, attempt.raw);
+  if (attempt.payload || attempt.inventory) {
+    if (attempt.inventory) publishOps(attempt.inventory);
+    if (attempt.payload) publishDialogue(attempt.payload, attempt.raw);
+    else renderEntry({ text: attempt.raw, at: Date.now(), raw: true });
     return;
   }
   if (attempt.error) {
@@ -82,7 +86,7 @@ export function shareTurn(text) {
 
   const body = cleanText(text);
   if (body.length < TURN_MIN_LENGTH) {
-    dom.turnError.textContent = `A plan needs at least ${TURN_MIN_LENGTH} characters.`;
+    dom.turnError.textContent = `A plan needs to be at least ${TURN_MIN_LENGTH} letters long.`;
     return false;
   }
   dom.turnError.textContent = "";
@@ -131,13 +135,14 @@ function flashImport(face) {
 }
 
 /* Only what was planned for the round in progress: anything stale belongs to
-   a scene already played out and was imported once already. The choices come
-   from that same round, so the two halves always describe one turn. */
+   a scene already played out and was imported once already. The choices and
+   the items come from that same round, so every half describes one turn. */
 export function exportTurns() {
   if (!state.isAdmin) return;
 
   const fresh = state.turnEntries.filter((entry) => !entry.stale);
   const chosen = choiceLines();
+  const used = usedItemLines(fresh.map((entry) => entry.text));
 
   if (!fresh.length && !chosen.length) {
     flashImport("Nothing new");
@@ -145,6 +150,9 @@ export function exportTurns() {
   }
 
   const parts = [];
+  if (used.length) {
+    parts.push("# Players use the following items:\n" + used.join("\n"));
+  }
   if (fresh.length) {
     parts.push(
       "# Actions planned by players:\n" +

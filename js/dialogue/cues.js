@@ -5,7 +5,8 @@
 
    Nothing here measures anything of its own — durations come from timing.js,
    and the CSS animations read the same numbers through --dur-*. To retime,
-   edit timing.js; to reorder, edit runCheck. */
+   edit timing.js; to reorder, edit runCheck. Assets are already in memory:
+   js/assets.js holds them from boot. */
 
 import { dom } from "../dom.js";
 import { TIMING } from "../timing.js";
@@ -15,32 +16,7 @@ import * as music from "../audio/music.js";
 const TAPE_CLASS = "is-rolling";
 const FADE_CLASS = "is-fading";
 
-const CHECK_ART = [
-  "images/check-success-background.png",
-  "images/check-failure-background.png",
-  "images/check-success-title.svg",
-  "images/check-failure-title.svg",
-];
-
-const artHeld = [];
 let timers = [];
-
-/* Every cue and every piece of verdict art into memory, so a verdict never
-   waits on a fetch. Safe to call more than once. */
-export function preloadAll() {
-  sfx.preloadAll();
-  if (artHeld.length) return;
-
-  const wanted = CHECK_ART.slice();
-  for (let i = 1; i <= 6; i += 1) wanted.push("images/dice/" + i + ".svg");
-
-  wanted.forEach((src) => {
-    const image = new Image();
-    image.src = new URL(src, window.location.href).href;
-    /* Keeping the reference is what keeps the decode around. */
-    artHeld.push(image);
-  });
-}
 
 function clearTimers() {
   for (let i = 0; i < timers.length; i += 1) clearTimeout(timers[i]);
@@ -153,13 +129,14 @@ function runCheck(check) {
   });
 }
 
-/* A skill speaking plays its attribute's jingle; a node that also rolls in
-   the open runs both on their own channels. A passive check is rolled behind
-   the reader's back — no tape, no dice, no cue. */
+/* An active rolled check owns the moment: the dice are the only thing heard,
+   so the speaker's jingle is left out. A passive is rolled behind the
+   reader's back — no tape, no dice, no cue, and the jingle still rings. */
 export function playNode(voice, check) {
+  const rolled = Boolean(check && check.result && !check.passive);
   const attribute = voice ? voice.attribute : null;
-  if (attribute) sfx.playJingle(attribute, null);
-  if (check && check.result && !check.passive) runCheck(check);
+  if (attribute && !rolled) sfx.playJingle(attribute, null);
+  if (rolled) runCheck(check);
 }
 
 /* The timer is the fallback for browsers that never fire animationend. */

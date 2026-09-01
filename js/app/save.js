@@ -1,3 +1,5 @@
+/* js/app/save.js */
+
 /* Export and Load, from the room's side: what a snapshot is written from, and
    what happens to a room when one is read back. */
 
@@ -16,6 +18,7 @@ import {
   refreshSpeakLock,
 } from "./locks.js";
 import { applyScene, setNpcs } from "./scene.js";
+import { setInventory } from "./inventory.js";
 import { replaceRounds, showDialogueHistory } from "./rounds.js";
 
 let noteTimer = null;
@@ -41,6 +44,8 @@ export function exportSession() {
     entries: state.logEntries,
     turns: state.turnEntries,
     npcs: state.npcs,
+    items: state.items,
+    inventories: state.inventories,
     scene: state.scene,
     dialogue: state.dialoguePayload,
     rounds: state.dialogueRounds,
@@ -105,6 +110,7 @@ export function applySession(snap) {
     restoredTurns((snap.turns || []).map(normalizeEntry).filter(Boolean)),
   );
   setNpcs(snap.npcs);
+  setInventory(snap.items, snap.inventories);
   applyScene(snap.scene);
 
   showDialogueHistory(state.dialogueRounds);

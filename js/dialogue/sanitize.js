@@ -3,6 +3,9 @@
 /* The administrateur's turn payload, rebuilt field by field: a peer can only
    ever contribute shapes the reader already understands. No DOM here.
 
+   Trees are keyed by character name or peer id; the reserved "inventory" key
+   carries item orders instead and is rebuilt by inventory/items.js.
+
    A skillCheck comes in three shapes:
      1. No dice, no result — a passive read that only acts as a speaker.
      2. Passive, "mode": "passive" (or "passive": true / "hidden": true), with
@@ -12,6 +15,7 @@
      3. Active with a visible roll — the default. Tape, dice, verdict. */
 
 import { own, pick, line, normalizeKey, bodyText } from "./text.js";
+import { INVENTORY_KEY, cleanOps } from "../inventory/items.js";
 
 export const DIFFICULTY_TARGET = {
   trivial: 6,
@@ -212,6 +216,7 @@ export function cleanPayload(raw) {
   for (let i = 0; i < keys.length && kept < MAX_TREES; i += 1) {
     const key = line(keys[i], KEY_MAX);
     if (!key || own(out, key)) continue;
+    if (normalizeKey(key) === INVENTORY_KEY) continue;
     const cleaned = cleanTree(raw[keys[i]]);
     if (!cleaned) continue;
     out[key] = cleaned;
@@ -220,19 +225,36 @@ export function cleanPayload(raw) {
   return kept ? out : null;
 }
 
+/* The item orders riding along with the trees, or null when there are none. */
+export function cleanInventoryOps(raw) {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const keys = Object.keys(raw);
+  for (let i = 0; i < keys.length; i += 1) {
+    if (normalizeKey(keys[i]) === INVENTORY_KEY) return cleanOps(raw[keys[i]]);
+  }
+  return null;
+}
+
 function stripFence(text) {
   const trimmed = String(text == null ? "" : text).trim();
   const fenced = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
   return fenced ? fenced[1].trim() : trimmed;
 }
 
-/* A null payload with a null error means the text was never meant to be a
-   payload — speak it as prose instead. */
+/* A null payload with a null error and no inventory means the text was never
+   meant to be a payload — speak it as prose instead. */
 export function parsePayload(text) {
   const raw = stripFence(text);
-  if (!raw || raw.charAt(0) !== "{") return { payload: null, error: null, raw };
+  if (!raw || raw.charAt(0) !== "{") {
+    return { payload: null, inventory: null, error: null, raw };
+  }
   if (raw.length > MAX_PAYLOAD_CHARS) {
-    return { payload: null, error: "That payload is too large to send.", raw };
+    return {
+      payload: null,
+      inventory: null,
+      error: "That payload is too large to send.",
+      raw,
+    };
   }
 
   let parsed;
@@ -241,20 +263,23 @@ export function parsePayload(text) {
   } catch (error) {
     return {
       payload: null,
+      inventory: null,
       error: "That looked like a turn payload, but the JSON is malformed.",
       raw,
     };
   }
 
   const payload = cleanPayload(parsed);
-  if (!payload) {
+  const inventory = cleanInventoryOps(parsed);
+  if (!payload && !inventory) {
     return {
       payload: null,
-      error: "No usable dialogue trees in that payload.",
+      inventory: null,
+      error: "No usable dialogue trees or item orders in that payload.",
       raw,
     };
   }
-  return { payload, error: null, raw };
+  return { payload, inventory, error: null, raw };
 }
 
 /* Keys are character names or PeerJS ids — the id is tried first. */

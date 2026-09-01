@@ -11,6 +11,7 @@
 import { dom } from "../dom.js";
 import { own, pick } from "./text.js";
 import { blocksNode } from "./passive.js";
+import { findSkill } from "./skills.js";
 import * as cues from "./cues.js";
 import * as narration from "../audio/narration.js";
 import { appendToLog, buildEntry, vitalsNote, voiceOf } from "./entry.js";
@@ -128,6 +129,16 @@ function renderContinue(host, nextId) {
   const button = document.createElement("button");
   button.type = "button";
   button.className = "choice continue";
+
+  /* A skill speaking on the other side of the slab colours the slab. */
+  const ahead = tree ? pick(tree.nodes, nextId) : null;
+  const voice = ahead ? findSkill(ahead.speaker) : null;
+  if (voice) {
+    const tint = "var(--attr-" + voice.attribute + ")";
+    button.style.background = tint;
+    button.style.borderColor = tint;
+  }
+
   button.appendChild(face);
   button.addEventListener("click", () => {
     if (host.dataset.spent === "true") return;

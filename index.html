@@ -160,7 +160,8 @@
           <p class="turn-legend">
             <span class="mark-quote">"Goodbye."</span> = Verbal ●
             <span class="mark-aside">(runs)</span> = Non Verbal ●
-            <span class="mark-past">*fast*</span> = Style
+            <span class="mark-past">*fast*</span> = Style ●
+            <span>[]</span> = Item use
           </p>
 
           <form
@@ -241,6 +242,7 @@
 
         <div id="admin-tools" class="admin-tools" hidden>
           <button type="button" id="npc-button" class="option">NPCs</button>
+          <button type="button" id="items-button" class="option">Items</button>
 
           <button
             type="button"
@@ -294,9 +296,19 @@
               aria-label="Morale"
             ></div>
           </div>
-          <button type="button" id="psyche-button" class="option psyche">
-            Skills
-          </button>
+          <div class="panel-foot-actions">
+            <button type="button" id="psyche-button" class="option psyche">
+              Skills
+            </button>
+            <button
+              type="button"
+              id="inventory-button"
+              class="option psyche"
+              title="What you are carrying"
+            >
+              Inv.
+            </button>
+          </div>
         </div>
 
         <div id="yt-player" class="yt-frame" aria-hidden="true"></div>
@@ -348,6 +360,36 @@
             ×
           </button>
           <div id="psyche-sheet" class="psyche-sheet"></div>
+        </div>
+      </div>
+
+      <!-- Inventory Modal -->
+      <div id="inventory-modal" class="modal" hidden>
+        <div class="modal-backdrop" data-close="true"></div>
+        <div
+          class="modal-card modal-card-wide inventory-modal-card"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="inventory-modal-title"
+        >
+          <button
+            type="button"
+            id="inventory-modal-close"
+            class="modal-close"
+            aria-label="Close inventory"
+          >
+            ×
+          </button>
+
+          <h2 id="inventory-modal-title" class="modal-name">What you carry</h2>
+
+          <div
+            id="inventory-grid"
+            class="inventory-grid"
+            role="list"
+            aria-label="Your items"
+          ></div>
+          <p id="inventory-empty" class="inv-empty">Your pockets are empty.</p>
         </div>
       </div>
 
@@ -446,7 +488,122 @@
           </div>
         </div>
       </div>
+
+      <!-- Items Modal — administrateur only -->
+      <div id="items-modal" class="modal" hidden>
+        <div class="modal-backdrop" data-close="true"></div>
+        <div
+          class="modal-card modal-card-wide npc-modal-card"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="items-modal-title"
+        >
+          <button
+            type="button"
+            id="items-modal-close"
+            class="modal-close"
+            aria-label="Close item manager"
+          >
+            ×
+          </button>
+
+          <h2 id="items-modal-title" class="modal-name npc-modal-header">
+            Manage Items
+          </h2>
+
+          <div class="npc-manager-layout">
+            <form id="item-form" class="npc-form" autocomplete="off">
+              <h3 id="item-form-heading" class="npc-subheading">Add item</h3>
+              <input type="hidden" id="item-key" value="" />
+
+              <div class="field">
+                <label for="item-name-input">Name</label>
+                <input
+                  id="item-name-input"
+                  type="text"
+                  placeholder="Item name"
+                  maxlength="48"
+                  required
+                />
+              </div>
+
+              <div class="field">
+                <label for="item-description-input">Description</label>
+                <textarea
+                  id="item-description-input"
+                  class="item-desc-input"
+                  rows="3"
+                  maxlength="600"
+                  placeholder="What it is, and what it is good for."
+                ></textarea>
+              </div>
+
+              <div class="field">
+                <label for="item-image-input">Thumbnail</label>
+                <div class="portrait-picker">
+                  <div
+                    id="item-image-preview"
+                    class="inv-thumb inv-thumb-sm"
+                    data-empty="true"
+                    aria-hidden="true"
+                  ></div>
+                  <div class="portrait-controls">
+                    <input
+                      id="item-image-input"
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/gif"
+                    />
+                    <label class="sub-label" for="item-image-url"
+                      >or image address</label
+                    >
+                    <input
+                      id="item-image-url"
+                      type="url"
+                      inputmode="url"
+                      placeholder="https://…/item.png"
+                      maxlength="2048"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div class="npc-form-actions">
+                <button type="submit" id="item-submit-button" class="option">
+                  Save item
+                </button>
+                <button
+                  type="button"
+                  id="item-cancel-button"
+                  class="npc-cancel-btn"
+                  hidden
+                >
+                  Cancel
+                </button>
+              </div>
+              <p
+                id="item-form-error"
+                class="error"
+                role="alert"
+                aria-live="assertive"
+              ></p>
+            </form>
+
+            <div class="npc-list-wrapper">
+              <h3 class="npc-subheading">Items in play</h3>
+              <div id="item-list" class="npc-list" role="list"></div>
+            </div>
+          </div>
+        </div>
+      </div>
     </main>
+
+    <!-- Item tooltip: fixed to the viewport, so it lives outside the modals -->
+    <div
+      id="inventory-tooltip"
+      class="inv-tooltip"
+      role="tooltip"
+      aria-hidden="true"
+    ></div>
 
     <!-- Skill-check verdict overlay -->
     <div id="check-overlay" class="check-overlay" aria-hidden="true" hidden>

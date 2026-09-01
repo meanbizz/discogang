@@ -26,6 +26,7 @@ import {
   refreshSpeakLock,
 } from "./locks.js";
 import { applyScene } from "./scene.js";
+import { setInventory } from "./inventory.js";
 
 function seat(isAdmin) {
   dom.roleLabel.hidden = !isAdmin;
@@ -64,6 +65,7 @@ export function connect(room, name, portrait) {
   setStatus("connecting", "Finding the room…");
   state.roster.clear();
   state.npcs = [];
+  setInventory([], {});
   renderRoster();
   replaceLog([]);
   replaceTurnLog([]);
@@ -108,6 +110,8 @@ export function leave() {
   modals.closePortrait();
   modals.closePsyche();
   modals.closeNpcModal();
+  modals.closeInventory();
+  modals.closeItemsModal();
 
   dialogue.reset();
   state.dialoguePayload = null;
@@ -126,6 +130,7 @@ export function leave() {
   state.turnEntries = [];
   state.isAdmin = false;
   state.selfId = null;
+  setInventory([], {});
 
   dom.sessionPanel.hidden = true;
   dom.joinPanel.hidden = false;

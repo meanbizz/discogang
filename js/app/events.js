@@ -22,6 +22,12 @@ import {
   removeNpc,
   submitNpcForm,
 } from "./scene.js";
+import {
+  editItem,
+  openInventory,
+  removeItem,
+  submitItemForm,
+} from "./inventory.js";
 import { leave } from "./room.js";
 
 /* Enter sends; Shift+Enter is a new line. requestSubmit keeps the form's own
@@ -197,6 +203,8 @@ function bindModals() {
     modals.closePsyche();
     modals.closePortrait();
     modals.closeNpcModal();
+    modals.closeInventory();
+    modals.closeItemsModal();
   });
 }
 
@@ -299,12 +307,120 @@ function bindNpcForm() {
   }
 }
 
+/* The player's own pockets. */
+function bindInventory() {
+  if (dom.inventoryButton) {
+    dom.inventoryButton.addEventListener("click", openInventory);
+  }
+  if (dom.inventoryModalClose) {
+    dom.inventoryModalClose.addEventListener("click", modals.closeInventory);
+  }
+  if (dom.inventoryModal) {
+    dom.inventoryModal.addEventListener("click", (event) => {
+      if (event.target.dataset.close === "true") modals.closeInventory();
+    });
+  }
+}
+
+/* The administrateur's catalogue of everything in play. */
+function bindItemForm() {
+  if (dom.itemsButton) {
+    dom.itemsButton.addEventListener("click", () =>
+      modals.openItemsModal(state.isAdmin, state.items, editItem, removeItem),
+    );
+  }
+  if (dom.itemsModalClose) {
+    dom.itemsModalClose.addEventListener("click", modals.closeItemsModal);
+  }
+  if (dom.itemsModal) {
+    dom.itemsModal.addEventListener("click", (event) => {
+      if (event.target.dataset.close === "true") modals.closeItemsModal();
+    });
+  }
+  if (dom.itemCancelButton) {
+    dom.itemCancelButton.addEventListener("click", modals.resetItemForm);
+  }
+
+  if (dom.itemNameInput) {
+    dom.itemNameInput.addEventListener("input", () => {
+      modals.paintItemPreview(
+        dom.itemNameInput.value,
+        modals.getStagedItemImage(),
+      );
+    });
+  }
+
+  if (dom.itemImageInput) {
+    dom.itemImageInput.addEventListener("change", () => {
+      const file = dom.itemImageInput.files?.[0];
+      dom.itemFormError.textContent = "";
+      if (!file) return;
+
+      const rejection = rejectImageFile(file);
+      if (rejection) {
+        dom.itemImageInput.value = "";
+        dom.itemFormError.textContent = rejection;
+        return;
+      }
+      dom.itemFormError.textContent = "Uploading thumbnail…";
+      uploadImage(file, (url, error) => {
+        dom.itemImageInput.value = "";
+        if (error) {
+          dom.itemFormError.textContent = error;
+          return;
+        }
+        dom.itemFormError.textContent = "";
+        modals.setStagedItemImage(url);
+        dom.itemImageUrl.value = url;
+        modals.paintItemPreview(dom.itemNameInput.value, url);
+      });
+    });
+  }
+
+  if (dom.itemImageUrl) {
+    dom.itemImageUrl.addEventListener("change", () => {
+      dom.itemFormError.textContent = "";
+      const raw = dom.itemImageUrl.value.trim();
+      if (!raw) {
+        modals.setStagedItemImage(null);
+        modals.paintItemPreview(dom.itemNameInput.value, null);
+        return;
+      }
+      const url = cleanImageUrl(raw);
+      if (!url) {
+        dom.itemFormError.textContent = "Use a full https image address.";
+        return;
+      }
+      dom.itemFormError.textContent = "Checking address…";
+      probeImage(url, (ok) => {
+        if (!ok) {
+          dom.itemFormError.textContent =
+            "That address did not load as an image.";
+          return;
+        }
+        dom.itemFormError.textContent = "";
+        modals.setStagedItemImage(url);
+        modals.paintItemPreview(dom.itemNameInput.value, url);
+      });
+    });
+  }
+
+  if (dom.itemForm) {
+    dom.itemForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      submitItemForm();
+    });
+  }
+}
+
 export function bindSession() {
   bindComposers();
   bindSaveFiles();
   bindDeck();
   bindModals();
   bindNpcForm();
+  bindInventory();
+  bindItemForm();
 
   dom.leaveButton.addEventListener("click", leave);
   window.addEventListener("beforeunload", () => network.disconnect());
