@@ -1,5 +1,15 @@
+/* js/dialogue/sanitize.js */
+
 /* The administrateur's turn payload, rebuilt field by field: a peer can only
-   ever contribute shapes the reader already understands. No DOM here. */
+   ever contribute shapes the reader already understands. No DOM here.
+
+   A skillCheck comes in three shapes:
+     1. No dice, no result — a passive read that only acts as a speaker.
+     2. Passive, "mode": "passive" (or "passive": true / "hidden": true), with
+        a difficulty. Not rolled: passive.js weighs it against the reader's own
+        sheet. The administrateur only ever writes these as successes, so the
+        result and any dice they carry are dropped here.
+     3. Active with a visible roll — the default. Tape, dice, verdict. */
 
 import { own, pick, line, normalizeKey, bodyText } from "./text.js";
 
@@ -16,6 +26,10 @@ export const DIFFICULTY_TARGET = {
 };
 
 const RESULTS = { success: true, failure: true };
+
+/* Names a payload may use for a check that is never rolled. */
+const PASSIVE_MODES = { passive: true, hidden: true, silent: true };
+const ACTIVE_MODES = { active: true, visible: true, open: true, rolled: true };
 
 const MAX_PAYLOAD_CHARS = 200000;
 const MAX_TREES = 16;
@@ -35,6 +49,18 @@ function resolveResult(value) {
   if (/succ|pass|win/.test(key)) return "success";
   if (/fail|miss|lose|lost/.test(key)) return "failure";
   return "";
+}
+
+/* Active is the default, so a payload written before passives existed still
+   rolls in the open. */
+function resolvePassive(raw) {
+  const mode = normalizeKey(raw.mode || raw.kind || raw.checkType);
+  if (own(PASSIVE_MODES, mode)) return true;
+  if (own(ACTIVE_MODES, mode)) return false;
+  if (raw.passive === true || raw.hidden === true) return true;
+  if (raw.hiddenDice === true || raw.hiddenRoll === true) return true;
+  if (raw.active === false || raw.visible === false) return true;
+  return false;
 }
 
 function dieValue(value) {
@@ -88,6 +114,7 @@ function cleanCheck(raw) {
   /* A verdict with no named skill is still a verdict worth showing. */
   if (!skill && !result) return null;
 
+  const passive = resolvePassive(raw);
   const difficulty = normalizeKey(raw.difficulty);
   const dice = cleanDice(raw);
   const modifier = Math.round(Number(raw.modifier));
@@ -95,9 +122,13 @@ function cleanCheck(raw) {
   return {
     skill,
     difficulty: own(DIFFICULTY_TARGET, difficulty) ? difficulty : "",
-    result,
-    dice1: dice.dice1,
-    dice2: dice.dice2,
+    /* A passive is only ever written as a success; whether the reader is
+       sharp enough to see it is settled by passive.js, not here. */
+    result: passive ? "success" : result,
+    passive,
+    /* No dice were thrown for a passive, so it shows none. */
+    dice1: passive ? 0 : dice.dice1,
+    dice2: passive ? 0 : dice.dice2,
     modifier: isFinite(modifier) ? Math.max(-20, Math.min(20, modifier)) : 0,
   };
 }

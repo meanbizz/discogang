@@ -1,9 +1,15 @@
+/* js/app/rounds.js */
+
 /* Dialogue rounds from the app's side: a payload arrives, the round is
-   remembered under the name it was published with, and each player is handed
-   the tree written for them. */
+   remembered under the name it was published with, each player is handed the
+   tree written for them, and what they choose is kept on the round it was
+   chosen in.
+
+   Choices live on the round rather than beside it, so they travel wherever it
+   already does: the welcome payload, the session broadcast, and the save. */
 
 import { DIALOGUE_ROUND_LIMIT } from "../config.js";
-import { uid } from "../utils.js";
+import { cleanName, uid } from "../utils.js";
 import * as dialogue from "../dialogue/dialogue.js";
 import { cleanRounds } from "../export/rounds.js";
 import { state, rosterPayload } from "./state.js";
@@ -24,6 +30,7 @@ dialogue.setHooks({
     refreshPlanningLock();
   },
   onSkillArt: setSceneOverride,
+  onChoice: reportChoice,
 });
 
 /* Rounds keep their name everywhere they travel, which is what makes this
@@ -38,7 +45,7 @@ export function rememberRound(payload, roundId, at) {
     if (state.dialogueRounds[i].id === id) return state.dialogueRounds[i];
   }
 
-  const round = { id, at: Number(at) || Date.now(), payload };
+  const round = { id, at: Number(at) || Date.now(), payload, choices: {} };
   state.dialogueRounds.push(round);
   while (state.dialogueRounds.length > DIALOGUE_ROUND_LIMIT) {
     state.dialogueRounds.shift();
@@ -53,9 +60,82 @@ export function replaceRounds(rounds, fallbackPayload) {
   state.dialogueRounds = cleanRounds(rounds, fallbackPayload || null);
 }
 
+/* The round being read right now is always the newest one held: rememberRound
+   appends it, and a welcome puts the live one last. Null when no round has
+   arrived. */
+export function currentRound() {
+  const rounds = state.dialogueRounds;
+  return rounds.length ? rounds[rounds.length - 1] : null;
+}
+
+function roundById(roundId) {
+  if (!roundId) return currentRound();
+  const rounds = state.dialogueRounds;
+  for (let i = rounds.length - 1; i >= 0; i -= 1) {
+    if (rounds[i].id === roundId) return rounds[i];
+  }
+  return null;
+}
+
+function listFor(round, author) {
+  if (!round.choices) round.choices = {};
+  if (!Object.prototype.hasOwnProperty.call(round.choices, author)) {
+    round.choices[author] = [];
+  }
+  return round.choices[author];
+}
+
+/* The administrateur is the one who needs to know what was picked, so it is
+   written into their log as it happens. Rendered rather than committed: the
+   echo is theirs to read, not the table's to inherit through a restore. */
+function echoChoice(author, choice) {
+  if (!state.isAdmin) return;
+  renderEntry({
+    system: true,
+    text: author + " chose — " + dialogue.describeChoice(choice),
+    at: Date.now(),
+  });
+}
+
+/* Somebody's choice, from the wire or from this seat's own reader. Returns
+   what was kept, so a host knows what to relay. */
+export function acceptChoice(author, roundId, raw) {
+  const name = cleanName(author);
+  const choice = dialogue.cleanChoice(raw);
+  const round = roundById(roundId);
+  if (!name || !choice || !round) return null;
+
+  dialogue.keepChoice(listFor(round, name), choice);
+  echoChoice(name, choice);
+  return { round, author: name, choice };
+}
+
+/* This seat's own reader picked something. The administrateur reads no trees,
+   so it never fires for them. */
+export function reportChoice(raw) {
+  if (state.isAdmin) return;
+
+  const round = currentRound();
+  if (!round) return;
+  const choice = dialogue.cleanChoice(
+    Object.assign({ at: Date.now() }, raw || {}),
+  );
+  if (!choice) return;
+
+  const author = cleanName(state.profile.name) || "Unnamed";
+  dialogue.keepChoice(listFor(round, author), choice);
+
+  if (network.isHost) {
+    broadcast({ type: "choice", roundId: round.id, author, choice });
+    return;
+  }
+  sendUpstream({ type: "choice", roundId: round.id, choice });
+}
+
 /* Rounds that are already over, read back as transcript: nothing to press, no
-   cues, no vitals spent twice. The administrateur reads nothing back — the
-   payloads stay in dialogueRounds. */
+   cues, no vitals spent twice, and each fork settled the way the player
+   settled it. The administrateur reads nothing back — the payloads stay in
+   dialogueRounds. */
 export function showDialogueHistory(rounds) {
   if (!Array.isArray(rounds) || !rounds.length) return;
   if (state.isAdmin) return;
@@ -152,7 +232,8 @@ function ageTurnLog() {
 }
 
 /* Host only: a payload arrived, so the round restarts — plans age, ready and
-   finished flags drop, and everybody gets the trees. */
+   finished flags drop, and everybody gets the trees. Choices stay on the
+   rounds they were made in. */
 export function openDialogueRound(payload, roundId, at) {
   const round = rememberRound(payload, roundId, at);
 

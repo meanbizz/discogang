@@ -1,9 +1,13 @@
+/* js/export/rounds.js */
+
 /* The dialogue history a save is written from: one entry per round, each
-   holding every character's tree as that round sent them. */
+   holding every character's tree as that round sent them, and what each
+   character chose when they read it. */
 
 import { DIALOGUE_ROUND_LIMIT } from "../config.js";
 import { uid } from "../utils.js";
 import { cleanPayload } from "../dialogue/sanitize.js";
+import { cleanChoices } from "../dialogue/choices.js";
 
 export const ROUND_ID_MAX = 64;
 
@@ -18,6 +22,9 @@ function cleanRound(raw) {
         : uid(),
     at: Number(raw.at) || 0,
     payload,
+    /* Empty for a round nobody has answered yet, and for any save written
+       before choices were kept. */
+    choices: cleanChoices(raw.choices),
   };
 }
 
@@ -39,7 +46,7 @@ export function cleanRounds(raw, fallback) {
   if (out.length) return out;
 
   const single = cleanPayload(fallback);
-  return single ? [{ id: uid(), at: 0, payload: single }] : [];
+  return single ? [{ id: uid(), at: 0, payload: single, choices: {} }] : [];
 }
 
 export function latestPayload(rounds) {

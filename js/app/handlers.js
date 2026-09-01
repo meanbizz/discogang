@@ -1,3 +1,5 @@
+/* js/app/handlers.js */
+
 /* The two sides of the wire. Every message a peer sends lands in one of these
    handlers, which is also the only place a peer's claim is weighed against
    who they are. */
@@ -30,6 +32,7 @@ import { refreshPlanningLock } from "./locks.js";
 import { applyScene, setNpcs } from "./scene.js";
 import { applySession } from "./save.js";
 import {
+  acceptChoice,
   applyDialogue,
   openDialogueRound,
   rememberRound,
@@ -66,6 +69,8 @@ function onHostReceiveData(connection, data) {
       scene: state.scene,
       npcs: state.npcs,
       dialogue: state.dialoguePayload,
+      /* Each round carries what was chosen in it, so a joiner inherits the
+         whole record and not just the trees. */
       rounds: state.dialogueRounds,
       /* A round on record is not a scene in progress: after a restore this is
          false, and a joining player reads the history instead. */
@@ -124,6 +129,25 @@ function onHostReceiveData(connection, data) {
     return;
   }
 
+  /* A choice is only ever a player's own, so the author is the connection's
+     and never the peer's to claim. Relayed on so the administrateur's copy of
+     the round agrees with the host's. */
+  if (data.type === "choice") {
+    if (!person || person.admin) return;
+    const kept = acceptChoice(person.name, data.roundId, data.choice);
+    if (!kept) return;
+    broadcast(
+      {
+        type: "choice",
+        roundId: kept.round.id,
+        author: kept.author,
+        choice: kept.choice,
+      },
+      connection.peer,
+    );
+    return;
+  }
+
   if (data.type === "dialogue") {
     if (!person?.admin) return;
     const payload = dialogue.cleanPayload(data.payload);
@@ -146,7 +170,7 @@ function onHostReceiveData(connection, data) {
     if (!person?.admin) return;
     const videoId = data.track ? music.parseVideoId(data.track.videoId) : null;
     const track = videoId ? { videoId, startedAt: Date.now() } : null;
-    music.applyTrack(track, state.isAdmin);
+    music.applyTrack(track);
     broadcast({ type: "track", track });
     return;
   }
@@ -206,7 +230,6 @@ function onWelcome(data) {
     videoId
       ? { videoId, startedAt: Number(data.track.startedAt) || Date.now() }
       : null,
-    state.isAdmin,
   );
 }
 
@@ -264,6 +287,12 @@ function onGuestReceiveData(data) {
     return;
   }
 
+  /* The host names the author; nothing is relayed on from here. */
+  if (data.type === "choice") {
+    acceptChoice(data.author, data.roundId, data.choice);
+    return;
+  }
+
   if (data.type === "scene") {
     applyScene(data.scene);
     return;
@@ -293,7 +322,6 @@ function onGuestReceiveData(data) {
       videoId
         ? { videoId, startedAt: Number(data.track.startedAt) || Date.now() }
         : null,
-      state.isAdmin,
     );
   }
 }

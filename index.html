@@ -102,6 +102,11 @@
             <span id="status-text" aria-live="polite">Offline</span>
           </div>
           <div class="session-actions">
+            <!-- Any seat can have autoplay refused, so this lives outside the
+                 administrateur's deck. -->
+            <button type="button" id="audio-unlock" class="option" hidden>
+              Enable audio
+            </button>
             <button type="button" id="leave-button">Leave</button>
           </div>
         </div>
@@ -226,9 +231,6 @@
             <button type="button" id="track-stop">Stop</button>
           </div>
 
-          <button type="button" id="audio-unlock" class="option" hidden>
-            Enable audio
-          </button>
           <p
             id="deck-error"
             class="error deck-error"

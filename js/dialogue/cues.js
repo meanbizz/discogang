@@ -1,3 +1,5 @@
+/* js/dialogue/cues.js */
+
 /* Cue choreography: what plays when. The reader says only what happened; how
    long it takes on screen or in the speakers is settled here.
 
@@ -8,6 +10,7 @@
 import { dom } from "../dom.js";
 import { TIMING } from "../timing.js";
 import * as sfx from "../audio/sfx.js";
+import * as music from "../audio/music.js";
 
 const TAPE_CLASS = "is-rolling";
 const FADE_CLASS = "is-fading";
@@ -132,12 +135,17 @@ export function beginRoll() {
 }
 
 /* One timer decides the rest: at TIMING.tape.rollMs the texture stops and the
-   verdict takes its place. Nothing waits on the audio. */
+   verdict takes its place. The roll cue is held back by
+   TIMING.sound.rollDelayMs — the clips are already in memory, so that pause
+   is the whole of the delay. The deck ducks out of the way for the sequence
+   and comes back on its own. Nothing waits on the audio. */
 function runCheck(check) {
   const result = check.result === "success" ? "success" : "failure";
 
   startTape();
-  sfx.playRoll(result, null, null);
+  music.duck();
+  after(TIMING.sound.rollDelayMs, () => sfx.playRoll(result, null, null));
+  music.unduck(TIMING.music.duckHoldMs);
 
   after(TIMING.tape.rollMs, () => {
     stopTape();
@@ -145,12 +153,13 @@ function runCheck(check) {
   });
 }
 
-/* A skill speaking plays its attribute's jingle; a node that also rolls runs
-   both on their own channels. */
+/* A skill speaking plays its attribute's jingle; a node that also rolls in
+   the open runs both on their own channels. A passive check is rolled behind
+   the reader's back — no tape, no dice, no cue. */
 export function playNode(voice, check) {
   const attribute = voice ? voice.attribute : null;
   if (attribute) sfx.playJingle(attribute, null);
-  if (check && check.result) runCheck(check);
+  if (check && check.result && !check.passive) runCheck(check);
 }
 
 /* The timer is the fallback for browsers that never fire animationend. */
@@ -175,4 +184,6 @@ export function reset() {
   sfx.stopAll();
   stopTape();
   hideVerdict();
+  /* Whatever the deck was ducked for is over. */
+  music.unduck(0);
 }

@@ -1,3 +1,5 @@
+/* css/dialogue.css */
+
 /* Dialogue rounds: the speaker/verdict/body row, vitals notes, choice
    buttons, the check overlay, the narrator's read-aloud button, and the
    administrateur's raw payload echo.
@@ -37,18 +39,11 @@
 }
 
 .check-tag {
-  font-size: 13px;
-  letter-spacing: 0.8px;
-  text-transform: uppercase;
+  font-size: 16px;
+  letter-spacing: 0.4px;
+  text-transform: capitalize;
   white-space: nowrap;
   opacity: 0.9;
-}
-
-/* Snake eyes and double sixes get shouted. */
-.check-tag[data-crit="true"] {
-  font-weight: 700;
-  letter-spacing: 0.2em;
-  opacity: 1;
 }
 
 /* ---------------- Narrator read-aloud ---------------- */
@@ -120,38 +115,40 @@
 
 /* ---------------- Choices ---------------- */
 
+/* A numbered list of plain lines rather than a stack of buttons. The number
+   itself is written by the reader, so a live round, a transcript and a
+   recorded choice all count alike. */
 .entry-choices {
   display: grid;
-  gap: 0.35rem;
+  gap: 0.15rem;
   margin-top: 0.75rem;
 }
 
 button.choice {
   width: fit-content;
-  padding: 0.4rem 0.7rem;
-  border-color: var(--rule);
-  background: rgba(126, 66, 44, 0.12);
-  color: var(--option-hi);
-  font-size: 0.95rem;
-  line-height: 1.4;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--option);
+  font-family: inherit;
+  font-size: 1rem;
+  font-style: normal;
+  line-height: 1.5;
   letter-spacing: normal;
   text-align: left;
 }
 
 button.choice:hover:not(:disabled) {
-  border-color: var(--option);
-  background: rgba(126, 66, 44, 0.3);
+  border-color: transparent;
+  background: transparent;
   color: var(--option-hi);
 }
 
-button.choice:disabled {
-  opacity: 0.4;
-}
-
-/* The path taken stays legible after the rest grey out. */
+/* The path taken stays legible after the rest grey out — in a live round and
+   in a round read back from the record alike. Later than the :disabled rule
+   on purpose: a remembered choice is still a dead button. */
 button.choice.is-chosen {
-  border-color: var(--option);
-  background: rgba(126, 66, 44, 0.34);
   color: var(--option-hi);
   opacity: 1;
 }
@@ -160,14 +157,24 @@ button.choice.is-chosen::before {
   content: "▸ ";
 }
 
+/* Continue is not one of the choices, so it keeps its slab. */
 button.choice.continue {
   justify-self: start;
   width: 100%;
   height: 60px;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--option);
   background: var(--option);
-  font-size: 23px;
-  text-transform: uppercase;
   color: white;
+  font-size: 23px;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+button.choice.continue:hover:not(:disabled) {
+  border-color: var(--option);
+  background: var(--option);
+  color: var(--option-hi);
 }
 
 /* ---------------- Check verdict overlay ---------------- */

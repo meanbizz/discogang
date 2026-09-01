@@ -1,3 +1,5 @@
+/* js/app/room.js */
+
 /* Joining and leaving: which half of the interface is present, and what is
    torn down on the way out. */
 
@@ -82,6 +84,9 @@ export function connect(room, name, portrait) {
   state.sheetState = state.isAdmin
     ? null
     : window.DiscoSkillSheet?.normalize(state.stagedSheet);
+  /* Passive checks are weighed against this sheet, so the reader is told
+     before any round can arrive. */
+  dialogue.setSheet(state.sheetState);
   if (modals.getSheetInstance()) {
     modals.getSheetInstance().setState(state.sheetState, true);
   }
@@ -112,6 +117,7 @@ export function leave() {
 
   state.sheetState = null;
   state.stagedSheet = null;
+  dialogue.setSheet(null);
   if (modals.getSheetInstance()) modals.getSheetInstance().setState(null, true);
 
   state.roster.clear();

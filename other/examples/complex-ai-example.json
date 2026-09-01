@@ -20,6 +20,7 @@
           "skill": "physical-instrument",
           "difficulty": "medium",
           "result": "success",
+          "mode": "passive",
           "diceRoll": { "dice1": 4, "dice2": 3 },
           "modifier": 3
         },

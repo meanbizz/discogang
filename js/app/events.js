@@ -1,3 +1,5 @@
+/* js/app/events.js */
+
 /* Every listener the session panel needs, in one place. Each one only calls
    into the modules above — no logic lives here. */
 
@@ -6,6 +8,7 @@ import { cleanImageUrl, cleanName, paintThumb } from "../utils.js";
 import { probeImage, rejectImageFile, uploadImage } from "../upload.js";
 import * as modals from "../modals.js";
 import * as music from "../audio/music.js";
+import * as dialogue from "../dialogue/dialogue.js";
 import { readFile } from "../export/file.js";
 import { state } from "./state.js";
 import { network } from "./net.js";
@@ -111,7 +114,7 @@ function bindDeck() {
       music.markAudioUnlocked();
       const track = { videoId, startedAt: Date.now() };
       if (network.isHost) {
-        music.applyTrack(track, state.isAdmin);
+        music.applyTrack(track);
         network.broadcast({ type: "track", track });
       } else if (network.upstream?.open) {
         network.upstream.send({ type: "track-request", track });
@@ -124,7 +127,7 @@ function bindDeck() {
     dom.trackStop.addEventListener("click", () => {
       dom.deckError.textContent = "";
       if (network.isHost) {
-        music.applyTrack(null, state.isAdmin);
+        music.applyTrack(null);
         network.broadcast({ type: "track", track: null });
       } else if (network.upstream?.open) {
         network.upstream.send({ type: "track-request", track: null });
@@ -132,17 +135,12 @@ function bindDeck() {
     });
   }
 
+  /* Any seat can be blocked from autoplaying, so this button lives in the
+     session bar rather than in the administrateur's deck. */
   if (dom.audioUnlock) {
     dom.audioUnlock.addEventListener("click", () => {
       music.markAudioUnlocked();
-      dom.audioUnlock.hidden = true;
-      const current = music.getCurrentTrack();
-      const player = music.getPlayer();
-      if (player && current) {
-        player.seekTo(music.trackOffsetSeconds(current), true);
-      } else if (current) {
-        music.applyTrack(current, state.isAdmin);
-      }
+      music.resync();
     });
   }
 
@@ -181,9 +179,12 @@ function bindModals() {
     if (event.target.dataset.close === "true") modals.closePortrait();
   });
 
+  /* A sheet that changes changes what the reader notices, so the passive
+     reckoning is told at the same time as the app. */
   dom.psycheButton.addEventListener("click", () =>
     modals.openPsyche(state.sheetState, (next) => {
       state.sheetState = next;
+      dialogue.setSheet(next);
     }),
   );
   dom.psycheClose.addEventListener("click", modals.closePsyche);
