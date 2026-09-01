@@ -1,18 +1,14 @@
+/* PeerJS plumbing. The first peer to claim the room id is the host; anybody
+   who finds it taken becomes a guest and connects to it. Every callback the
+   app registers arrives through the handlers object. */
+
 import {
   ROOM_PREFIX,
   PLAYER_SLOTS,
   MAX_JOIN_ATTEMPTS,
   RETRY_DELAY_MS,
-  TURN_MIN_LENGTH,
 } from "./config.js";
-import {
-  uid,
-  cleanName,
-  cleanText,
-  cleanImageUrl,
-  isAdminName,
-} from "./utils.js";
-import { parseVideoId } from "./audio.js";
+import { isAdminName } from "./utils.js";
 
 export class NetworkManager {
   constructor(handlers) {
@@ -37,6 +33,7 @@ export class NetworkManager {
     return 0;
   }
 
+  /* A callback from a torn-down session must not touch the current one. */
   sessionAlive(instance, generation) {
     return generation === this.sessionGeneration && instance === this.peer;
   }
@@ -46,7 +43,7 @@ export class NetworkManager {
     try {
       instance.removeAllListeners();
       instance.destroy();
-    } catch (e) {}
+    } catch (error) {}
   }
 
   broadcast(payload, exceptPeerId) {
@@ -100,7 +97,7 @@ export class NetworkManager {
       id: this.selfId,
       name: profile.name,
       portrait: profile.portrait,
-      admin: admin,
+      admin,
       slot: admin ? 0 : 1,
       ready: false,
     });
@@ -111,7 +108,7 @@ export class NetworkManager {
       if (!this.sessionAlive(instance, generation)) {
         try {
           connection.close();
-        } catch (e) {}
+        } catch (error) {}
         return;
       }
 
@@ -200,6 +197,7 @@ export class NetworkManager {
     });
   }
 
+  /* The room may still be settling after the host claimed the id. */
   retryJoin(generation, hostId, profile) {
     if (generation !== this.sessionGeneration) return;
 

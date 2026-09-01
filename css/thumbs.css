@@ -1,4 +1,9 @@
-/* Portrait thumbnails and the file/URL picker that feeds them. */
+/* Portrait thumbnails and the picker that feeds them.
+
+   Layering, back to front: the element's own surface, the frame (::before),
+   the portrait (::after), then the initial-letter fallback paintThumb writes
+   as text. The address arrives as --portrait, so the frame is always behind
+   the face. */
 
 .portrait-picker {
   display: flex;
@@ -18,12 +23,14 @@
 }
 
 .thumb {
+  position: relative;
+  isolation: isolate;
   flex: 0 0 auto;
   width: 2.25rem;
   height: 3.375rem;
   display: grid;
   place-items: center;
-  background: var(--bg) center / cover no-repeat;
+  background: var(--bg);
   border: var(--hairline);
   color: var(--text-old);
   font-size: 1rem;
@@ -31,15 +38,34 @@
   filter: grayscale(0.25) contrast(1.05);
 }
 
-.thumb-lg {
+/* The frame stands slightly proud of the portrait and sits underneath it.
+   Scene art is not a portrait, so it keeps its bare box. */
+.thumb:not(.scene-thumb)::before {
+  content: "";
+  position: absolute;
+  inset: -8%;
+  z-index: -2;
+  background: url("../images/portrait-frame.png") center / 100% 100% no-repeat;
+  pointer-events: none;
+}
+
+.thumb::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--portrait, none) center / cover no-repeat;
+  pointer-events: none;
+}
+
+/* Sizes must out-specify the bare .thumb box. */
+.thumb.thumb-lg {
   width: 5rem;
   height: 7.5rem;
   font-size: 1.6rem;
 }
 
-/* Initial-letter fallbacks are written as text content; the "?" only shows
-   when there is neither an image nor a letter. */
-.thumb[data-empty="true"]:empty::after {
-  content: "?";
-  opacity: 0.5;
+/* The question mark reads dimmer than a real initial. */
+.thumb[data-mark="unknown"] {
+  color: #4a4a47;
 }

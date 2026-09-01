@@ -1,3 +1,6 @@
+/* Shared helpers: room codes, field cleaning, thumbnails, inline markup,
+   clipboard. Nothing here knows about the session. */
+
 import {
   ROOM_CODE_MIN,
   ROOM_CODE_MAX,
@@ -9,9 +12,13 @@ import {
   ADMIN_NAME,
 } from "./config.js";
 
-/* The address of a painted portrait travels as a custom property so the
-   stylesheet can lay the frame down first and the face over it. */
-export const PORTRAIT_VAR = "--portrait";
+/* A portrait's address travels as a custom property, so the stylesheet can
+   lay the frame down before the face. */
+const PORTRAIT_VAR = "--portrait";
+
+function cssUrl(href) {
+  return `url("${href}")`;
+}
 
 export function sanitizeRoomCode(value) {
   const code = String(value == null ? "" : value)
@@ -23,7 +30,7 @@ export function sanitizeRoomCode(value) {
 
 export function randomRoomCode() {
   let out = "";
-  const source = window.crypto || window.msCrypto;
+  const source = window.crypto;
   if (source && source.getRandomValues) {
     const bytes = new Uint8Array(ROOM_CODE_LENGTH);
     source.getRandomValues(bytes);
@@ -87,22 +94,28 @@ export function cleanImageUrl(value) {
   return href;
 }
 
-export function cssUrl(href) {
-  return `url("${href}")`;
-}
-
 export function cleanScene(raw) {
   if (!raw || typeof raw !== "object") return { image: null };
   return { image: cleanImageUrl(raw.image) };
+}
+
+export function cleanNpc(raw) {
+  if (!raw || typeof raw !== "object") return null;
+  const name = cleanName(raw.name);
+  if (!name) return null;
+  return {
+    id: typeof raw.id === "string" && raw.id ? raw.id : uid(),
+    name,
+    thumbnail: cleanImageUrl(raw.thumbnail),
+  };
 }
 
 export function isAdminName(name) {
   return cleanName(name).toLowerCase() === ADMIN_NAME;
 }
 
-/* Hands the address to CSS and leaves the painting order to the
-   stylesheet. data-mark says whether the text fallback is a real initial or
-   the bare question mark, so only the latter is dimmed. */
+/* data-mark says whether the fallback is a real initial or a bare question
+   mark, so only the latter is dimmed. */
 export function paintThumb(element, person) {
   if (!element) return;
   const portrait = person && person.portrait ? person.portrait : null;
@@ -130,8 +143,8 @@ export function clearThumb(element) {
   element.textContent = "";
 }
 
-/* "spoken" → quote, (aside) → aside, *style* → past.
-   Text only: every piece lands through createTextNode/textContent. */
+/* "spoken" → quote, (aside) → aside, *style* → past. Text only: every piece
+   lands through createTextNode/textContent. */
 export function paintMarkup(target, text) {
   const source = String(text == null ? "" : text);
   const pattern = /"[^"]*"|\([^)]*\)|\*[^*]*\*/g;

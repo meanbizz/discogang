@@ -1,20 +1,12 @@
-/* Sound cues for dialogue rounds — playback only.
+/* Sound cues — playback only. One jingle per attribute plus the two roll
+   clips, pulled into memory up front so a cue never waits on the network.
 
-   One jingle per attribute, plus the two roll clips. Every file is pulled
-   into memory once, up front, so a cue never waits on the network at the
-   moment it is needed.
+   Jingles and rolls sit on separate channels, so a skill's voice can ring on
+   while the dice roll. Timings come from the clip's own duration, or from
+   TIMING.sound.fallbackMs when the browser reports none. */
 
-   Jingles and rolls sit on separate channels: a skill's voice can keep
-   ringing while the dice are already rolling, so neither cue has to wait for
-   the other to clear.
-
-   Nothing here decides when a cue fires — that belongs to cues.js, and every
-   number this file leans on comes from timing.js. Timings come from the
-   clip's own duration when the browser reports it and from
-   TIMING.sound.fallbackMs when it does not, so a blocked or missing file
-   never strands the visual sequence that hangs off these callbacks. */
-
-import { TIMING } from "./timing.js";
+import { TIMING } from "../timing.js";
+import { halt, rewind, start } from "./channel.js";
 
 export const JINGLE_SRC = {
   intellect: "sounds/IntellectJingle.mp3",
@@ -30,8 +22,6 @@ export const ROLL_SRC = {
 
 const cache = {};
 
-/* One slot per kind of cue. Starting a jingle no longer cuts a roll short,
-   and the other way round. */
 const channels = {
   jingle: { voice: null, timers: [] },
   roll: { voice: null, timers: [] },
@@ -60,9 +50,7 @@ function clip(src) {
   return cache[src];
 }
 
-/* Called once at boot: fetches and decodes every cue so the first roll of the
-   session is as prompt as the tenth. Loading needs no user gesture — only
-   playback does. */
+/* Loading needs no user gesture — only playback does. */
 export function preloadAll() {
   Object.keys(JINGLE_SRC).forEach((key) => clip(JINGLE_SRC[key]));
   Object.keys(ROLL_SRC).forEach((key) => clip(ROLL_SRC[key]));
@@ -78,12 +66,7 @@ function clearTimers(channel) {
 function stopChannel(channel) {
   clearTimers(channel);
   if (!channel.voice) return;
-  try {
-    channel.voice.pause();
-    channel.voice.currentTime = 0;
-  } catch (error) {
-    /* nothing to rewind */
-  }
+  halt(channel.voice);
   channel.voice = null;
 }
 
@@ -98,21 +81,14 @@ function durationMs(audio) {
 }
 
 /* hooks.onLead fires TIMING.sound.leadMs before the end, hooks.onEnd just
-   after it. With preloadAll behind us the metadata is already in hand, so
-   both timers are armed on the same tick the clip starts. */
+   after it. */
 function run(channel, src, hooks) {
   stopChannel(channel);
 
   const audio = clip(src);
   channel.voice = audio;
-  try {
-    audio.currentTime = 0;
-  } catch (error) {
-    /* not seekable yet */
-  }
-
-  const started = audio.play();
-  if (started && started.catch) started.catch(() => {});
+  rewind(audio);
+  start(audio);
 
   let armed = false;
   const arm = () => {

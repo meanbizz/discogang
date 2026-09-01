@@ -1,8 +1,5 @@
-/* Salon — stylesheet index.
-
-   Nothing but imports. Load order is the cascade order: tokens, then the
-   base layer, then components. Media queries live in the component file
-   they belong to, so anything that touches a component is in one place. */
+/* Salon — stylesheet index. Load order is cascade order: tokens, base, then
+   components. Media queries live in the component they belong to. */
 
 @import url("./css/tokens.css");
 @import url("./css/base.css");
@@ -22,5 +19,4 @@
 
 @import url("./css/modals.css");
 @import url("./css/npc.css");
-@import url("./css/portrait.css");
 @import url("./css/animations.css");

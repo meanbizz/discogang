@@ -1,3 +1,5 @@
+/* Every tunable number and name the session runs on. */
+
 import { NARRATION_ENDPOINT } from "/js/secrets/secrets.js";
 
 export const ROOM_PREFIX = "de-salon-";
@@ -8,9 +10,8 @@ export const HISTORY_LIMIT = 200;
 export const TURN_LIMIT = 120;
 export const TURN_MIN_LENGTH = 3;
 export const PLAYER_SLOTS = 8;
-/* Dialogue rounds held for the session save: every payload the
-   administrateur has sent, oldest dropped first. Each round carries every
-   character's tree, so this list is the table's whole dialogue history. */
+/* Rounds held for the save: oldest dropped first. Each round carries every
+   character's tree, so this is the table's whole dialogue history. */
 export const DIALOGUE_ROUND_LIMIT = 64;
 
 export const ROOM_CODE_LENGTH = 8;
@@ -38,20 +39,10 @@ export const IMAGE_URL_MAX_CHARS = 2048;
 export const MAX_JOIN_ATTEMPTS = 4;
 export const RETRY_DELAY_MS = 1200;
 
-/* Narrator voice-over.
-
-   endpoint is the Cloudflare Worker that fronts the speech service; it holds
-   the key and sends the CORS headers the browser insists on, so token and
-   backend stay empty here. Emptying them is not cosmetic: it keeps the
-   Authorization and model headers off the request, which is what keeps the
-   preflight to content-type alone.
-
-   modelId is the voice, and travels in the body as reference_id — the Worker
-   passes the body through untouched, so changing a voice is a change here and
-   nowhere else.
-
-   narratorNames are the speaker names, lowercased, that earn a line its play
-   button. */
+/* endpoint is the Worker that holds the speech key and sends the CORS
+   headers; token and backend stay empty so the preflight is content-type
+   alone. modelId travels in the body as reference_id. narratorNames are the
+   speaker names, lowercased, that earn a line its play button. */
 export const NARRATION = {
   endpoint: NARRATION_ENDPOINT,
   token: "",

@@ -1,3 +1,6 @@
+/* Every element the app touches, looked up once, plus the anchors that let
+   whole regions be detached and put back. */
+
 export const dom = {
   joinPanel: document.getElementById("join-panel"),
   joinForm: document.getElementById("join-form"),
@@ -54,7 +57,7 @@ export const dom = {
   deckError: document.getElementById("deck-error"),
   audioUnlock: document.getElementById("audio-unlock"),
 
-  // Session save files — administrateur only
+  // Save files — administrateur only
   sessionExport: document.getElementById("session-export"),
   sessionLoad: document.getElementById("session-load"),
   sessionFile: document.getElementById("session-file"),
@@ -68,9 +71,9 @@ export const dom = {
   checkOverlayTitle: document.getElementById("check-overlay-title"),
 
   modal: document.getElementById("portrait-modal"),
-  modalCard: document.querySelector("#portrait-modal .modal-card"),
   modalClose: document.getElementById("portrait-modal-close"),
   modalImage: document.getElementById("portrait-modal-image"),
+  modalName: document.getElementById("portrait-modal-name"),
   modalRole: document.getElementById("portrait-modal-role"),
 
   npcButton: document.getElementById("npc-button"),
@@ -89,7 +92,6 @@ export const dom = {
   npcList: document.getElementById("npc-list"),
 };
 
-// Anchors for dynamic detachment/reattachment
 export const anchors = {
   deck: document.createComment("deck"),
   adminTools: document.createComment("admin-tools"),
@@ -120,7 +122,6 @@ export function setPresent(anchor, node, present) {
   if (node.isConnected) node.remove();
 }
 
-// Initial detachments for conditional rendering
 detach(anchors.deck, dom.deck);
 detach(anchors.adminTools, dom.adminTools);
 detach(anchors.composer, dom.composer);

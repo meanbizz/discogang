@@ -1,4 +1,7 @@
-import { dom } from "./dom.js";
+/* The music deck: a YouTube video played offscreen, held in step with the
+   room by the startedAt the host hands out. */
+
+import { dom } from "../dom.js";
 
 let youtubeReady = false;
 let player = null;
@@ -130,7 +133,7 @@ export function stopPlayer() {
   if (player && player.stopVideo) {
     try {
       player.stopVideo();
-    } catch (e) {}
+    } catch (error) {}
   }
   currentTrack = null;
 }

@@ -1,11 +1,9 @@
-/* Dialogue rounds: the one-line speaker/verdict/body row, vitals notes,
-   choice buttons, the check overlay, the narrator's read-aloud button, and
-   the administrateur's raw payload echo.
+/* Dialogue rounds: the speaker/verdict/body row, vitals notes, choice
+   buttons, the check overlay, the narrator's read-aloud button, and the
+   administrateur's raw payload echo.
 
-   Static appearance only — every keyframe and transition these classes take
-   part in lives in animations.css. */
+   Static appearance only — keyframes live in animations.css. */
 
-/* SPEAKER [Medium 10+: success] — body, all on one line. */
 .entry-line {
   margin: 0;
   white-space: pre-wrap;
@@ -19,7 +17,7 @@
   text-transform: uppercase;
 }
 
-/* A speaker that names a skill takes the colour of its attribute. */
+/* A speaker naming a skill takes the colour of its attribute. */
 .entry-speaker[data-attribute="intellect"] {
   color: var(--attr-intellect);
 }
@@ -33,13 +31,11 @@
   color: var(--attr-motorics);
 }
 
-/* Spent dialogue recedes as a whole — speaker colours included — instead of
-   being repainted line by line. */
+/* Spent dialogue recedes as a whole, speaker colours included. */
 .entry.dialogue:not(.current) {
   opacity: 0.5;
 }
 
-/* Inline skill-check verdict. */
 .check-tag {
   font-size: 13px;
   letter-spacing: 0.8px;
@@ -57,10 +53,9 @@
 
 /* ---------------- Narrator read-aloud ---------------- */
 
-/* Rides at the end of a narrated line and keeps out of the way until the
-   entry is hovered. It stays visible while it is working, so a reading in
-   progress can always be stopped, and it is reachable by keyboard whether
-   the pointer is anywhere near it or not. */
+/* Rides at the end of a narrated line, out of the way until the entry is
+   hovered. It stays visible while working, so a reading in progress can
+   always be stopped, and it is reachable by keyboard regardless. */
 .entry-speak {
   padding: 0 0.3rem;
   border: 1px solid transparent;
@@ -104,7 +99,8 @@
   color: var(--danger);
 }
 
-/* Vitals effect */
+/* ---------------- Vitals note ---------------- */
+
 .vitals-note {
   display: flex;
   flex-wrap: wrap;
@@ -122,7 +118,8 @@
   color: var(--morale);
 }
 
-/* Choices */
+/* ---------------- Choices ---------------- */
+
 .entry-choices {
   display: grid;
   gap: 0.35rem;
@@ -175,9 +172,8 @@ button.choice.continue {
 
 /* ---------------- Check verdict overlay ---------------- */
 
-/* Sits over the whole viewport, transparent until cues.js fades it in. The
-   mask is parked off to the right so the wipe in animations.css has somewhere
-   to travel from. */
+/* Over the whole viewport, transparent until cues.js fades it in. The mask is
+   parked off to the right so the wipe has somewhere to travel from. */
 .check-overlay {
   position: fixed;
   inset: 0;
@@ -213,8 +209,8 @@ button.choice.continue {
   display: none;
 }
 
-/* No surface of its own: the verdict backdrops are transparent PNGs, so the
-   session behind them stays visible. Only the image paints here. */
+/* No surface of its own: the backdrops are transparent PNGs, so the session
+   behind them stays visible. */
 .check-overlay-scene {
   position: absolute;
   inset: 0;
@@ -248,7 +244,8 @@ button.choice.continue {
   height: auto;
 }
 
-/* Raw payload echo — administrateur's own log only. */
+/* ---------------- Raw payload echo (administrateur only) ---------------- */
+
 .entry.raw {
   position: relative;
 }
@@ -276,7 +273,6 @@ button.choice.continue {
   white-space: pre-wrap;
 }
 
-/* Lifts the payload back to the clipboard. */
 .entry-copy {
   position: absolute;
   top: -0.15rem;
@@ -295,8 +291,7 @@ button.choice.continue {
   color: var(--option-hi);
 }
 
-/* Touch and other pointers with no hover: the button is simply always
-   there, since there is no hover to reveal it with. */
+/* No hover to reveal it with, so it is simply always there. */
 @media (hover: none) {
   .entry-speak {
     opacity: 1;

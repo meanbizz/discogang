@@ -1,5 +1,8 @@
+/* The three dialogs: enlarged portrait, the skill sheet, and the NPC
+   manager. Each one remembers what to return focus to on close. */
+
 import { dom } from "./dom.js";
-import { paintThumb, clearThumb, cleanName, cleanImageUrl, uid } from "./utils.js";
+import { paintThumb, clearThumb, cleanName } from "./utils.js";
 import { refreshVitals } from "./vitals.js";
 
 let modalReturnFocus = null;
@@ -8,16 +11,19 @@ let npcReturnFocus = null;
 let sheetInstance = null;
 let stagedNpcPortrait = null;
 
-/* ---------------- Image/Portrait Modal ---------------- */
+function activeFocus() {
+  return document.activeElement?.focus ? document.activeElement : null;
+}
+
+/* ---------------- Portrait ---------------- */
 
 export function openImage(name, image, role) {
   paintThumb(dom.modalImage, { name, portrait: image });
+  if (dom.modalName) dom.modalName.textContent = name || "—";
   dom.modalRole.textContent = role || "";
   dom.modalRole.hidden = !role;
 
-  modalReturnFocus = document.activeElement?.focus
-    ? document.activeElement
-    : null;
+  modalReturnFocus = activeFocus();
   dom.modal.hidden = false;
   dom.modalClose.focus();
 }
@@ -32,7 +38,7 @@ export function closePortrait() {
   modalReturnFocus = null;
 }
 
-/* ---------------- Psyche Modal ---------------- */
+/* ---------------- Psyche ---------------- */
 
 export function openPsyche(sheetState, onStateChange) {
   if (!dom.psycheModal.hidden) return;
@@ -50,9 +56,7 @@ export function openPsyche(sheetState, onStateChange) {
     sheetInstance.setState(sheetState, true);
   }
 
-  psycheReturnFocus = document.activeElement?.focus
-    ? document.activeElement
-    : null;
+  psycheReturnFocus = activeFocus();
   dom.psycheModal.hidden = false;
   dom.psycheClose.focus();
 }
@@ -71,18 +75,7 @@ export function getSheetInstance() {
   return sheetInstance;
 }
 
-/* ---------------- NPC Modal ---------------- */
-
-export function cleanNpc(raw) {
-  if (!raw || typeof raw !== "object") return null;
-  const name = cleanName(raw.name);
-  if (!name) return null;
-  return {
-    id: typeof raw.id === "string" && raw.id ? raw.id : uid(),
-    name,
-    thumbnail: cleanImageUrl(raw.thumbnail),
-  };
-}
+/* ---------------- NPCs ---------------- */
 
 export function resetNpcForm() {
   if (!dom.npcForm) return;
@@ -149,9 +142,7 @@ export function openNpcModal(isAdmin, npcs, onEdit, onRemove) {
   if (!isAdmin || !dom.npcModal) return;
   resetNpcForm();
   renderNpcList(npcs, onEdit, onRemove);
-  npcReturnFocus = document.activeElement?.focus
-    ? document.activeElement
-    : null;
+  npcReturnFocus = activeFocus();
   dom.npcModal.hidden = false;
   dom.npcModalClose.focus();
 }
@@ -173,3 +164,5 @@ export function getStagedNpcPortrait() {
 export function setStagedNpcPortrait(url) {
   stagedNpcPortrait = url;
 }
+
+export { cleanName };

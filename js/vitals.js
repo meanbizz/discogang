@@ -1,3 +1,7 @@
+/* Health and morale: the two bars, their ceilings taken from the skill sheet,
+   and the single-step changes a dialogue node spends. The is-hit flash is
+   animated in animations.css. */
+
 import { dom } from "./dom.js";
 import { VITAL_SKILL } from "./config.js";
 import { TIMING } from "./timing.js";
@@ -7,8 +11,6 @@ export const vitals = {
   morale: { value: 0, max: 0 },
 };
 
-/* The class comes off just after the animation ends; both numbers live in
-   timing.js. */
 const FLASH_CLEAR_MS = TIMING.vitals.flashMs + TIMING.vitals.clearBufferMs;
 const flashTimers = {};
 
@@ -30,7 +32,7 @@ export function vitalMax(sheetState, kind) {
   return skillScore(sheetState, VITAL_SKILL[kind]) + 1;
 }
 
-export function renderBar(element, label, filled, total) {
+function renderBar(element, label, filled, total) {
   if (!element) return;
   element.textContent = "";
   for (let i = 0; i < total; i += 1) {
@@ -47,6 +49,8 @@ export function renderVitals() {
   renderBar(dom.moraleBar, "Morale", vitals.morale.value, vitals.morale.max);
 }
 
+/* fill tops both bars up; otherwise a raised ceiling adds its own difference,
+   so editing the sheet mid-session neither heals nor harms. */
 export function refreshVitals(sheetState, fill) {
   Object.keys(vitals).forEach((kind) => {
     const state = vitals[kind];
@@ -60,12 +64,8 @@ export function refreshVitals(sheetState, fill) {
   renderVitals();
 }
 
-function barOf(kind) {
-  return kind === "health" ? dom.healthBar : dom.moraleBar;
-}
-
 function flash(kind) {
-  const element = barOf(kind);
+  const element = kind === "health" ? dom.healthBar : dom.moraleBar;
   if (!element) return;
   if (flashTimers[kind]) clearTimeout(flashTimers[kind]);
   element.classList.remove("is-hit");
@@ -77,8 +77,8 @@ function flash(kind) {
   }, FLASH_CLEAR_MS);
 }
 
-/* One step of health or morale, clamped to the sheet's ceiling.
-   direction is "gain" or "loss"; returns the actual change. */
+/* One step of health or morale, clamped to the sheet's ceiling. direction is
+   "gain" or "loss"; returns the actual change. */
 export function changeVital(kind, direction) {
   const state = vitals[kind];
   if (!state) return 0;
@@ -90,11 +90,4 @@ export function changeVital(kind, direction) {
   renderVitals();
   if (state.value !== before) flash(kind);
   return state.value - before;
-}
-
-export function vitalSnapshot() {
-  return {
-    health: { value: vitals.health.value, max: vitals.health.max },
-    morale: { value: vitals.morale.value, max: vitals.morale.max },
-  };
 }

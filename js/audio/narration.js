@@ -1,24 +1,16 @@
-/* Narrator voice-over.
-
-   One clip at a time, fetched from a text-to-speech API and played back on
-   click. The same click while a line is loading or speaking cancels it: an
-   in-flight request is aborted, a playing clip is paused and rewound.
+/* Narrator voice-over: one clip at a time, fetched from a speech API and
+   played on click. The same click while loading or speaking cancels it.
 
    The caller gets its state back through a report callback — "loading",
-   "playing", "idle" or "error" — so the button that started a line can paint
-   itself without this module knowing anything about the DOM.
+   "playing", "idle", "error" — so a button can paint itself without this
+   module knowing any DOM. Clips are held as blob URLs keyed by their text.
+   isNarrator answers which speakers are offered aloud, from config.js. */
 
-   Clips are held as blob URLs keyed by their text, so hearing the same line
-   twice costs one request. Nothing here decides which lines are narrated;
-   isNarrator answers that question for the reader, from the names in
-   config.js. */
+import { NARRATION } from "../config.js";
+import { halt, start } from "./channel.js";
 
-import { NARRATION } from "./config.js";
-
-/* text → blob URL, oldest first for eviction. */
 const clips = new Map();
 
-/* The one line currently loading or speaking. */
 let key = null;
 let audio = null;
 let controller = null;
@@ -35,7 +27,6 @@ function normalize(value) {
     .toLowerCase();
 }
 
-/* A speaker is the narrator when the payload names it as one. */
 export function isNarrator(speaker) {
   const name = normalize(speaker);
   if (!name) return false;
@@ -67,12 +58,7 @@ export function stop() {
   if (audio) {
     audio.onended = null;
     audio.onerror = null;
-    try {
-      audio.pause();
-      audio.currentTime = 0;
-    } catch (error) {
-      /* nothing to rewind */
-    }
+    halt(audio);
   }
   settle("idle");
 }
@@ -87,25 +73,21 @@ function remember(text, url) {
   clips.set(text, url);
 }
 
-/* Resolves to a playable address. A line already heard resolves at once. */
 function fetchClip(text, signal) {
   const held = clips.get(text);
   if (held) return Promise.resolve(held);
 
-  const headers = {
-    "Content-Type": "application/json",
-  };
+  const headers = { "Content-Type": "application/json" };
   if (NARRATION.token) headers.Authorization = "Bearer " + NARRATION.token;
   if (NARRATION.backend) headers.model = NARRATION.backend;
 
-  const cleanedText = text.replaceAll("*", "");
   return fetch(NARRATION.endpoint, {
     method: "POST",
     mode: "cors",
     signal,
     headers,
     body: JSON.stringify({
-      text: cleanedText,
+      text: text.replaceAll("*", ""),
       reference_id: NARRATION.modelId,
       format: NARRATION.format,
       normalize: true,
@@ -136,7 +118,7 @@ function play(url, mine) {
     if (key === mine) settle("error");
   };
 
-  const started = voice.play();
+  const started = start(voice);
   if (started && started.catch) {
     started.catch(() => {
       if (key === mine) settle("error");
@@ -145,8 +127,8 @@ function play(url, mine) {
   announce("playing");
 }
 
-/* Click to read a line aloud; click again to cancel it. id is whatever the
-   caller uses to recognise its own line — the node id, in practice. */
+/* Click to read a line aloud, click again to cancel. id is whatever the
+   caller uses to recognise its own line. */
 export function toggle(id, text, report) {
   if (key === id) {
     stop();
@@ -177,13 +159,11 @@ export function toggle(id, text, report) {
       play(url, mine);
     })
     .catch(() => {
-      /* An abort has already handed the field over; anything else failed. */
       if (key !== mine) return;
       settle("error");
     });
 }
 
-/* Drops every held clip. */
 export function reset() {
   stop();
   clips.forEach((url) => URL.revokeObjectURL(url));

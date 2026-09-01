@@ -1,3 +1,6 @@
+/* Portrait and thumbnail uploads: the size and type gate, the image host, and
+   a probe for pasted addresses. */
+
 import { IMAGE_HOST, IMAGE_TYPES, IMAGE_MAX_BYTES } from "./config.js";
 import { cleanImageUrl } from "./utils.js";
 
@@ -5,6 +8,7 @@ export function uploadConfigured() {
   return Boolean(IMAGE_HOST.cloudName && IMAGE_HOST.uploadPreset);
 }
 
+/* Returns the reason to refuse, or "" when the file is fine. */
 export function rejectImageFile(file) {
   if (!IMAGE_TYPES.includes(file.type)) {
     return "Use a PNG, JPEG, WebP or GIF image.";
