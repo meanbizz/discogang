@@ -1,3 +1,5 @@
+/* js/dialogue/dialogue.js */
+
 /* The reader: walks one dialogue tree a node at a time inside the session
    log, spending vitals, earning experience and firing cues as it goes.
 
@@ -104,6 +106,9 @@ function renderOptions(host, node) {
     button.addEventListener("click", () => {
       if (host.dataset.spent === "true") return;
       host.dataset.spent = "true";
+      /* Heard on the frame it was pressed — a dead click on a spent row makes
+         no sound, which is why this sits under the guard. */
+      cues.playChoice();
       const siblings = host.querySelectorAll("button");
       for (let i = 0; i < siblings.length; i += 1) siblings[i].disabled = true;
       button.classList.add("is-chosen");
@@ -145,6 +150,7 @@ function renderContinue(host, nextId) {
   button.addEventListener("click", () => {
     if (host.dataset.spent === "true") return;
     host.dataset.spent = "true";
+    cues.playChoice();
     host.remove();
     renderNode(nextId);
   });
@@ -155,12 +161,17 @@ function renderContinue(host, nextId) {
    animation lane, so a rolled node's dice are always finished with the screen
    before the words arrive — nothing here has to know that happened. The
    ledger is moved here; the app is told after the fact, so it can publish and
-   repaint the sheet. */
+   repaint the sheet.
+
+   A point that landed on the last of the experience is still a point: the
+   plate and its cue depend on either half of the reading, not on the XP
+   alone. That was what could leave a new skill point silent. */
 function earnXp(node) {
   if (!node.xpGained) return;
   const landed = grantXp(node.xpGained);
-  if (!landed.gained) return;
-  cues.showXp(landed.gained, landed.granted);
+  if (!landed) return;
+  if (!landed.gained && !landed.granted) return;
+  cues.showXp(landed.gained || 0, landed.granted);
   if (hooks.onXp) hooks.onXp(landed);
 }
 
@@ -197,9 +208,9 @@ function renderNode(id) {
 
   /* A rolled node hides its own arrival and claims its place in the queue on
      this frame, before anything else the node sets off can ask for one: the
-     incoming entry is already invisible when it lands, and the vitals flash
-     and experience plate below fall in behind the dice. A passive is never
-     rolled, so it hides nothing and waits for nothing. */
+     incoming entry is already invisible when it lands, and the vitals flash,
+     the health plate and the experience plate below fall in behind the dice.
+     A passive is never rolled, so it hides nothing and waits for nothing. */
   if (rolled) cues.beginRoll(node.skillCheck);
 
   const article = buildEntry(node, voice, "node:" + node.id);

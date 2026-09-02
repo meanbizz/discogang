@@ -27,6 +27,15 @@
   --xp-point: #1f7a3a;
   --xp-glow: rgba(72, 214, 110, 0.9);
 
+  /* Money. The purse's own colours, in the notice plate and on its square:
+     gained reads as gold, lost as the rust everything else spends in. */
+  --notice-back: #000000;
+  --notice-ink: #ffffff;
+  --money-gain: #e8c34a;
+  --money-loss: #c96a48;
+  --money-rule: #4a3d1e;
+  --money-sunk: #12100a;
+
   /* Player slot colours, 1–8. Mapped onto --slot in slots.css. */
   --p1: #ff6f4b;
   --p2: #ffc94a;
@@ -75,5 +84,8 @@
   --dur-xp-out: 600ms;
   --dur-xp-vignette: 260ms;
   --dur-xp-art: 420ms;
+  --dur-notice-in: 200ms;
+  --dur-notice-out: 600ms;
+  --dur-notice-art: 420ms;
   --tape-step: 420px;
 }

@@ -148,7 +148,10 @@ function restoreSelf(people) {
 
 /* Everyone's side of a restore. Nothing replays: the reader stays closed and
    planning stays open, since a save holds no record of who had already read
-   their scene — which is also why this may only happen once. */
+   their scene — which is also why this may only happen once.
+
+   The purse comes back as it was written, and silently: a restore is a room
+   being put back, not money changing hands. */
 export function applySession(snap) {
   if (!snap) return;
 

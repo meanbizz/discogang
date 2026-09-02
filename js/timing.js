@@ -14,9 +14,11 @@
      + outMs        verdict wipes away left to right
      music.duckHoldMs from the roll, the music fades back in over duckInMs
 
-   A node that also hands over experience shows its plate after all of that,
-   and nothing here has to say so: js/sequencer.js runs the two in turn, so
-   these numbers can be changed freely without two overlays landing at once.
+   A node that also hands over experience shows its plate after all of that; a
+   step of health or morale it spent takes its own turn, and a payment that
+   arrived with the same payload takes another. Nothing here says so:
+   js/sequencer.js runs them one after another, which is what lets these
+   numbers be changed freely without two overlays landing at once.
    cues.checkDurationMs is the same sum, kept only as the lane's watchdog
    estimate for the check.
 
@@ -55,16 +57,30 @@ export const TIMING = {
     artMs: 420,
   },
 
+  /* The notice plate — money, health and morale, and whatever else earns one.
+     Shorter than experience on purpose: a payment or a bruise is a fact, not
+     an achievement, and several can arrive in a row. */
+  notice: {
+    inMs: 200,
+    holdMs: 1500,
+    outMs: 600,
+    artMs: 420,
+  },
+
   /* fallbackMs stands in for a duration the browser never reports; leadMs is
      how long before a clip ends its onLead fires. rollDelayMs is the pause
      between a rolled node landing and its roll cue — the clips are already in
-     memory, so this is the whole of the delay. */
+     memory, so this is the whole of the delay. retryMs is how long a clip is
+     given to actually leave the starting line before it is asked once more:
+     the guard against a play() the element quietly refused while it was still
+     loading, which is what used to swallow the rarer cues. */
   sound: {
     volume: 0.525,
     fallbackMs: 1600,
     metadataWaitMs: 600,
     leadMs: 1000,
     rollDelayMs: 200,
+    retryMs: 220,
   },
 
   /* The deck's own volume envelope. volume is the level a track settles at;
@@ -101,6 +117,9 @@ export const CSS_TIMING = {
   "--dur-xp-out": TIMING.xp.outMs + "ms",
   "--dur-xp-vignette": TIMING.xp.vignetteMs + "ms",
   "--dur-xp-art": TIMING.xp.artMs + "ms",
+  "--dur-notice-in": TIMING.notice.inMs + "ms",
+  "--dur-notice-out": TIMING.notice.outMs + "ms",
+  "--dur-notice-art": TIMING.notice.artMs + "ms",
   "--tape-step": TIMING.tape.stepPx + "px",
 };
 

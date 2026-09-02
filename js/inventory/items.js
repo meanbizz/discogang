@@ -4,6 +4,17 @@
    holder's bag is a count per item name. The name is the identity, so bags
    and catalogues are read case-insensitively.
 
+   One item is not the administrateur's to invent or to withdraw: the Reál is
+   the money every character carries, and it is seeded into every catalogue
+   that passes through here. That is why the seeding lives in cleanItems and
+   nowhere else — a welcome, a save, a payload's orders and a fresh room all
+   come through that one door, so none of them can arrive without it.
+
+   Names that plainly mean the money — real, REAL, reals, an á written as two
+   characters instead of one — are folded to the one spelling before anything
+   else looks at them. Otherwise a payload written in a hurry would open a
+   second purse beside the first and the table would hold two kinds of money.
+
    An administrateur's payload may carry add/update/remove orders under the
    reserved "inventory" key; they are rebuilt here before anything moves.
    No DOM and no network. */
@@ -11,6 +22,23 @@
 import { cleanImageUrl } from "../utils.js";
 
 export const INVENTORY_KEY = "inventory";
+
+/* The money. The mark is its face on a square — a purse has no portrait. */
+export const CURRENCY_NAME = "Reál";
+export const CURRENCY_MARK = "✤";
+export const CURRENCY_DESC =
+  "Currency used by countries in the Reál Belt.";
+
+/* Everything that means the money. Only whole words: "Real Estate" is an
+   item, "reals" is a purse. */
+const CURRENCY_KEYS = {
+  "reál": true,
+  "reáls": true,
+  réal: true,
+  réals: true,
+  real: true,
+  reals: true,
+};
 
 const NAME_MAX = 48;
 const DESC_MAX = 600;
@@ -20,6 +48,25 @@ const MAX_COUNT = 999;
 
 /* Targets that mean every player at the table. */
 const EVERYONE = { "*": true, all: true, everyone: true, players: true };
+
+function has(map, key) {
+  return (
+    map &&
+    typeof key === "string" &&
+    Object.prototype.hasOwnProperty.call(map, key)
+  );
+}
+
+/* Two spellings of the same accent are the same name. Composed first, so a
+   decomposed á off the wire matches the one written here. */
+function fold(value) {
+  const text = String(value == null ? "" : value);
+  try {
+    return text.normalize ? text.normalize("NFC") : text;
+  } catch (error) {
+    return text;
+  }
+}
 
 function line(value, max) {
   return String(value == null ? "" : value)
@@ -37,12 +84,31 @@ function body(value, max) {
     .slice(0, max);
 }
 
+/* Whether a name means the money, asked before any canonicalising so it can
+   be used from inside itemName without circling. */
+export function isCurrency(value) {
+  return has(CURRENCY_KEYS, line(fold(value), NAME_MAX).toLowerCase());
+}
+
+/* Every name in the app comes through here, which is what makes the money one
+   name rather than six. */
 export function itemName(value) {
-  return line(value, NAME_MAX);
+  const name = line(fold(value), NAME_MAX);
+  return isCurrency(name) ? CURRENCY_NAME : name;
 }
 
 export function itemKey(value) {
   return itemName(value).toLowerCase();
+}
+
+const CURRENCY_KEY = CURRENCY_NAME.toLowerCase();
+
+export function currencyItem() {
+  return {
+    name: CURRENCY_NAME,
+    image: null,
+    description: CURRENCY_DESC,
+  };
 }
 
 function tally(value, fallback) {
@@ -62,19 +128,34 @@ export function cleanItem(raw) {
   };
 }
 
+/* The money, put where it belongs: first, described, and present whether the
+   list that arrived knew about it or not. Whatever the administrateur has
+   written on it otherwise is left alone. */
+function withCurrency(items) {
+  for (let i = 0; i < items.length; i += 1) {
+    if (itemKey(items[i].name) !== CURRENCY_KEY) continue;
+    if (!items[i].description) items[i].description = CURRENCY_DESC;
+    if (i > 0) items.unshift(items.splice(i, 1)[0]);
+    return items;
+  }
+  items.unshift(currencyItem());
+  if (items.length > MAX_ITEMS) items.length = MAX_ITEMS;
+  return items;
+}
+
 export function cleanItems(raw) {
-  if (!Array.isArray(raw)) return [];
+  const source = Array.isArray(raw) ? raw : [];
   const out = [];
-  const seen = {};
-  for (let i = 0; i < raw.length && out.length < MAX_ITEMS; i += 1) {
-    const item = cleanItem(raw[i]);
+  const seen = Object.create(null);
+  for (let i = 0; i < source.length && out.length < MAX_ITEMS; i += 1) {
+    const item = cleanItem(source[i]);
     if (!item) continue;
     const key = itemKey(item.name);
-    if (seen[key]) continue;
+    if (has(seen, key)) continue;
     seen[key] = true;
     out.push(item);
   }
-  return out;
+  return withCurrency(out);
 }
 
 export function findItem(items, name) {
@@ -86,7 +167,11 @@ export function findItem(items, name) {
   return null;
 }
 
-/* { "Harry": { "Cigarette": 2 } } */
+/* { "Harry": { "Cigarette": 2 } }
+
+   Two names that fold to the same item are added together rather than one
+   quietly winning: a hand-edited save holding both "real" and "Reál" is
+   somebody's money, and losing half of it would be worse than either. */
 export function cleanInventories(raw) {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
   const out = {};
@@ -99,15 +184,22 @@ export function cleanInventories(raw) {
     if (!holder || !bag || typeof bag !== "object" || Array.isArray(bag)) {
       continue;
     }
-    if (Object.prototype.hasOwnProperty.call(out, holder)) continue;
+    if (has(out, holder)) continue;
 
     const kepts = {};
+    const under = Object.create(null);
     const names = Object.keys(bag);
     let held = 0;
     for (let j = 0; j < names.length && held < MAX_ITEMS; j += 1) {
       const name = itemName(names[j]);
       const count = tally(bag[names[j]], 0);
       if (!name || !count) continue;
+      const key = name.toLowerCase();
+      if (has(under, key)) {
+        kepts[under[key]] = tally(kepts[under[key]] + count, MAX_COUNT);
+        continue;
+      }
+      under[key] = name;
       kepts[name] = count;
       held += 1;
     }
@@ -265,15 +357,15 @@ export function applyOps(store, ops, everyone) {
 /* Item names written as [Cigarette] inside a plan, once each, in the order
    they were written. */
 export function mentionedNames(texts) {
-  const seen = {};
+  const seen = Object.create(null);
   const out = [];
   (Array.isArray(texts) ? texts : []).forEach((text) => {
     const pattern = /\[([^\][]{1,48})\]/g;
     let match;
     while ((match = pattern.exec(String(text == null ? "" : text)))) {
       const name = itemName(match[1]);
-      const key = itemKey(name);
-      if (!key || seen[key]) continue;
+      const key = name.toLowerCase();
+      if (!key || has(seen, key)) continue;
       seen[key] = true;
       out.push(name);
     }

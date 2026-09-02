@@ -2,18 +2,33 @@
 
 /* The dialogs: enlarged portrait, the skill sheet, the NPC manager, the
    player's inventory and the administrateur's item catalogue. Each one
-   remembers what to return focus to on close.
+   remembers what to return focus to on close, and each one is heard closing:
+   whichever dialog it was, dismissing it sounds the same, because the answer
+   to the player is the same.
 
    The skill sheet is the one dialog with a life of its own: it is built once
    and kept, so its header has to be told separately when the player's
    experience moves while it is open. It also keeps whichever card was
    selected, tooltip and all, which is why the dialog is put on screen before
    the sheet renders — a tooltip measured against a hidden dialog has no box
-   to hang off and would land in the corner of the viewport. */
+   to hang off and would land in the corner of the viewport.
+
+   The sheet is also not ours — it is stats/disco-skills.js — so the two
+   sounds it owes are taken from either side of it: a point spent answers
+   through onSpend, and a card picked up is heard by listening on its
+   container.
+
+   The purse is the one square that is not like the others. It is always the
+   first, it prints its amount at one and at none — an empty purse is a
+   reading, not an absence — and it wears its sign rather than an initial,
+   because money has no portrait. It is also the one item the administrateur
+   cannot delete, so it is not offered the button. */
 
 import { dom } from "./dom.js";
 import { paintThumb, clearThumb, cleanName } from "./utils.js";
+import { isCurrency, CURRENCY_MARK } from "./inventory/items.js";
 import { refreshVitals } from "./vitals.js";
+import * as sfx from "./audio/sfx.js";
 
 let modalReturnFocus = null;
 let psycheReturnFocus = null;
@@ -29,6 +44,33 @@ let stagedItemImage = null;
 let psycheHandlers = { onChange: null, onSpend: null };
 
 const TOOLTIP_GAP = 8;
+
+/* What counts as a skill card being picked up. The sheet is somebody else's
+   markup, so this is written wide enough to catch any of the shapes a card
+   can take and narrow enough that the bare background between them stays
+   quiet. */
+const SKILL_TARGET = [
+  "[data-skill]",
+  "[data-skill-id]",
+  "[data-skill-key]",
+  "[data-id]",
+  ".skill",
+  ".skill-card",
+  ".skill-cell",
+  ".disco-skill",
+  ".disco-skill-card",
+  "button",
+  "[role='button']",
+  "[tabindex]",
+].join(", ");
+
+/* A spend and the click that asked for it are the same press. The pick is
+   held back a tick and dropped if a spend was asked for in the same breath,
+   so the two are never heard at once — whichever of the two handlers the
+   sheet runs first. */
+const SPEND_WINDOW_MS = 200;
+let spendAskedAt = 0;
+let sheetWired = false;
 
 function activeFocus() {
   return document.activeElement?.focus ? document.activeElement : null;
@@ -51,6 +93,7 @@ export function closePortrait() {
   if (dom.modal.hidden) return;
   dom.modal.hidden = true;
   clearThumb(dom.modalImage);
+  sfx.playCancel();
   if (modalReturnFocus && document.contains(modalReturnFocus)) {
     modalReturnFocus.focus();
   }
@@ -59,10 +102,23 @@ export function closePortrait() {
 
 /* ---------------- Psyche ---------------- */
 
+/* A card taken up in the sheet. Deferred by a tick on purpose: see
+   SPEND_WINDOW_MS above. */
+function skillPicked(event) {
+  const target = event.target;
+  if (!target || typeof target.closest !== "function") return;
+  if (!target.closest(SKILL_TARGET)) return;
+  setTimeout(() => {
+    if (Date.now() - spendAskedAt < SPEND_WINDOW_MS) return;
+    sfx.playSkillPick();
+  }, 0);
+}
+
 /* options: { ledger, onChange, onSpend }.
 
    onSpend is asked before a pip moves and answers whether the point was
-   really there to spend — the sheet holds no ledger of its own.
+   really there to spend — the sheet holds no ledger of its own. The levelling
+   cue rides on that answer, so a spend the ledger refused is silent.
 
    The dialog is unhidden first and on purpose: the sheet restores the card
    the player last had selected, and its tooltip can only place itself against
@@ -79,6 +135,13 @@ export function openPsyche(sheetState, options) {
   psycheReturnFocus = activeFocus();
   dom.psycheModal.hidden = false;
 
+  /* Once, on the container rather than the cards: the sheet rebuilds those
+     whenever a point lands. */
+  if (!sheetWired && dom.psycheSheet) {
+    dom.psycheSheet.addEventListener("click", skillPicked);
+    sheetWired = true;
+  }
+
   if (!sheetInstance && window.DiscoSkillSheet) {
     sheetInstance = new window.DiscoSkillSheet(dom.psycheSheet, {
       /* Attributes are the character's, fixed at the door. Points earned in
@@ -91,8 +154,14 @@ export function openPsyche(sheetState, options) {
         if (psycheHandlers.onChange) psycheHandlers.onChange(next);
         refreshVitals(next, false);
       },
-      onSpend: (skillId) =>
-        psycheHandlers.onSpend ? psycheHandlers.onSpend(skillId) : false,
+      onSpend: (skillId) => {
+        spendAskedAt = Date.now();
+        const allowed = psycheHandlers.onSpend
+          ? psycheHandlers.onSpend(skillId)
+          : false;
+        if (allowed) sfx.playSkillLevel();
+        return allowed;
+      },
     });
   } else if (sheetInstance) {
     sheetInstance.setState(sheetState, true);
@@ -112,6 +181,7 @@ export function closePsyche() {
   if (dom.psycheModal.hidden) return;
   if (sheetInstance) sheetInstance.hideTooltip();
   dom.psycheModal.hidden = true;
+  sfx.playCancel();
   if (psycheReturnFocus && document.contains(psycheReturnFocus)) {
     psycheReturnFocus.focus();
   }
@@ -204,6 +274,7 @@ export function closeNpcModal() {
   if (!dom.npcModal || dom.npcModal.hidden) return;
   dom.npcModal.hidden = true;
   resetNpcForm();
+  sfx.playCancel();
   if (npcReturnFocus && document.contains(npcReturnFocus)) {
     npcReturnFocus.focus();
   }
@@ -216,6 +287,31 @@ export function getStagedNpcPortrait() {
 
 export function setStagedNpcPortrait(url) {
   stagedNpcPortrait = url;
+}
+
+/* ---------------- Item squares ---------------- */
+
+/* One square's face. A picture if the item has one, its sign if it is money,
+   its initial otherwise. clearThumb is what drops any portrait custom
+   property left over from a previous render. */
+function paintItemSquare(element, item) {
+  if (!element) return;
+  const held = item || {};
+
+  element.classList.remove("is-sign");
+
+  if (held.image) {
+    paintThumb(element, { name: held.name, portrait: held.image });
+    return;
+  }
+  if (held.mark) {
+    clearThumb(element);
+    element.setAttribute("data-mark", "sign");
+    element.classList.add("is-sign");
+    element.textContent = held.mark;
+    return;
+  }
+  paintThumb(element, { name: held.name || "", portrait: null });
 }
 
 /* ---------------- Item tooltip ---------------- */
@@ -271,14 +367,20 @@ function toggleItemTooltip(anchor, item) {
   tip.appendChild(title);
   tip.appendChild(body);
 
+  /* A purse says what is in it, since its square carries a number rather than
+     a count of things. */
+  if (item.currency) {
+    const purse = document.createElement("p");
+    purse.className = "inv-tooltip-text inv-tooltip-purse";
+    purse.textContent = "You currently have " + (item.count || 0) + ".";
+    tip.appendChild(purse);
+  }
+
   tip.dataset.item = item.name;
   tip.setAttribute("aria-hidden", "false");
   tip.classList.add("is-open");
   positionItemTooltip(anchor);
 }
-
-window.addEventListener("resize", hideItemTooltip);
-window.addEventListener("scroll", hideItemTooltip, true);
 
 /* ---------------- Inventory (player) ---------------- */
 
@@ -291,11 +393,33 @@ export function noteInventory(text) {
   dom.inventoryLock.hidden = !body;
 }
 
+/* Money is always there, so "empty" has to mean something narrower than it
+   used to: nothing but the purse. What the purse holds decides which of the
+   two readings is true. */
+function paintInventoryEmpty(items) {
+  if (!dom.inventoryEmpty) return;
+  let things = 0;
+  let money = 0;
+  items.forEach((item) => {
+    if (item.currency) money = item.count || 0;
+    else things += 1;
+  });
+
+  if (things) {
+    dom.inventoryEmpty.hidden = true;
+    return;
+  }
+  dom.inventoryEmpty.hidden = false;
+  dom.inventoryEmpty.textContent = money
+    ? "Nothing but your money."
+    : "Your pockets are empty.";
+}
+
 export function renderInventoryGrid(list, onPick) {
   if (!dom.inventoryGrid) return;
   const items = Array.isArray(list) ? list : [];
   dom.inventoryGrid.textContent = "";
-  if (dom.inventoryEmpty) dom.inventoryEmpty.hidden = items.length > 0;
+  paintInventoryEmpty(items);
 
   items.forEach((item) => {
     const cell = document.createElement("div");
@@ -305,18 +429,31 @@ export function renderInventoryGrid(list, onPick) {
     const square = document.createElement("button");
     square.type = "button";
     square.className = "inv-item";
+    if (item.currency) square.classList.add("inv-currency");
     square.title = item.name;
-    square.setAttribute("aria-label", item.name + " — name it in your plan");
+    square.setAttribute(
+      "aria-label",
+      item.currency
+        ? item.name + " — " + (item.count || 0) + ", name it in your plan"
+        : item.name + " — name it in your plan",
+    );
 
     const thumb = document.createElement("span");
     thumb.className = "inv-thumb";
-    paintThumb(thumb, { name: item.name, portrait: item.image });
+    paintItemSquare(thumb, item);
     square.appendChild(thumb);
 
-    if (item.count > 1) {
+    /* A purse prints its amount at one and at none: how much money there is
+       is the whole of what the square says. */
+    if (item.currency || item.count > 1) {
       const count = document.createElement("span");
       count.className = "inv-count";
-      count.textContent = "×" + item.count;
+      if (item.currency) {
+        count.classList.add("inv-count-currency");
+        count.textContent = String(item.count || 0);
+      } else {
+        count.textContent = "×" + item.count;
+      }
       square.appendChild(count);
     }
 
@@ -358,6 +495,7 @@ export function closeInventory() {
   hideItemTooltip();
   noteInventory("");
   dom.inventoryModal.hidden = true;
+  sfx.playCancel();
   if (inventoryReturnFocus && document.contains(inventoryReturnFocus)) {
     inventoryReturnFocus.focus();
   }
@@ -367,9 +505,11 @@ export function closeInventory() {
 /* ---------------- Items (administrateur) ---------------- */
 
 export function paintItemPreview(name, image) {
-  paintThumb(dom.itemImagePreview, {
-    name: String(name == null ? "" : name).trim(),
-    portrait: image || null,
+  const label = String(name == null ? "" : name).trim();
+  paintItemSquare(dom.itemImagePreview, {
+    name: label,
+    image: image || null,
+    mark: isCurrency(label) ? CURRENCY_MARK : "",
   });
 }
 
@@ -402,12 +542,19 @@ export function renderItemList(list, onEdit, onRemove) {
   }
 
   items.forEach((item) => {
+    const money = isCurrency(item.name);
+
     const row = document.createElement("div");
     row.className = "npc-item";
+    if (money) row.classList.add("item-fixed");
 
     const thumb = document.createElement("div");
     thumb.className = "inv-thumb inv-thumb-sm";
-    paintThumb(thumb, { name: item.name, portrait: item.image });
+    paintItemSquare(thumb, {
+      name: item.name,
+      image: item.image,
+      mark: money ? CURRENCY_MARK : "",
+    });
 
     const name = document.createElement("span");
     name.className = "npc-item-name";
@@ -421,14 +568,25 @@ export function renderItemList(list, onEdit, onRemove) {
     editBtn.type = "button";
     editBtn.textContent = "Edit";
     editBtn.addEventListener("click", () => onEdit(item.name));
-
-    const delBtn = document.createElement("button");
-    delBtn.type = "button";
-    delBtn.textContent = "Delete";
-    delBtn.addEventListener("click", () => onRemove(item.name));
-
     actions.appendChild(editBtn);
-    actions.appendChild(delBtn);
+
+    /* The money is not the administrateur's to withdraw, so the button that
+       would try is simply not there — a disabled one only invites the
+       question. */
+    if (money) {
+      const held = document.createElement("span");
+      held.className = "item-fixed-note";
+      held.textContent = "Money";
+      held.title =
+        "Every character carries this. It cannot be renamed or removed.";
+      actions.appendChild(held);
+    } else {
+      const delBtn = document.createElement("button");
+      delBtn.type = "button";
+      delBtn.textContent = "Delete";
+      delBtn.addEventListener("click", () => onRemove(item.name));
+      actions.appendChild(delBtn);
+    }
 
     row.appendChild(thumb);
     row.appendChild(name);
@@ -451,6 +609,7 @@ export function closeItemsModal() {
   if (!dom.itemsModal || dom.itemsModal.hidden) return;
   dom.itemsModal.hidden = true;
   resetItemForm();
+  sfx.playCancel();
   if (itemsReturnFocus && document.contains(itemsReturnFocus)) {
     itemsReturnFocus.focus();
   }
@@ -464,5 +623,8 @@ export function getStagedItemImage() {
 export function setStagedItemImage(url) {
   stagedItemImage = url;
 }
+
+window.addEventListener("resize", hideItemTooltip);
+window.addEventListener("scroll", hideItemTooltip, true);
 
 export { cleanName };

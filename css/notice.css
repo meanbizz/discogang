@@ -1,0 +1,122 @@
+/* css/notice.css */
+
+/* The notice plate: money, health and morale, and whatever else earns one
+   later.
+
+   Same shape as the check verdict and the experience plate — fixed over the
+   viewport, transparent until overlays.js fades it in, masked off to the right
+   so the wipe has somewhere to travel from. Only the travel is in
+   animations.css.
+
+   Above both of those in the stack, because a notice is queued rather than
+   raced: if it is on screen at all, nothing else has a claim on the moment.
+
+   Money says what moved in words under its coins. Health and morale say
+   nothing at all — the picture is the whole sentence — so the title and the
+   amount are both allowed to be absent, and the art is given the room the
+   words would have taken. */
+
+.notice-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 62;
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+  opacity: 0;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    transparent 50%,
+    #000 66.6%,
+    #000 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    transparent 50%,
+    #000 66.6%,
+    #000 100%
+  );
+  -webkit-mask-size: 300% 100%;
+  mask-size: 300% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: 100% 0;
+  mask-position: 100% 0;
+}
+
+.notice-overlay[hidden] {
+  display: none;
+}
+
+/* Low on the screen, like the verdict and the experience plate: the session
+   stays readable above it. */
+.notice-overlay-body {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 0.6rem;
+  margin-top: auto;
+  margin-bottom: 96px;
+  text-align: center;
+}
+
+.notice-art {
+  width: clamp(7rem, 32vw, 24rem);
+  height: auto;
+  filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.75));
+  pointer-events: none;
+}
+
+.notice-art[hidden] {
+  display: none;
+}
+
+/* A wordless plate carries its meaning in the picture, so the picture gets
+   the words' room as well. */
+.notice-overlay[data-kind^="health-"] .notice-art,
+.notice-overlay[data-kind^="morale-"] .notice-art {
+  width: clamp(7rem, 24vw, 15rem);
+}
+
+.notice-title,
+.notice-amount {
+  margin: 0;
+  background: var(--notice-back);
+  color: var(--notice-ink);
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  line-height: 1.2;
+}
+
+.notice-title {
+  padding: 0.4rem 1.1rem;
+  font-size: clamp(1rem, 3vw, 2.5rem);
+}
+
+.notice-title[hidden] {
+  display: none;
+}
+
+/* The amount reads smaller than the news it belongs to, and in the colour of
+   the direction it went. */
+.notice-amount {
+  padding: 0.25rem 0.85rem;
+  font-size: clamp(0.9rem, 2.2vw, 1.35rem);
+}
+
+.notice-amount[hidden] {
+  display: none;
+}
+
+/* Which way it went, whatever moved. overlays.js writes data-way for every
+   plate, so money and vitals are coloured and animated by one rule each. */
+.notice-overlay[data-way="gain"] .notice-amount {
+  color: var(--money-gain);
+}
+
+.notice-overlay[data-way="loss"] .notice-amount {
+  color: var(--money-loss);
+}

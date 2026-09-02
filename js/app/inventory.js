@@ -3,20 +3,31 @@
 /* Items from the app's side: what each character holds, the catalogue of
    everything in play, and the payload orders that move items around.
 
-   The host is the only seat that mutates any of it; everybody else is told. */
+   The host is the only seat that mutates any of it; everybody else is told.
+
+   Money is watched rather than moved: every live change to the table's items
+   is compared against what this seat's purse held a moment ago, and a
+   difference is announced. Only live changes — a welcome, a reconnect and a
+   restored save all land silently, since money that was already earned is not
+   news, and a seat coming back from a dropped wire should not be paid twice
+   in its own eyes. */
 
 import { dom } from "../dom.js";
 import { holdImage } from "../assets.js";
 import * as modals from "../modals.js";
+import * as overlays from "../overlays.js";
 import {
   applyOps,
   cleanItem,
   cleanItems,
   cleanInventories,
   findItem,
+  isCurrency,
   itemKey,
   itemName,
   mentionedNames,
+  CURRENCY_MARK,
+  CURRENCY_NAME,
 } from "../inventory/items.js";
 import { state } from "./state.js";
 import { network, broadcast, sendUpstream } from "./net.js";
@@ -39,27 +50,62 @@ function bagOf(holder) {
   return null;
 }
 
-/* What one character carries, described from the catalogue. */
+/* One square, described from the catalogue. currency and mark are what let
+   the grid treat a purse as a purse: it prints its amount at one and at none,
+   and it wears its sign instead of an initial. */
+function describeHeld(name, count) {
+  const known = findItem(state.items, name);
+  const currency = isCurrency(name);
+  return {
+    name: known ? known.name : itemName(name),
+    image: known ? known.image : null,
+    description: known ? known.description : "",
+    count,
+    currency,
+    mark: currency ? CURRENCY_MARK : "",
+  };
+}
+
+/* What one character carries, described from the catalogue. The purse is
+   always the first square and is there at nothing: a bag holds no zeroes, so
+   an empty purse is read from the catalogue rather than found in the bag. */
 export function heldBy(holder) {
   const bag = bagOf(holder) || {};
   const out = [];
+  let money = 0;
+
   Object.keys(bag).forEach((name) => {
     const count = bag[name];
+    if (isCurrency(name)) {
+      money = Number(count) || 0;
+      return;
+    }
     if (!count) return;
-    const known = findItem(state.items, name);
-    out.push({
-      name: known ? known.name : name,
-      image: known ? known.image : null,
-      description: known ? known.description : "",
-      count,
-    });
+    out.push(describeHeld(name, count));
   });
+
   out.sort((a, b) => a.name.localeCompare(b.name));
+  out.unshift(describeHeld(CURRENCY_NAME, money));
   return out;
 }
 
 export function selfItems() {
   return heldBy(state.profile.name);
+}
+
+/* Just the number, for the before-and-after either side of a change. */
+export function moneyHeld(holder) {
+  const bag = bagOf(holder);
+  if (!bag) return 0;
+  const names = Object.keys(bag);
+  for (let i = 0; i < names.length; i += 1) {
+    if (isCurrency(names[i])) return Number(bag[names[i]]) || 0;
+  }
+  return 0;
+}
+
+function selfMoney() {
+  return moneyHeld(state.profile.name);
 }
 
 function totalHeld(name) {
@@ -82,12 +128,24 @@ export function refreshViews() {
   modals.renderInventoryGrid(selfItems(), pickItem);
 }
 
-export function setInventory(rawItems, rawInventories) {
+/* The administrateur keeps no purse, so nothing is announced to them. */
+function announceMoney(before, after) {
+  if (state.isAdmin) return;
+  overlays.money(after - before);
+}
+
+/* announce is for the live paths only: the host committing a payload's orders,
+   and a guest being told what came of them. */
+export function setInventory(rawItems, rawInventories, announce) {
+  const before = announce ? selfMoney() : 0;
+
   state.items = cleanItems(rawItems);
   state.inventories = cleanInventories(rawInventories);
   /* Thumbnails are held the moment they are known, so the grid never waits. */
   state.items.forEach((item) => holdImage(item.image));
   refreshViews();
+
+  if (announce) announceMoney(before, selfMoney());
 }
 
 export function inventoryPayload() {
@@ -105,7 +163,7 @@ export function commitOps(ops) {
     ops,
     holderNames(),
   );
-  setInventory(next.items, next.inventories);
+  setInventory(next.items, next.inventories, true);
   broadcast(inventoryPayload());
 }
 
@@ -197,7 +255,16 @@ function renameHeld(from, to) {
   });
 }
 
+/* The money is not the administrateur's to withdraw: every character carries
+   it, and a catalogue without it is put back the moment anything is read.
+   Refusing here is what keeps the two from disagreeing in the meantime. */
 export function removeItem(name) {
+  if (isCurrency(name)) {
+    dom.itemFormError.textContent =
+      CURRENCY_NAME + " is the table's money — it cannot be taken out of play.";
+    return;
+  }
+
   const key = itemKey(name);
   state.items = state.items.filter((item) => itemKey(item.name) !== key);
   Object.keys(state.inventories).forEach((holder) => {
@@ -225,6 +292,15 @@ export function submitItemForm() {
   }
 
   const previous = itemName(dom.itemKeyInput.value);
+
+  /* Its description and its picture are the administrateur's; its name is
+     not. Everything that moves money looks it up by that name. */
+  if (previous && isCurrency(previous) && !isCurrency(cleaned.name)) {
+    dom.itemFormError.textContent =
+      CURRENCY_NAME + " cannot be renamed — it is the table's money.";
+    return;
+  }
+
   const clash = findItem(state.items, cleaned.name);
   if (clash && itemKey(clash.name) !== itemKey(previous)) {
     dom.itemFormError.textContent = "An item by that name already exists.";

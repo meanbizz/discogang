@@ -1,3 +1,5 @@
+/* js/vitals.js */
+
 /* Health and morale: the two bars, their ceilings taken from the skill sheet,
    and the single-step changes a dialogue node spends. The is-hit flash is
    animated in animations.css.
@@ -5,15 +7,18 @@
    The arithmetic itself lives in js/sheet.js, so the save writer and the sheet
    header read the same numbers this does.
 
-   The flash is the one thing here that waits on anything: it goes through the
+   Nothing here is seen the moment it happens. The flash goes through the
    animation lane, so a bar moving under a node that also rolls is seen after
-   the dice rather than behind them. */
+   the dice rather than behind them, and the plate that announces the step is
+   queued on the same lane by js/overlays.js. Only refreshVitals is silent: a
+   raised ceiling is bookkeeping, not damage. */
 
 import { dom } from "./dom.js";
 import { VITAL_SKILL } from "./config.js";
 import { TIMING } from "./timing.js";
 import { skillScores } from "./sheet.js";
 import { whenIdle } from "./sequencer.js";
+import * as overlays from "./overlays.js";
 
 export const vitals = {
   health: { value: 0, max: 0 },
@@ -54,7 +59,8 @@ export function renderVitals() {
 
 /* fill tops both bars up; otherwise a raised ceiling adds its own difference,
    so editing the sheet mid-session neither heals nor harms. A skill point
-   spent on endurance or volition arrives through exactly this path. */
+   spent on endurance or volition arrives through exactly this path — and
+   raises no plate, because nothing was done to the character. */
 export function refreshVitals(sheetState, fill) {
   Object.keys(vitals).forEach((kind) => {
     const state = vitals[kind];
@@ -87,7 +93,11 @@ function flash(kind) {
 }
 
 /* One step of health or morale, clamped to the sheet's ceiling. direction is
-   "gain" or "loss"; returns the actual change. */
+   "gain" or "loss"; returns the actual change.
+
+   A step that actually landed is both flashed on the bar and announced on the
+   notice plate — the bar says how much is left, the plate says what just
+   happened. A step that changed nothing says nothing. */
 export function changeVital(kind, direction) {
   const state = vitals[kind];
   if (!state) return 0;
@@ -97,6 +107,9 @@ export function changeVital(kind, direction) {
   const before = state.value;
   state.value = Math.max(0, Math.min(state.max, state.value + delta));
   renderVitals();
-  if (state.value !== before) flash(kind);
+  if (state.value !== before) {
+    flash(kind);
+    overlays.vital(kind, state.value > before);
+  }
   return state.value - before;
 }

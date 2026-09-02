@@ -4,7 +4,9 @@
    torn down on the way out.
 
    Experience is the session's, not the browser's: a seat that leaves the room
-   drops its ledger with everything else, and only a save can hand it back. */
+   drops its ledger with everything else, and only a save can hand it back.
+   Money goes the same way — it lives in the room's inventories, and a fresh
+   seat starts with an empty purse. */
 
 import { dom, anchors, setPresent } from "../dom.js";
 import { isAdminName } from "../utils.js";
@@ -12,6 +14,7 @@ import * as audio from "../audio/index.js";
 import * as music from "../audio/music.js";
 import * as dialogue from "../dialogue/dialogue.js";
 import * as modals from "../modals.js";
+import * as overlays from "../overlays.js";
 import * as vitals from "../vitals.js";
 import { resetXp } from "../xp.js";
 import { state } from "./state.js";
@@ -72,6 +75,8 @@ export function connect(room, name, portrait) {
   state.seats.clear();
   state.savedProgress.clear();
   state.npcs = [];
+  /* Empty, which the item sieve reads as "the money and nothing else": every
+     character has a purse from the first frame, holding nothing. */
   setInventory([], {});
   renderRoster();
   replaceLog([]);
@@ -87,6 +92,8 @@ export function connect(room, name, portrait) {
   state.welcomed = false;
   state.sessionRestored = false;
   dialogue.reset();
+  /* Nothing another room was announcing belongs to this one. */
+  overlays.reset();
   refreshPlanningLock();
   refreshSpeakLock();
   refreshLoadButton();
@@ -127,6 +134,7 @@ export function leave() {
   modals.closeItemsModal();
 
   dialogue.reset();
+  overlays.reset();
   state.dialoguePayload = null;
   state.dialogueRounds = [];
   state.dialogueLive = false;

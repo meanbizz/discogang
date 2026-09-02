@@ -1,7 +1,9 @@
+/* css/animations.css */
+
 /* Every animation in the app. Nothing here decides when a class arrives —
-   that is cues.js, and the order those classes arrive in is js/sequencer.js.
-   Each duration comes from a --dur-* token: tokens.css holds the fallbacks,
-   js/timing.js rewrites them on :root at boot.
+   that is cues.js and overlays.js, and the order those classes arrive in is
+   js/sequencer.js. Each duration comes from a --dur-* token: tokens.css holds
+   the fallbacks, js/timing.js rewrites them on :root at boot.
 
    Load last, after the component files. */
 
@@ -178,6 +180,75 @@
   }
 }
 
+/* ---------------- Notice overlay ---------------- */
+
+/* The same three beats again, shorter: a payment or a bruise is a fact rather
+   than an achievement, and several can arrive one after another. The mask is
+   set up in notice.css. */
+.notice-overlay.is-in {
+  animation: notice-in var(--dur-notice-in) ease forwards;
+}
+
+.notice-overlay.is-out {
+  animation: notice-wipe var(--dur-notice-out) linear forwards;
+}
+
+@keyframes notice-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes notice-wipe {
+  from {
+    opacity: 1;
+    -webkit-mask-position: 100% 0;
+    mask-position: 100% 0;
+  }
+  to {
+    opacity: 1;
+    -webkit-mask-position: 0% 0;
+    mask-position: 0% 0;
+  }
+}
+
+/* A plate arrives from below when something was given and sinks when it was
+   taken, so the direction is read before the picture is. One rule for all of
+   them: overlays.js writes data-way for money, health and morale alike, and
+   nothing here needs to know which of the three it is. */
+.notice-overlay[data-way="gain"] .notice-art:not([hidden]) {
+  animation: notice-art-rise var(--dur-notice-art) ease-out forwards;
+}
+
+.notice-overlay[data-way="loss"] .notice-art:not([hidden]) {
+  animation: notice-art-sink var(--dur-notice-art) ease-out forwards;
+}
+
+@keyframes notice-art-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes notice-art-sink {
+  from {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 /* ---------------- Vitals ---------------- */
 
 .vital.is-hit {
@@ -246,6 +317,22 @@
   }
 
   .xp-overlay[data-kind="point"] .xp-art:not([hidden]) {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .notice-overlay.is-in {
+    animation: none;
+    opacity: 1;
+  }
+
+  .notice-overlay.is-out {
+    animation: none;
+    opacity: 0;
+  }
+
+  .notice-overlay .notice-art:not([hidden]) {
     animation: none;
     opacity: 1;
     transform: none;

@@ -71,12 +71,13 @@ function skillsOf(sheetState) {
 }
 
 /* The bag as the grid shows it. Nameless entries cannot be anything, so they
-   are left out. */
+   are left out — but a count of none is kept: an empty purse is a reading,
+   and rounding it up to one would hand the player money they never had. */
 function inventoryOf(list) {
   return (Array.isArray(list) ? list : [])
     .map((item) => ({
       name: String(item && item.name ? item.name : ""),
-      count: count(item && item.count, 1) || 1,
+      count: count(item && item.count, 0),
       description: String(item && item.description ? item.description : ""),
       image: item && item.image ? item.image : null,
     }))

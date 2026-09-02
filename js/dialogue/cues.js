@@ -1,3 +1,5 @@
+/* js/dialogue/cues.js */
+
 /* Cue choreography: what plays when. The reader says only what happened; how
    long it takes on screen or in the speakers is settled here.
 
@@ -9,18 +11,25 @@
    Every overlay is queued on the one lane in js/sequencer.js rather than
    started where it was asked for. A rolled node takes its place in that queue
    on the frame it lands, so everything else the same node sets off — the
-   experience plate, a bar flashing — falls in behind the dice on its own.
-   Nothing adds up a delay any more.
+   experience plate, a bar flashing, a step of health announcing itself — falls
+   in behind the dice on its own. Nothing adds up a delay any more.
 
-   The one thing that does not wait is the hiding. A rolled node's line is
-   held out of sight from the frame it arrives, lane free or not, because the
-   verdict is written in its check tag and must not be read there first. */
+   The scene's jobs are its own group, so resetting the reader drops the dice
+   and the experience it queued without touching a money notice that arrived
+   alongside the payload. Two things do not wait at all: the hiding, because a
+   rolled node's line is held out of sight from the frame it arrives, lane free
+   or not — the verdict is written in its check tag and must not be read there
+   first — and the click of a choice being taken, because a blip that waited
+   for the dice would answer a press nobody remembers making. */
 
 import { dom } from "../dom.js";
 import { TIMING } from "../timing.js";
 import * as sfx from "../audio/sfx.js";
 import * as music from "../audio/music.js";
 import * as sequencer from "../sequencer.js";
+
+/* Everything queued here belongs to the scene being read. */
+const SCENE = "scene";
 
 /* is-held is a line waiting its turn: nothing moves, it is simply not read
    yet. is-rolling is that turn being taken, texture and all. */
@@ -35,18 +44,11 @@ function href(path) {
   return new URL(path, window.location.href).href;
 }
 
-/* Each job keeps its own timers, so cancelling one cannot drop another's. */
-function clock() {
-  let timers = [];
-  return {
-    after(ms, action) {
-      timers.push(setTimeout(action, Math.max(0, Number(ms) || 0)));
-    },
-    stop() {
-      for (let i = 0; i < timers.length; i += 1) clearTimeout(timers[i]);
-      timers = [];
-    },
-  };
+/* Off the dom map where it carries it, off the document where it does not:
+   the plate is the loudest half of a new skill point and should not be lost
+   to a missing name. */
+function xpArt() {
+  return dom.xpArt || document.getElementById("xp-art");
 }
 
 function holdEntries() {
@@ -180,9 +182,10 @@ export function beginRoll(check) {
   holdEntries();
   if (!check) return;
 
-  const timers = clock();
+  const timers = sequencer.clock();
   sequencer.enqueue({
     name: "check",
+    group: SCENE,
     timeoutMs: checkDurationMs(),
     run: (done) => runCheck(check, timers, done),
     cancel: () => {
@@ -207,13 +210,15 @@ function runXp(gained, granted, timers, done) {
   host.dataset.kind = point ? "point" : "gain";
 
   /* A point gets a plate of its own; a plain gain is only words. */
-  if (dom.xpArt) {
+  const art = xpArt();
+  if (art) {
     if (point) {
-      dom.xpArt.src = href(POINT_ART);
-      dom.xpArt.hidden = false;
+      art.src = href(POINT_ART);
+      art.alt = "";
+      art.hidden = false;
     } else {
-      dom.xpArt.hidden = true;
-      dom.xpArt.removeAttribute("src");
+      art.hidden = true;
+      art.removeAttribute("src");
     }
   }
 
@@ -221,7 +226,7 @@ function runXp(gained, granted, timers, done) {
     dom.xpTitle.textContent = point ? "New skill point!" : "Gained experience";
   }
   if (dom.xpAmount) {
-    dom.xpAmount.textContent = "+" + gained + " XP";
+    dom.xpAmount.textContent = "+" + (gained || 0) + " XP";
     /* A point is the news; the experience that bought it would read as small
        print beside it. */
     dom.xpAmount.hidden = point;
@@ -233,9 +238,11 @@ function runXp(gained, granted, timers, done) {
   void host.offsetWidth;
   host.classList.add("is-in");
 
-  /* The dice have finished with the channel by now, so the point is heard as
-     well as read. */
+  /* The dice have finished with their channel by now, so whichever of the two
+     this is gets heard as well as read. One or the other, never both: a point
+     is the news, and the experience under it would only crowd it. */
   if (point) sfx.playPoint(null);
+  else sfx.playXp(null);
 
   timers.after(TIMING.xp.inMs + TIMING.xp.holdMs, () => {
     host.classList.remove("is-in");
@@ -257,9 +264,10 @@ function runXp(gained, granted, timers, done) {
 export function showXp(gained, granted) {
   if (!dom.xpOverlay || (!gained && !granted)) return;
 
-  const timers = clock();
+  const timers = sequencer.clock();
   sequencer.enqueue({
     name: granted ? "skill-point" : "xp",
+    group: SCENE,
     timeoutMs: TIMING.xp.inMs + TIMING.xp.holdMs + TIMING.xp.outMs,
     run: (done) => runXp(gained, granted, timers, done),
     cancel: () => {
@@ -279,6 +287,12 @@ export function playNode(voice, check) {
   const rolled = Boolean(check && check.result && !check.passive);
   const attribute = voice ? voice.attribute : null;
   if (attribute && !rolled) sfx.playJingle(attribute, null);
+}
+
+/* A line being taken. Never queued: the press is the player's own doing and
+   is answered on the frame it happens. */
+export function playChoice() {
+  sfx.playClick();
 }
 
 /* The timer is the fallback for browsers that never fire animationend. A
@@ -302,9 +316,12 @@ export function fadeOutAndRemove(node, done) {
 }
 
 export function reset() {
-  /* Cancels whatever was queued or mid-turn, which puts the screen back. */
-  sequencer.clear();
-  sfx.stopAll();
+  /* This scene's own queue only: a notice riding in with the payload that
+     opened it keeps its place. */
+  sequencer.clear(SCENE);
+  /* And its own voices only, for the same reason — the plate that survives a
+     reset survives with the sound it was given. */
+  sfx.stopScene();
   stopTape();
   releaseEntries();
   hideVerdict();

@@ -1,7 +1,11 @@
 /* css/inventory.css */
 
 /* The player's item grid and the administrateur's item manager. The manager
-   borrows the NPC layout; only the squares and the tooltip are new. */
+   borrows the NPC layout; only the squares and the tooltip are new.
+
+   One square is not like the others: the purse is always first, always
+   present, and carries an amount rather than a count of things. It wears its
+   sign where the others wear a picture. */
 
 .inventory-modal-card {
   width: min(96vw, 34rem);
@@ -35,6 +39,16 @@
   border-color: var(--option);
 }
 
+/* The purse stands slightly apart from the things beside it. */
+.inv-item.inv-currency {
+  border-color: var(--money-rule);
+  background: var(--money-sunk);
+}
+
+.inv-item.inv-currency:hover {
+  border-color: var(--money-gain);
+}
+
 /* Bare box, no portrait frame: an item is a thing, not a face. */
 .inv-thumb {
   position: relative;
@@ -57,6 +71,15 @@
   pointer-events: none;
 }
 
+/* A sign is not an initial: it is the item's own mark, so it is drawn large
+   and in the money's colour rather than dimmed like a missing portrait. */
+.inv-thumb.is-sign {
+  color: var(--money-gain);
+  font-size: 2.1rem;
+  line-height: 1;
+  text-transform: none;
+}
+
 .inv-thumb.inv-thumb-sm {
   flex: 0 0 auto;
   width: 2.5rem;
@@ -64,6 +87,10 @@
   background: var(--bg);
   border: var(--hairline);
   font-size: 0.9rem;
+}
+
+.inv-thumb.inv-thumb-sm.is-sign {
+  font-size: 1.25rem;
 }
 
 .inv-count {
@@ -74,6 +101,16 @@
   font-size: 0.7rem;
   letter-spacing: 0.06em;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95);
+}
+
+/* How much money there is is the whole of what the square says, so it is read
+   at a glance rather than squinted at in a corner. */
+.inv-count.inv-count-currency {
+  right: 0.25rem;
+  bottom: 0.15rem;
+  color: var(--money-gain);
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
 }
 
 /* The name only surfaces on the square being considered. */
@@ -163,8 +200,28 @@
   line-height: 1.35;
 }
 
+/* What is actually in the purse, under what a purse is. */
+.inv-tooltip-purse {
+  color: var(--money-gain);
+}
+
 .item-desc-input {
   min-height: 5rem;
+}
+
+/* An item the administrateur may edit but not withdraw. The note stands where
+   the Delete button would have been, so the row does not reflow. */
+.npc-item.item-fixed {
+  border-color: var(--money-rule);
+}
+
+.item-fixed-note {
+  padding: 0.2rem 0.5rem;
+  border: 1px solid var(--money-rule);
+  color: var(--money-gain);
+  font-size: 0.65rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
 
 @media (max-width: 32rem) {
@@ -173,5 +230,8 @@
   }
   .inv-name {
     font-size: 0.55rem;
+  }
+  .inv-thumb.is-sign {
+    font-size: 1.7rem;
   }
 }

@@ -13,7 +13,12 @@
    reader — the scene replayed, vitals were spent twice and experience was
    earned twice. onWelcome therefore asks whether this seat has been welcomed
    before: the first time the room is built, and every time after that only
-   what is genuinely new is taken. */
+   what is genuinely new is taken.
+
+   Inventory carries the same distinction. setInventory is told whether the
+   change is news: money moving because a payload just paid somebody is
+   announced, and money that was already in the bag when this seat arrived is
+   not. */
 
 import { TURN_MIN_LENGTH, PLAYER_SLOTS } from "../config.js";
 import {
@@ -251,7 +256,8 @@ function onHostReceiveData(connection, data) {
     return;
   }
 
-  /* Items move here and nowhere else, so every bag agrees with this one. */
+  /* Items move here and nowhere else, so every bag agrees with this one.
+     commitOps announces what it did to this seat's own purse. */
   if (data.type === "inventory-ops") {
     if (!person?.admin) return;
     const ops = cleanOps(data.ops);
@@ -261,7 +267,7 @@ function onHostReceiveData(connection, data) {
   }
 
   /* The administrateur edited the catalogue, which can rename what people
-     already carry, so the whole thing is adopted and passed on. */
+     already carry but never moves a count, so there is nothing to announce. */
   if (data.type === "inventory-state") {
     if (!person?.admin) return;
     setInventory(data.items, data.inventories);
@@ -312,7 +318,8 @@ function unseenEntries(incoming, held) {
   });
 }
 
-/* The room as this seat finds it for the first time. */
+/* The room as this seat finds it for the first time. Nothing in it is news:
+   whatever is in the bag was earned before this seat could see it happen. */
 function firstWelcome(data, current, live) {
   replaceRounds(data.rounds, data.dialogue);
 
@@ -358,7 +365,12 @@ function firstWelcome(data, current, live) {
    The scene in progress is the delicate part. If the room is still reading
    the round this seat was reading, it is left entirely alone — restarting it
    would replay the lines, spend the vitals again and pay the experience
-   again. A round this seat never saw is a new scene, and is started properly. */
+   again. A round this seat never saw is a new scene, and is started properly.
+
+   Money that moved while the wire was down lands quietly. It is a state
+   correction rather than an event, and a plate for it would be a plate for
+   something the player has no scene to attach it to. The amount in their
+   pocket is right either way. */
 function laterWelcome(data, current, live) {
   const before = state.dialogueRounds.map((round) => round.id);
   const seen = {};
@@ -527,8 +539,10 @@ function onGuestReceiveData(data) {
     return;
   }
 
+  /* The live path: the host has just moved items, so a change to this seat's
+     purse is news and is announced. */
   if (data.type === "inventory") {
-    setInventory(data.items, data.inventories);
+    setInventory(data.items, data.inventories, true);
     return;
   }
 

@@ -635,12 +635,32 @@
       </div>
     </div>
 
-    <!-- Experience overlay: the same in-hold-wipe as the verdict above -->
+    <!-- Experience overlay: the same in-hold-wipe as the verdict above. The
+         plate is only shown for a new skill point; cues.js hides it for a
+         plain gain, which is words alone. -->
     <div id="xp-overlay" class="xp-overlay" aria-hidden="true" hidden>
       <div id="xp-vignette" class="xp-vignette"></div>
       <div class="xp-overlay-body">
+        <img id="xp-art" class="xp-art" src="" alt="" hidden />
         <p id="xp-title" class="xp-title">GAINED EXPERIENCE</p>
         <p id="xp-amount" class="xp-amount">+0 XP</p>
+      </div>
+    </div>
+
+    <!-- Notice plate: money, health and morale. Announced rather than
+         decorative, so it is read out rather than hidden from the reader —
+         the wordless plates carry their sentence in the picture's alt. -->
+    <div
+      id="notice-overlay"
+      class="notice-overlay"
+      role="status"
+      aria-live="polite"
+      hidden
+    >
+      <div class="notice-overlay-body">
+        <img id="notice-art" class="notice-art" src="" alt="" hidden />
+        <p id="notice-title" class="notice-title"></p>
+        <p id="notice-amount" class="notice-amount" hidden></p>
       </div>
     </div>
 

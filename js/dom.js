@@ -82,6 +82,12 @@ export const dom = {
   xpTitle: document.getElementById("xp-title"),
   xpAmount: document.getElementById("xp-amount"),
 
+  // Notice plate — money for now, and whatever else earns one later
+  noticeOverlay: document.getElementById("notice-overlay"),
+  noticeArt: document.getElementById("notice-art"),
+  noticeTitle: document.getElementById("notice-title"),
+  noticeAmount: document.getElementById("notice-amount"),
+
   modal: document.getElementById("portrait-modal"),
   modalClose: document.getElementById("portrait-modal-close"),
   modalImage: document.getElementById("portrait-modal-image"),
