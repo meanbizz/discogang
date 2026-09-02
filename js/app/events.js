@@ -12,7 +12,13 @@ import { readFile } from "../export/file.js";
 import { ledger } from "../xp.js";
 import { state } from "./state.js";
 import { network } from "./net.js";
-import { exportTurns, setSelfReady, shareText, shareTurn } from "./actions.js";
+import {
+  exportCharacter,
+  exportTurns,
+  setSelfReady,
+  shareText,
+  shareTurn,
+} from "./actions.js";
 import { exportSession, loadSession, noteSession } from "./save.js";
 import { loadAllowed, refreshLoadButton } from "./locks.js";
 import { adoptSheet, spendSkillPoint } from "./progress.js";
@@ -418,6 +424,12 @@ export function bindSession() {
   bindNpcForm();
   bindInventory();
   bindItemForm();
+
+  /* Player only: the button lives in the panel foot, which is detached for
+     the administrateur. */
+  if (dom.sheetExport) {
+    dom.sheetExport.addEventListener("click", exportCharacter);
+  }
 
   dom.leaveButton.addEventListener("click", leave);
   window.addEventListener("beforeunload", () => network.disconnect());

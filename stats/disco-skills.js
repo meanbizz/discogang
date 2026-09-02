@@ -20,6 +20,11 @@
    one slot per point of its owning attribute — so intellect 2 caps logic's
    spent points at 2. Raising the attribute is the only way to make more room,
    and that is not something play grants.
+
+   The tooltip is fixed to the viewport and measured against the selected
+   card, so it can only be placed while that card has a box. A sheet inside a
+   dialog that has not been shown yet has none: the tooltip stays closed and
+   refreshTooltip() places it once the host has put the dialog on screen.
    ============================================================ */
 (function (global) {
   "use strict";
@@ -492,6 +497,13 @@
     this.tooltip.setAttribute("aria-hidden", "true");
   };
 
+  /* Called once the sheet is actually on screen. A tooltip restored for the
+     selected card while the host dialog was still hidden had no box to
+     measure itself against and stayed closed; this is what places it. */
+  DiscoSkillSheet.prototype.refreshTooltip = function () {
+    this._syncTooltip();
+  };
+
   DiscoSkillSheet.prototype._attributeOf = function (skillId) {
     for (var i = 0; i < ATTRIBUTES.length; i++) {
       for (var j = 0; j < ATTRIBUTES[i].skills.length; j++) {
@@ -845,6 +857,16 @@
     if (!card) return;
 
     var cardRect = card.getBoundingClientRect();
+    /* No box to hang it off: the sheet is in a dialog that is not on screen.
+       Anchoring to nothing would park the tooltip in the corner of the
+       viewport, so it stays closed until refreshTooltip is called with the
+       cards actually laid out. */
+    if (!cardRect.width && !cardRect.height) {
+      tip.classList.remove("is-open");
+      tip.setAttribute("aria-hidden", "true");
+      return;
+    }
+
     var tipRect = tip.getBoundingClientRect();
 
     var left = cardRect.left + cardRect.width / 2 - tipRect.width / 2;

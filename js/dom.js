@@ -50,6 +50,9 @@ export const dom = {
   psycheClose: document.getElementById("psyche-modal-close"),
   psycheSheet: document.getElementById("psyche-sheet"),
 
+  // The player's own character, written to a file they keep
+  sheetExport: document.getElementById("sheet-export"),
+
   deck: document.getElementById("deck"),
   adminTools: document.getElementById("admin-tools"),
   trackUrl: document.getElementById("track-url"),
@@ -105,6 +108,7 @@ export const dom = {
   inventoryModalClose: document.getElementById("inventory-modal-close"),
   inventoryGrid: document.getElementById("inventory-grid"),
   inventoryEmpty: document.getElementById("inventory-empty"),
+  inventoryLock: document.getElementById("inventory-lock"),
   inventoryTooltip: document.getElementById("inventory-tooltip"),
 
   // Items — administrateur only

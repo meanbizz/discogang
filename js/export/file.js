@@ -1,3 +1,5 @@
+/* js/export/file.js */
+
 /* A save going to disk and coming back. The only DOM here is the throwaway
    anchor a download needs. */
 
@@ -7,7 +9,9 @@ import { parse } from "./session.js";
    200k characters of its own. */
 const MAX_FILE_BYTES = 32 * 1024 * 1024;
 
-function stamp() {
+/* "20260902-0815" — shared with the character export, so both files sort the
+   same way in a folder. */
+export function stamp() {
   const now = new Date();
   const pad = (value) => String(value).padStart(2, "0");
   return (
@@ -25,17 +29,18 @@ export function fileName(snap) {
   return "salon-" + room + "-" + stamp() + ".json";
 }
 
-/* Returns whether the browser took the download. */
-export function download(snap) {
+/* Returns whether the browser took the download. name is for documents that
+   are not session saves — a character sheet names itself after its owner. */
+export function download(data, name) {
   let url = null;
   try {
-    const body = JSON.stringify(snap, null, 2);
+    const body = JSON.stringify(data, null, 2);
     const blob = new Blob([body], { type: "application/json" });
     url = URL.createObjectURL(blob);
 
     const link = document.createElement("a");
     link.href = url;
-    link.download = fileName(snap);
+    link.download = name || fileName(data);
     link.rel = "noopener";
     document.body.appendChild(link);
     link.click();

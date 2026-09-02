@@ -1,3 +1,5 @@
+/* js/dialogue/entry.js */
+
 /* One dialogue line as a DOM node: speaker, verdict tag, body, the vitals and
    experience note, and the narrator's read-aloud button. A live node and a
    restored one are the same article; only what is appended after differs. */
@@ -36,7 +38,11 @@ function signed(value) {
 /* What the tag says when it is hovered. Every number is named: which die was
    which, what the modifier did, what the target was, and what the three came
    to together. A bare "3 + 4 + 2 = 9" leaves the reader to guess which of
-   those was the roll and which the sheet. */
+   those was the roll and which the sheet.
+
+   A pair against its target is the whole of a verdict: there are no critical
+   faces here, so nothing is read into two sixes beyond the twelve they add
+   up to. */
 function checkTitle(check) {
   const lines = [];
 
@@ -62,16 +68,6 @@ function checkTitle(check) {
     lines.push("Rolled: " + check.dice1 + " and " + check.dice2);
     lines.push("Modifier: " + signed(check.modifier));
     lines.push("Total: " + total);
-    if (
-      check.dice1 === check.dice2 &&
-      (check.dice1 === 1 || check.dice1 === 6)
-    ) {
-      lines.push(
-        check.dice1 === 6
-          ? "Двойная — critical success, whatever the target"
-          : "Snake eyes — critical failure, whatever the target",
-      );
-    }
     return lines.join("\n");
   }
 
@@ -95,15 +91,6 @@ function checkTag(check) {
   tag.className = "check-tag";
   if (check.result) tag.dataset.result = check.result;
   tag.textContent = "[" + parts.join(": ") + "]";
-
-  if (
-    check.dice1 &&
-    check.dice2 &&
-    check.dice1 === check.dice2 &&
-    (check.dice1 === 1 || check.dice1 === 6)
-  ) {
-    tag.dataset.crit = "true";
-  }
   tag.title = checkTitle(check);
 
   return tag;

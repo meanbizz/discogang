@@ -70,7 +70,8 @@
               accept="application/json,.json"
             />
             <p class="sub-label">
-              Optional — a .json sheet with attributes and skills.
+              Optional — a .json sheet with attributes and skills. A character
+              exported from a previous session reads back here.
             </p>
           </div>
 
@@ -250,7 +251,7 @@
             class="option"
             title="Download the whole session as a .json save"
           >
-            Export
+            Save
           </button>
           <button
             type="button"
@@ -307,6 +308,15 @@
               title="What you are carrying"
             >
               Inv.
+            </button>
+            <!-- The player's own character, written to a .json they keep. -->
+            <button
+              type="button"
+              id="sheet-export"
+              class="option psyche"
+              title="Download your character as a .json — attributes, skills, inventory, vitals"
+            >
+              Export
             </button>
           </div>
         </div>
@@ -382,6 +392,9 @@
           </button>
 
           <h2 id="inventory-modal-title" class="modal-name">What you carry</h2>
+
+          <!-- Why naming an item in a plan is unavailable right now. -->
+          <p id="inventory-lock" class="lock-note" role="status" hidden></p>
 
           <div
             id="inventory-grid"

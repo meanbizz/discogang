@@ -6,7 +6,10 @@
 
    The skill sheet is the one dialog with a life of its own: it is built once
    and kept, so its header has to be told separately when the player's
-   experience moves while it is open. */
+   experience moves while it is open. It also keeps whichever card was
+   selected, tooltip and all, which is why the dialog is put on screen before
+   the sheet renders — a tooltip measured against a hidden dialog has no box
+   to hang off and would land in the corner of the viewport. */
 
 import { dom } from "./dom.js";
 import { paintThumb, clearThumb, cleanName } from "./utils.js";
@@ -59,7 +62,12 @@ export function closePortrait() {
 /* options: { ledger, onChange, onSpend }.
 
    onSpend is asked before a pip moves and answers whether the point was
-   really there to spend — the sheet holds no ledger of its own. */
+   really there to spend — the sheet holds no ledger of its own.
+
+   The dialog is unhidden first and on purpose: the sheet restores the card
+   the player last had selected, and its tooltip can only place itself against
+   a card that has a box. Rendering into a hidden dialog is what used to park
+   that tooltip in the top left corner. */
 export function openPsyche(sheetState, options) {
   if (!dom.psycheModal.hidden) return;
   const opts = options || {};
@@ -67,6 +75,9 @@ export function openPsyche(sheetState, options) {
     onChange: opts.onChange || null,
     onSpend: opts.onSpend || null,
   };
+
+  psycheReturnFocus = activeFocus();
+  dom.psycheModal.hidden = false;
 
   if (!sheetInstance && window.DiscoSkillSheet) {
     sheetInstance = new window.DiscoSkillSheet(dom.psycheSheet, {
@@ -88,8 +99,12 @@ export function openPsyche(sheetState, options) {
     sheetInstance.setLedger(opts.ledger || null);
   }
 
-  psycheReturnFocus = activeFocus();
-  dom.psycheModal.hidden = false;
+  /* Measured again now that the cards are laid out, in case a render happened
+     on the frame the dialog was still coming up. */
+  if (sheetInstance && sheetInstance.refreshTooltip) {
+    sheetInstance.refreshTooltip();
+  }
+
   dom.psycheClose.focus();
 }
 
@@ -267,6 +282,15 @@ window.addEventListener("scroll", hideItemTooltip, true);
 
 /* ---------------- Inventory (player) ---------------- */
 
+/* Why a pick did nothing — the composer being locked, usually. Cleared on
+   every open, so a stale reason cannot outlive the round it belonged to. */
+export function noteInventory(text) {
+  if (!dom.inventoryLock) return;
+  const body = text || "";
+  dom.inventoryLock.textContent = body;
+  dom.inventoryLock.hidden = !body;
+}
+
 export function renderInventoryGrid(list, onPick) {
   if (!dom.inventoryGrid) return;
   const items = Array.isArray(list) ? list : [];
@@ -322,6 +346,7 @@ export function renderInventoryGrid(list, onPick) {
 
 export function openInventory(list, onPick) {
   if (!dom.inventoryModal) return;
+  noteInventory("");
   renderInventoryGrid(list, onPick);
   inventoryReturnFocus = activeFocus();
   dom.inventoryModal.hidden = false;
@@ -331,6 +356,7 @@ export function openInventory(list, onPick) {
 export function closeInventory() {
   if (!dom.inventoryModal || dom.inventoryModal.hidden) return;
   hideItemTooltip();
+  noteInventory("");
   dom.inventoryModal.hidden = true;
   if (inventoryReturnFocus && document.contains(inventoryReturnFocus)) {
     inventoryReturnFocus.focus();

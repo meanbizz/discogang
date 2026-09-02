@@ -20,6 +20,7 @@ import {
 } from "../inventory/items.js";
 import { state } from "./state.js";
 import { network, broadcast, sendUpstream } from "./net.js";
+import { planningUnlocked } from "./locks.js";
 
 function holderNames() {
   const out = [];
@@ -139,11 +140,23 @@ export function openInventory() {
   modals.openInventory(selfItems(), pickItem);
 }
 
-/* A picked item is a word in the plan, not an action of its own. */
+/* A picked item is a word in the plan, not an action of its own — so there
+   has to be a plan to write it into. While the scene is still playing out the
+   composer is locked, and the grid says why rather than dropping a name into
+   a field nobody can send. Reading what an item is stays available either
+   way. */
 export function pickItem(item) {
-  modals.closeInventory();
   const input = dom.turnInput;
   if (!input) return;
+
+  if (!planningUnlocked()) {
+    modals.noteInventory(
+      "The scene is still playing out — items are named in a plan, and there is none to write yet.",
+    );
+    return;
+  }
+
+  modals.closeInventory();
 
   const tag = "[" + item.name + "]";
   const body = input.value;
