@@ -1,10 +1,10 @@
-/* js/audio/sfx.js */
+/* Sound cues — playback only. One jingle per attribute, the two roll clips
+   and the skill point, pulled into memory up front so a cue never waits on
+   the network.
 
-/* Sound cues — playback only. One jingle per attribute plus the two roll
-   clips, pulled into memory up front so a cue never waits on the network.
-
-   Jingles and rolls sit on separate channels, so a skill's voice can ring on
-   while the dice roll. Timings come from the clip's own duration, or from
+   Jingles, rolls and the point sit on separate channels, so a skill's voice
+   can ring on while the dice roll, and a new skill point can be heard over
+   neither. Timings come from the clip's own duration, or from
    TIMING.sound.fallbackMs when the browser reports none. */
 
 import { TIMING } from "../timing.js";
@@ -22,11 +22,15 @@ export const ROLL_SRC = {
   failure: "sounds/interface-diceroll-fail.wav",
 };
 
+/* What a new skill point sounds like. */
+export const POINT_SRC = "sounds/new-skill-point.wav";
+
 const cache = {};
 
 const channels = {
   jingle: { voice: null, timers: [] },
   roll: { voice: null, timers: [] },
+  point: { voice: null, timers: [] },
 };
 
 function own(map, key) {
@@ -56,6 +60,7 @@ function clip(src) {
 export function preloadAll() {
   Object.keys(JINGLE_SRC).forEach((key) => clip(JINGLE_SRC[key]));
   Object.keys(ROLL_SRC).forEach((key) => clip(ROLL_SRC[key]));
+  clip(POINT_SRC);
 }
 
 function clearTimers(channel) {
@@ -75,6 +80,7 @@ function stopChannel(channel) {
 export function stopAll() {
   stopChannel(channels.jingle);
   stopChannel(channels.roll);
+  stopChannel(channels.point);
 }
 
 function durationMs(audio) {
@@ -124,4 +130,10 @@ export function playJingle(attribute, onEnd) {
 export function playRoll(result, onLead, onEnd) {
   const src = result === "success" ? ROLL_SRC.success : ROLL_SRC.failure;
   run(channels.roll, src, { onLead: onLead || null, onEnd: onEnd || null });
+}
+
+/* A new skill point, on its own channel: cues.js fires this as the plate goes
+   up, by which time the dice are done with theirs. */
+export function playPoint(onEnd) {
+  run(channels.point, POINT_SRC, { onEnd: onEnd || null });
 }

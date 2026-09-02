@@ -14,8 +14,11 @@
      + outMs        verdict wipes away left to right
      music.duckHoldMs from the roll, the music fades back in over duckInMs
 
-   A node that also hands over experience waits out that whole sequence before
-   the XP overlay takes the screen: cues.checkDurationMs is the same sum.
+   A node that also hands over experience shows its plate after all of that,
+   and nothing here has to say so: js/sequencer.js runs the two in turn, so
+   these numbers can be changed freely without two overlays landing at once.
+   cues.checkDurationMs is the same sum, kept only as the lane's watchdog
+   estimate for the check.
 
    Nothing here waits on how long an audio file happens to be. */
 
@@ -42,12 +45,14 @@ export const TIMING = {
 
   /* The experience overlay. vignetteMs is the green rim's fade for a new
      skill point; it is shorter than inMs + holdMs on purpose, so the glow has
-     settled before the words are read. */
+     settled before the words are read. artMs is the plate rising into place
+     behind them, and is kept inside the same window. */
   xp: {
     inMs: 220,
     holdMs: 1800,
     outMs: 600,
     vignetteMs: 260,
+    artMs: 420,
   },
 
   /* fallbackMs stands in for a duration the browser never reports; leadMs is
@@ -95,6 +100,7 @@ export const CSS_TIMING = {
   "--dur-xp-in": TIMING.xp.inMs + "ms",
   "--dur-xp-out": TIMING.xp.outMs + "ms",
   "--dur-xp-vignette": TIMING.xp.vignetteMs + "ms",
+  "--dur-xp-art": TIMING.xp.artMs + "ms",
   "--tape-step": TIMING.tape.stepPx + "px",
 };
 

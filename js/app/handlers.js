@@ -6,7 +6,14 @@
 
    A seat that comes back after a dropped wire says so, and the host hands it
    the slot, the flags and the progress it had rather than seating a stranger
-   in the middle of a round. */
+   in the middle of a round.
+
+   A welcome is not always a first welcome. A guest that re-dialled is told
+   everything again, and rebuilding the log from that used to restart the
+   reader — the scene replayed, vitals were spent twice and experience was
+   earned twice. onWelcome therefore asks whether this seat has been welcomed
+   before: the first time the room is built, and every time after that only
+   what is genuinely new is taken. */
 
 import { TURN_MIN_LENGTH, PLAYER_SLOTS } from "../config.js";
 import {
@@ -55,6 +62,29 @@ import {
   showDialogueHistory,
 } from "./rounds.js";
 
+/* Host side: a name already at the table on a wire that is no longer there.
+   A ghost holds a slot and, worse, keeps a round open by never finishing its
+   scene — so it is remembered and shown out as its replacement sits down. */
+function evictGhost(name, keepPeerId) {
+  const wanted = cleanName(name).toLowerCase();
+  if (!wanted) return;
+
+  const doomed = [];
+  state.roster.forEach((person, peerId) => {
+    if (peerId === keepPeerId || person.admin) return;
+    if (cleanName(person.name).toLowerCase() !== wanted) return;
+    const conn = network.downstream.get(peerId);
+    if (conn && conn.open) return;
+    doomed.push(peerId);
+  });
+
+  doomed.forEach((peerId) => {
+    const person = state.roster.get(peerId);
+    if (person) rememberSeat(person);
+    state.roster.delete(peerId);
+  });
+}
+
 function onHostReceiveData(connection, data) {
   const person = state.roster.get(connection.peer);
 
@@ -62,14 +92,22 @@ function onHostReceiveData(connection, data) {
     const name = cleanName(data.profile?.name) || "Unnamed";
     const joiningAdmin = isAdminName(name);
     const previous = state.roster.get(connection.peer);
+    /* The same peer id knocking again is the same seat, whatever it says: a
+       wire that came back before anybody noticed it had gone. */
+    const known = Boolean(previous && !previous.admin);
     /* What this name had when it last sat here, and what a loaded save
        remembers of it. The seat wins: it is the more recent of the two. */
     const seat = joiningAdmin ? null : recallSeat(name);
     const saved = joiningAdmin ? null : recallProgress(name);
     const held = seat || saved;
-    /* Only a peer that says it is resuming inherits the flags. A fresh join
-       under a familiar name is still a fresh join. */
-    const resuming = Boolean(seat && data.resuming);
+    /* Only a peer that says it is resuming inherits the flags — or one this
+       host still has on the roster, which is the same thing seen from here. */
+    const resuming = Boolean((seat && data.resuming) || known);
+    /* What to inherit from: the roster entry if this seat never left it, the
+       remembered seat otherwise. */
+    const flags = known ? previous : seat;
+
+    if (!joiningAdmin) evictGhost(name, connection.peer);
 
     state.roster.set(connection.peer, {
       id: connection.peer,
@@ -81,11 +119,15 @@ function onHostReceiveData(connection, data) {
         : previous?.slot || (held && held.slot) || network.nextSlot(state.roster),
       /* Readying up again, or re-reading a scene already finished, is not
          something a dropped wire should cost anybody. */
-      ready: resuming && Boolean(seat.ready),
-      done: resuming && Boolean(seat.done),
-      skills: held ? held.skills || {} : {},
-      allocated: held ? held.allocated || {} : {},
-      xp: held ? held.xp || null : null,
+      ready: Boolean(resuming && flags && flags.ready),
+      done: Boolean(resuming && flags && flags.done),
+      skills: known ? previous.skills || {} : held ? held.skills || {} : {},
+      allocated: known
+        ? previous.allocated || {}
+        : held
+          ? held.allocated || {}
+          : {},
+      xp: known ? previous.xp || null : held ? held.xp || null : null,
     });
 
     renderRoster();
@@ -253,20 +295,26 @@ function onHostReceiveData(connection, data) {
   }
 }
 
-function onWelcome(data) {
-  if (typeof data.id === "string") {
-    network.selfId = data.id;
-    state.selfId = data.id;
-  }
+/* Which entries in a welcome this seat has not already got. Ids are what the
+   two sides agree on; anything without one is matched on its stamp and its
+   words, so a host that minted an id we never saw cannot make us print the
+   line twice. */
+function unseenEntries(incoming, held) {
+  const ids = {};
+  const bodies = {};
+  held.forEach((entry) => {
+    if (entry.id) ids[entry.id] = true;
+    bodies[entry.at + "|" + entry.text] = true;
+  });
+  return incoming.filter((entry) => {
+    if (entry.id && ids[entry.id]) return false;
+    return !bodies[entry.at + "|" + entry.text];
+  });
+}
 
-  /* The history comes first: the log is about to be rebuilt from entries that
-     may name these rounds. */
+/* The room as this seat finds it for the first time. */
+function firstWelcome(data, current, live) {
   replaceRounds(data.rounds, data.dialogue);
-
-  /* The room says which kind of payload this is. A live one is the scene
-     being played now; one merely on record is read back as transcript. */
-  const current = dialogue.cleanPayload(data.dialogue);
-  const live = Boolean(data.live) && Boolean(current);
 
   replaceLog(
     (Array.isArray(data.entries) ? data.entries : [])
@@ -295,12 +343,100 @@ function onWelcome(data) {
 
   if (live) {
     applyDialogue(current);
-  } else {
-    state.dialoguePayload = current || latestPayload(state.dialogueRounds);
-    state.dialogueLive = false;
-    dialogue.reset();
-    refreshPlanningLock();
+    return;
   }
+  state.dialoguePayload = current || latestPayload(state.dialogueRounds);
+  state.dialogueLive = false;
+  dialogue.reset();
+  refreshPlanningLock();
+}
+
+/* The same seat, welcomed again after a wire came back. Nothing that is
+   already on screen is rebuilt: the reader keeps the scene it is in, the log
+   keeps its lines, and only what arrived while the wire was down is taken.
+
+   The scene in progress is the delicate part. If the room is still reading
+   the round this seat was reading, it is left entirely alone — restarting it
+   would replay the lines, spend the vitals again and pay the experience
+   again. A round this seat never saw is a new scene, and is started properly. */
+function laterWelcome(data, current, live) {
+  const before = state.dialogueRounds.map((round) => round.id);
+  const seen = {};
+  before.forEach((id) => {
+    seen[id] = true;
+  });
+  const wasReading = state.dialogueLive && !dialogue.isFinished();
+
+  replaceRounds(data.rounds, data.dialogue);
+
+  const missed = state.dialogueRounds.filter((round) => !seen[round.id]);
+  const currentId = state.dialogueRounds.length
+    ? state.dialogueRounds[state.dialogueRounds.length - 1].id
+    : null;
+  /* The round being read now is not history, so it is kept out of any
+     transcript that is about to be written. */
+  const readable = live
+    ? missed.filter((round) => round.id !== currentId)
+    : missed;
+
+  const fresh = unseenEntries(
+    (Array.isArray(data.entries) ? data.entries : [])
+      .map(normalizeEntry)
+      .filter(Boolean),
+    state.logEntries,
+  );
+
+  /* Plans are the host's list wholesale: they carry no reader state, so
+     replacing them costs nothing and keeps the stale flags honest. */
+  replaceTurnLog(
+    (Array.isArray(data.turns) ? data.turns : [])
+      .map(normalizeEntry)
+      .filter(Boolean),
+  );
+  applyScene(data.scene);
+  if (Array.isArray(data.npcs)) setNpcs(data.npcs);
+  setInventory(data.items, data.inventories);
+
+  /* This seat's own ledger is the better copy; the host is simply reminded
+     of it. */
+  publishProgress();
+
+  fresh.forEach((entry) => {
+    state.logEntries.push(entry);
+  });
+  if (readable.length) showDialogueHistory(readable);
+
+  const sameScene = live && currentId && seen[currentId];
+  if (sameScene && wasReading) {
+    /* Still the round in hand: the reader is left exactly where it was. */
+    state.dialoguePayload = current;
+    state.dialogueLive = true;
+    refreshPlanningLock();
+    return;
+  }
+  if (live) {
+    applyDialogue(current);
+    return;
+  }
+  state.dialoguePayload = current || latestPayload(state.dialogueRounds);
+  state.dialogueLive = false;
+  refreshPlanningLock();
+}
+
+function onWelcome(data) {
+  if (typeof data.id === "string") {
+    network.selfId = data.id;
+    state.selfId = data.id;
+  }
+
+  /* The room says which kind of payload this is. A live one is the scene
+     being played now; one merely on record is read back as transcript. */
+  const current = dialogue.cleanPayload(data.dialogue);
+  const live = Boolean(data.live) && Boolean(current);
+
+  if (state.welcomed) laterWelcome(data, current, live);
+  else firstWelcome(data, current, live);
+  state.welcomed = true;
 
   const videoId = data.track ? music.parseVideoId(data.track.videoId) : null;
   music.applyTrack(
@@ -424,6 +560,8 @@ setHandlers({
   onSystemNote: systemNote,
   onHostStarted: (selfId, hostProfile) => {
     state.selfId = selfId;
+    /* The host builds its own room rather than being welcomed into one. */
+    state.welcomed = true;
     state.roster.set(
       selfId,
       Object.assign(

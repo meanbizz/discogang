@@ -2,7 +2,7 @@
    who finds it taken becomes a guest and connects to it. Every callback the
    app registers arrives through the handlers object.
 
-   Staying up is most of this file. Four things used to end a session at around
+   Staying up is most of this file. Five things used to end a session at around
    the quarter-hour mark, and each has its answer here:
 
      1. A reconnect that raced the signalling server's own bookkeeping came
@@ -25,7 +25,16 @@
      4. Nothing crossed an idle wire, so NAT mappings were collected out from
         under a quiet table. A ping/pong now crosses every open connection, and
         doubles as the liveness signal for links that die without ever firing
-        close. */
+        close.
+
+     5. That same liveness signal then became the problem: silence measured
+        across a throttled tab was read as a death, and a healthy wire was torn
+        down and re-dialled — which had the host re-welcome the seat and the
+        player replay the scene they were reading. Silence is now only ever
+        judged while the tab is visible, the line is asked once before it is
+        condemned, and the clock starts again the moment the tab wakes. A stale
+        association closing can no longer drop the wire that replaced it,
+        either: the drop is only honoured for the connection still on file. */
 
 import {
   ROOM_PREFIX,
@@ -36,6 +45,7 @@ import {
   KEEPALIVE_MS,
   LINK_WATCH_MS,
   LINK_STALE_MS,
+  LINK_PROBE_MS,
   MAX_RESUME_ATTEMPTS,
   RESUME_DELAY_MS,
   RESUME_MAX_DELAY_MS,
@@ -72,6 +82,9 @@ export class NetworkManager {
     this.keepaliveTimer = null;
     this.watchTimer = null;
     this.lastHeard = 0;
+    /* When the line was last asked whether it is still there. Zero means the
+       question has not been put. */
+    this.probeAt = 0;
     this.bound = false;
   }
 
@@ -111,9 +124,17 @@ export class NetworkManager {
   /* ---------------- Liveness ---------------- */
 
   /* Anything at all arriving is proof the wire is still there, so every data
-     handler reports through here. */
+     handler reports through here — and any question in the air is answered. */
   heard() {
     this.lastHeard = Date.now();
+    this.probeAt = 0;
+  }
+
+  hidden() {
+    return (
+      typeof document !== "undefined" &&
+      document.visibilityState === "hidden"
+    );
   }
 
   clearTimer(name) {
@@ -134,31 +155,38 @@ export class NetworkManager {
     }
   }
 
-  /* One ping across everything open, every KEEPALIVE_MS. Cheap, and it is what
-     keeps a NAT mapping from being collected while the table reads. */
+  /* One beat across everything open. Cheap, and it is what keeps a NAT
+     mapping from being collected while the table reads. */
+  pingLinks() {
+    const beat = { type: "ping", at: Date.now() };
+    if (this.isHost) {
+      this.broadcast(beat);
+      return;
+    }
+    if (this.upstream && this.upstream.open) {
+      try {
+        this.upstream.send(beat);
+      } catch (error) {}
+    }
+  }
+
   startKeepalive() {
     this.stopKeepalive();
     this.lastHeard = Date.now();
+    this.probeAt = 0;
 
-    this.keepaliveTimer = setInterval(() => {
-      const beat = { type: "ping", at: Date.now() };
-      if (this.isHost) {
-        this.broadcast(beat);
-        return;
-      }
-      if (this.upstream && this.upstream.open) {
-        try {
-          this.upstream.send(beat);
-        } catch (error) {}
-      }
-    }, KEEPALIVE_MS);
-
+    this.keepaliveTimer = setInterval(() => this.pingLinks(), KEEPALIVE_MS);
     this.watchTimer = setInterval(() => this.checkLink(), LINK_WATCH_MS);
   }
 
   /* A link can die without ever firing close — the socket simply stops
-     answering. Silence past LINK_STALE_MS is treated as a death, and the
-     signalling connection is woken alongside it. */
+     answering. Silence on its own is not proof of that: a backgrounded tab's
+     timers are throttled, so our own beats stop going out long before
+     anything is actually wrong. Two things follow. Silence is only judged
+     while the tab is being looked at, and the verdict is never immediate: the
+     line is asked once, and only silence that outlives the answer condemns
+     it. Tearing down a healthy wire is the more expensive mistake — it costs
+     the player the scene they are reading. */
   checkLink() {
     const instance = this.peer;
     if (!instance || instance.destroyed) return;
@@ -170,15 +198,34 @@ export class NetworkManager {
     }
 
     if (this.isHost) return;
-    const silent = Date.now() - this.lastHeard;
-    if (silent < LINK_STALE_MS) return;
-    if (this.upstream && this.upstream.open) {
-      /* Open but mute: the association is gone even though nobody said so. */
-      this.lastHeard = Date.now();
-      this.resumeUpstream("The line went quiet — redialling…");
+    if (this.hidden()) return;
+
+    if (!this.upstream) {
+      this.resumeUpstream("Reconnecting to the room…");
       return;
     }
-    if (!this.upstream) this.resumeUpstream("Reconnecting to the room…");
+
+    const silent = Date.now() - this.lastHeard;
+    if (silent < LINK_STALE_MS) {
+      this.probeAt = 0;
+      return;
+    }
+
+    if (!this.upstream.open) {
+      /* It never answered at all, so there is nothing to ask. */
+      this.probeAt = 0;
+      this.resumeUpstream("Reconnecting to the room…");
+      return;
+    }
+
+    if (!this.probeAt) {
+      this.probeAt = Date.now();
+      this.pingLinks();
+      return;
+    }
+    if (Date.now() - this.probeAt < LINK_PROBE_MS) return;
+    this.probeAt = 0;
+    this.resumeUpstream("The line went quiet — redialling…");
   }
 
   /* A hidden tab's timers cannot be trusted, so the two moments a browser
@@ -187,8 +234,14 @@ export class NetworkManager {
     if (this.bound) return;
     this.bound = true;
 
+    /* The clock starts again here: whatever silence a throttled tab measured
+       while it was away says nothing about the wire. The line is pinged and
+       given the usual grace before anything is decided about it. */
     const wake = () => {
-      if (!this.peer || document.visibilityState === "hidden") return;
+      if (!this.peer || this.hidden()) return;
+      this.lastHeard = Date.now();
+      this.probeAt = 0;
+      this.pingLinks();
       this.checkLink();
     };
     document.addEventListener("visibilitychange", wake);
@@ -345,7 +398,16 @@ export class NetworkManager {
 
       connection.on("open", () => {
         if (!this.sessionAlive(instance, generation)) return;
+        /* A seat that re-dialled before its old association ever closed. The
+           new wire is the live one; the old is let go of without being
+           mourned as a drop. */
+        const stale = this.downstream.get(connection.peer);
         this.downstream.set(connection.peer, connection);
+        if (stale && stale !== connection) {
+          try {
+            stale.close();
+          } catch (error) {}
+        }
         this.heard();
       });
 
@@ -363,9 +425,12 @@ export class NetworkManager {
         this.handlers.onHostReceiveData(connection, data);
       });
 
+      /* Only the connection still on file can drop the seat: a replaced
+         association closing late must not carry off the wire that took its
+         place. */
       const drop = () => {
         if (!this.sessionAlive(instance, generation)) return;
-        if (!this.downstream.has(connection.peer)) return;
+        if (this.downstream.get(connection.peer) !== connection) return;
         this.downstream.delete(connection.peer);
         this.handlers.onPeerDrop(connection.peer);
       };
@@ -473,6 +538,7 @@ export class NetworkManager {
     const generation = this.sessionGeneration;
     const stale = this.upstream;
     this.upstream = null;
+    this.probeAt = 0;
     if (stale) {
       try {
         stale.close();
@@ -555,6 +621,7 @@ export class NetworkManager {
     this.resumeAttempts = 0;
     this.reclaimAttempts = 0;
     this.heldId = false;
+    this.probeAt = 0;
     this.clearTimer("resumeTimer");
     this.clearTimer("reclaimTimer");
     this.stopKeepalive();

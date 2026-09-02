@@ -1,6 +1,7 @@
 /* Every animation in the app. Nothing here decides when a class arrives —
-   that is cues.js. Each duration comes from a --dur-* token: tokens.css holds
-   the fallbacks, js/timing.js rewrites them on :root at boot.
+   that is cues.js, and the order those classes arrive in is js/sequencer.js.
+   Each duration comes from a --dur-* token: tokens.css holds the fallbacks,
+   js/timing.js rewrites them on :root at boot.
 
    Load last, after the component files. */
 
@@ -40,6 +41,24 @@
 .stage-side.is-rolling .scene-thumb {
   opacity: 0;
   pointer-events: none;
+}
+
+/* A rolled line waiting its turn in the queue. Held from the frame it arrives
+   — the verdict is written in its check tag, so it must not be readable
+   before the dice have said so — and held without moving: the fade belongs to
+   the tape, and this may have to wait through whatever else owns the screen
+   first. */
+.log.is-held .entry,
+.log.is-held .entry.dialogue:not(.current) {
+  opacity: 0;
+  pointer-events: none;
+  transition: none;
+}
+
+.stage-side.is-held .scene-thumb {
+  opacity: 0;
+  pointer-events: none;
+  transition: none;
 }
 
 /* ---------------- Terminal choice row ---------------- */
@@ -142,6 +161,23 @@
   }
 }
 
+/* The plate rises into place a little after the glow, so the two read as one
+   arrival rather than a pair of flickers. */
+.xp-overlay[data-kind="point"] .xp-art:not([hidden]) {
+  animation: xp-art-rise var(--dur-xp-art) ease-out forwards;
+}
+
+@keyframes xp-art-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 /* ---------------- Vitals ---------------- */
 
 .vital.is-hit {
@@ -166,7 +202,9 @@
 /* ---------------- Reduced motion ---------------- */
 
 /* Every end state above, held still. The JS timers are untouched: the
-   sequence still advances on schedule, it just does not move. */
+   sequence still advances on schedule, it just does not move. The held state
+   is kept as it is — it hides a verdict that has not landed yet, which is
+   meaning rather than motion. */
 @media (prefers-reduced-motion: reduce) {
   .log.is-rolling {
     animation: none;
@@ -205,6 +243,12 @@
   .xp-overlay[data-kind="point"] .xp-vignette {
     animation: none;
     opacity: 0.5;
+  }
+
+  .xp-overlay[data-kind="point"] .xp-art:not([hidden]) {
+    animation: none;
+    opacity: 1;
+    transform: none;
   }
 
   .vital.is-hit {

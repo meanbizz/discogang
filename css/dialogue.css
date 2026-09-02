@@ -236,6 +236,8 @@ button.choice.continue:hover:not(:disabled) {
   gap: 1.25rem;
   margin-top: auto;
   margin-bottom: 96px;
+  background: #131311ba;
+  padding: 1rem;
 }
 
 .check-overlay-dice {

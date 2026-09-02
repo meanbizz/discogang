@@ -151,19 +151,16 @@ function renderContinue(host, nextId) {
   host.appendChild(button);
 }
 
-/* Experience the node hands over, announced once the screen is free. A rolled
-   node keeps the viewport for its dice, so the overlay queues behind them
-   rather than fighting for it. The ledger is moved here — the app is told
-   after the fact, so it can publish and repaint the sheet. */
-function earnXp(node, rolled) {
+/* Experience the node hands over. The overlay takes its turn on the one
+   animation lane, so a rolled node's dice are always finished with the screen
+   before the words arrive — nothing here has to know that happened. The
+   ledger is moved here; the app is told after the fact, so it can publish and
+   repaint the sheet. */
+function earnXp(node) {
   if (!node.xpGained) return;
   const landed = grantXp(node.xpGained);
   if (!landed.gained) return;
-  cues.showXp(
-    landed.gained,
-    landed.granted,
-    rolled ? cues.checkDurationMs() : 0,
-  );
+  cues.showXp(landed.gained, landed.granted);
   if (hooks.onXp) hooks.onXp(landed);
 }
 
@@ -198,10 +195,12 @@ function renderNode(id) {
     node.skillCheck && node.skillCheck.result && !node.skillCheck.passive,
   );
 
-  /* A rolled node hides its own arrival: the tape starts on this frame, so
-     the incoming entry is already invisible when it lands. A passive is never
-     rolled, so it hides nothing. */
-  if (rolled) cues.beginRoll();
+  /* A rolled node hides its own arrival and claims its place in the queue on
+     this frame, before anything else the node sets off can ask for one: the
+     incoming entry is already invisible when it lands, and the vitals flash
+     and experience plate below fall in behind the dice. A passive is never
+     rolled, so it hides nothing and waits for nothing. */
+  if (rolled) cues.beginRoll(node.skillCheck);
 
   const article = buildEntry(node, voice, "node:" + node.id);
   article.classList.add("current");
@@ -215,7 +214,7 @@ function renderNode(id) {
   appendToLog(article);
   emitArt(voice ? voice.art : null);
   cues.playNode(voice, node.skillCheck);
-  if (first) earnXp(node, rolled);
+  if (first) earnXp(node);
 
   const choices = document.createElement("div");
   choices.className = "entry-choices";

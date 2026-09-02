@@ -36,6 +36,10 @@ export const state = {
   /* Every round sent this session, oldest first. */
   dialogueRounds: [],
   dialogueLive: false,
+  /* Whether this seat has already been welcomed into the room. A wire that
+     comes back is welcomed again, and a second welcome must not rebuild the
+     scene the player is in the middle of reading. */
+  welcomed: false,
   /* A save is read once per session; this remembers that it happened. */
   sessionRestored: false,
   /* Host only. Lowercased name -> what that seat had when it went quiet. */

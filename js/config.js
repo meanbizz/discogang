@@ -55,9 +55,16 @@ export const RETRY_DELAY_MS = 1200;
 
    KEEPALIVE_MS is our own ping across every open data connection: it keeps
    idle NAT mappings from being collected and gives each end something to
-   measure silence against. LINK_STALE_MS is how much silence condemns a link;
-   LINK_WATCH_MS is how often the watchdog looks, though it also runs the
-   moment the tab is looked at, since a hidden tab's timers cannot be trusted.
+   measure silence against.
+
+   LINK_STALE_MS is how much silence is worth asking about. It is deliberately
+   longer than a throttled tab's ping period: a hidden tab sends roughly one
+   beat a minute, so anything tighter condemns a wire that is perfectly well
+   for the crime of having been in the background. LINK_PROBE_MS is how long
+   the answer to that question is waited for before the link is declared dead;
+   LINK_WATCH_MS is how often the watchdog looks, and it only ever judges a tab
+   that is being looked at, since a hidden tab's own clock cannot be trusted to
+   say how long anything took.
 
    MAX_RESUME_ATTEMPTS is how many times a guest re-dials a host it has lost
    before calling the room closed, the delay growing to RESUME_MAX_DELAY_MS.
@@ -66,7 +73,8 @@ export const RETRY_DELAY_MS = 1200;
 export const PEER_PING_MS = 3000;
 export const KEEPALIVE_MS = 15000;
 export const LINK_WATCH_MS = 5000;
-export const LINK_STALE_MS = 45000;
+export const LINK_STALE_MS = 75000;
+export const LINK_PROBE_MS = 8000;
 export const MAX_RESUME_ATTEMPTS = 12;
 export const RESUME_DELAY_MS = 1500;
 export const RESUME_MAX_DELAY_MS = 15000;

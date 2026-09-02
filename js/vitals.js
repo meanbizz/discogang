@@ -3,12 +3,17 @@
    animated in animations.css.
 
    The arithmetic itself lives in js/sheet.js, so the save writer and the sheet
-   header read the same numbers this does. */
+   header read the same numbers this does.
+
+   The flash is the one thing here that waits on anything: it goes through the
+   animation lane, so a bar moving under a node that also rolls is seen after
+   the dice rather than behind them. */
 
 import { dom } from "./dom.js";
 import { VITAL_SKILL } from "./config.js";
 import { TIMING } from "./timing.js";
 import { skillScores } from "./sheet.js";
+import { whenIdle } from "./sequencer.js";
 
 export const vitals = {
   health: { value: 0, max: 0 },
@@ -63,17 +68,22 @@ export function refreshVitals(sheetState, fill) {
   renderVitals();
 }
 
+/* The bar itself has already moved; this is only the movement being noticed.
+   Queued behind whatever owns the screen, since a flash under the dice is a
+   flash nobody sees. */
 function flash(kind) {
-  const element = kind === "health" ? dom.healthBar : dom.moraleBar;
-  if (!element) return;
-  if (flashTimers[kind]) clearTimeout(flashTimers[kind]);
-  element.classList.remove("is-hit");
-  void element.offsetWidth;
-  element.classList.add("is-hit");
-  flashTimers[kind] = setTimeout(() => {
+  whenIdle(() => {
+    const element = kind === "health" ? dom.healthBar : dom.moraleBar;
+    if (!element) return;
+    if (flashTimers[kind]) clearTimeout(flashTimers[kind]);
     element.classList.remove("is-hit");
-    flashTimers[kind] = null;
-  }, FLASH_CLEAR_MS);
+    void element.offsetWidth;
+    element.classList.add("is-hit");
+    flashTimers[kind] = setTimeout(() => {
+      element.classList.remove("is-hit");
+      flashTimers[kind] = null;
+    }, FLASH_CLEAR_MS);
+  });
 }
 
 /* One step of health or morale, clamped to the sheet's ceiling. direction is

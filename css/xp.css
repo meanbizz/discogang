@@ -4,7 +4,9 @@
 
    Same shape as the check verdict — fixed over the viewport, transparent
    until cues.js fades it in, and masked off to the right so the wipe has
-   somewhere to travel from. Only the travel is in animations.css.
+   somewhere to travel from. Only the travel is in animations.css. It takes its
+   turn on the one animation lane, so it can never share the screen with the
+   dice that earned it.
 
    Nothing here paints a surface: the plate belongs to the words alone, so the
    session stays readable behind them. */
@@ -69,19 +71,38 @@
   text-align: center;
 }
 
+/* The plate a new skill point brings with it. Only ever present for a point —
+   cues.js hides it for a plain gain — and sized against the viewport so it
+   cannot push the words off a small screen. */
+.xp-art {
+  width: clamp(6rem, 22vw, 14rem);
+  height: auto;
+  filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.75));
+  pointer-events: none;
+}
+
+.xp-art[hidden] {
+  display: none;
+}
+
 .xp-title,
 .xp-amount {
   margin: 0;
   background: var(--xp-back);
   color: var(--xp-ink);
-  letter-spacing: 0.2em;
+  letter-spacing: 4px;
   text-transform: uppercase;
   line-height: 1.2;
 }
 
 .xp-title {
   padding: 0.4rem 1.1rem;
-  font-size: clamp(1.05rem, 3.4vw, 2rem);
+  font-size: clamp(1.05rem, 3.4vw, 3rem);
+}
+
+/* A point says so in its own colour, over the plate that announces it. */
+.xp-overlay[data-kind="point"] .xp-title {
+  background: var(--xp-point);
 }
 
 .xp-amount {
@@ -91,10 +112,4 @@
 
 .xp-amount[hidden] {
   display: none;
-}
-
-/* A point is worth more than the experience that bought it, so it says so in
-   green and says only that. */
-.xp-overlay[data-kind="point"] .xp-title {
-  background: var(--xp-point);
 }

@@ -83,6 +83,8 @@ export function connect(room, name, portrait) {
   state.dialoguePayload = null;
   state.dialogueRounds = [];
   state.dialogueLive = false;
+  /* A fresh join: the welcome that follows is this seat's first. */
+  state.welcomed = false;
   state.sessionRestored = false;
   dialogue.reset();
   refreshPlanningLock();
@@ -128,6 +130,7 @@ export function leave() {
   state.dialoguePayload = null;
   state.dialogueRounds = [];
   state.dialogueLive = false;
+  state.welcomed = false;
   state.sessionRestored = false;
 
   state.sheetState = null;

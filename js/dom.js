@@ -75,9 +75,10 @@ export const dom = {
   checkDie2: document.getElementById("check-die-2"),
   checkOverlayTitle: document.getElementById("check-overlay-title"),
 
-  // Experience overlay
+  // Experience overlay. xpArt is the plate a new skill point brings with it.
   xpOverlay: document.getElementById("xp-overlay"),
   xpVignette: document.getElementById("xp-vignette"),
+  xpArt: document.getElementById("xp-art"),
   xpTitle: document.getElementById("xp-title"),
   xpAmount: document.getElementById("xp-amount"),
 

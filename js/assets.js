@@ -16,6 +16,8 @@ const IMAGES = [
   "images/check-failure-background.png",
   "images/check-success-title.svg",
   "images/check-failure-title.svg",
+  /* The plate a new skill point announces itself with. */
+  "images/new_skillpoint.png",
 ];
 
 /* Keeping the reference is what keeps the decode around. */
