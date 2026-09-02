@@ -3,9 +3,9 @@
 /* Sound cues — playback only. One jingle per attribute, the two roll clips,
    the skill point and the experience that bought none, health and morale in
    both directions, the two money clips, and the interface answering for
-   itself — a line taken, a dialog dismissed, a skill card picked up, a point
-   spent on one. All of them are pulled into memory up front, so a cue never
-   waits on the network.
+   itself — a line taken, a dialog thrown open, a dialog dismissed, the ready
+   switch flipped, a skill card picked up, a point spent on one. All of them
+   are pulled into memory up front, so a cue never waits on the network.
 
    Each kind sits on its own channel, so a skill's voice can ring on while the
    dice roll and money changing hands is heard over neither. Timings come from
@@ -66,6 +66,8 @@ export const VITAL_SRC = {
 export const UI_SRC = {
   click: "sounds/dialogue-click.wav",
   cancel: "sounds/cancel.wav",
+  modal: "sounds/switch-02.wav",
+  ready: "sounds/switch-04.wav",
   skillPick: "sounds/skill-choosing.wav",
   skillLevel: "sounds/skills-leveling.wav",
 };
@@ -292,6 +294,18 @@ export function playClick() {
 /* A dialog dismissed, whichever one it was. */
 export function playCancel() {
   run(channels.ui, UI_SRC.cancel, { onEnd: null });
+}
+
+/* A dialog opened, whichever one it was: a switch thrown, answering the press
+   that asked for it. */
+export function playModal() {
+  run(channels.ui, UI_SRC.modal, { onEnd: null });
+}
+
+/* The ready toggle, in either direction. The player's own hand on it, so it
+   is heard on the frame it happens. */
+export function playReady() {
+  run(channels.ui, UI_SRC.ready, { onEnd: null });
 }
 
 /* A skill card picked up in the sheet, and a point spent on one. Their own

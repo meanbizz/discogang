@@ -8,6 +8,7 @@ import { TURN_MIN_LENGTH } from "../config.js";
 import { dom } from "../dom.js";
 import { cleanText, copyText, uid } from "../utils.js";
 import * as dialogue from "../dialogue/dialogue.js";
+import * as sfx from "../audio/sfx.js";
 import { vitals } from "../vitals.js";
 import * as character from "../export/character.js";
 import { download } from "../export/file.js";
@@ -31,6 +32,8 @@ export function setSelfReady(next) {
   if (!planningUnlocked()) return;
 
   state.selfReady = Boolean(next);
+  /* The player's own press on the switch, either way it went. */
+  sfx.playReady();
   paintReadyButton();
 
   if (network.isHost) {

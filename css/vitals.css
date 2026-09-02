@@ -1,8 +1,5 @@
 /* css/vitals.css */
 
-/* Health and morale bars plus the two buttons beside them.
-   The is-hit flash is animated in animations.css. */
-
 .panel-foot {
   display: flex;
   align-items: flex-end;
@@ -58,6 +55,55 @@
   padding: 0.4rem 1.1rem;
   font-size: 0.8rem;
   letter-spacing: 0.18em;
+}
+
+/* ---------------- Under your own name ---------------- */
+
+/* The name and the bars, stacked: min-width lets the name go on clipping to
+   the width the strip allows. */
+.roster-stack {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+/* The name goes on clipping to whatever the strip allows: without this the
+   grid track is held open by the unbroken name and the ellipsis never
+   arrives. */
+.roster-stack .roster-name {
+  min-width: 0;
+}
+
+/* Cut to the room a name leaves. The press belongs to the portrait button
+   underneath, so the bars take none of it. */
+.roster-vitals {
+  display: grid;
+  gap: 3px;
+  justify-items: start;
+  width: max-content;
+  pointer-events: none;
+}
+
+/* Four to a line, however many steps a character has. The wrap is written
+   into the track list rather than left to whatever width the name happens to
+   leave over: six steps are four and two, ten are three lines, and the row's
+   width is the same either way. Left to flex-wrap it moved with the name, and
+   the two bars could break at different places. */
+.roster-vitals .vital {
+  display: grid;
+  grid-template-columns: repeat(4, 0.7rem);
+  grid-auto-rows: 0.3rem;
+  gap: 2px;
+  width: max-content;
+}
+
+/* Sized by the track it lands in, borders and all, so a step cannot spill
+   past the four it shares a line with. */
+.roster-vitals .vital-step {
+  box-sizing: border-box;
+  width: auto;
+  min-width: 0;
+  height: auto;
 }
 
 @media (max-width: 32rem) {

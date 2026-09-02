@@ -2,9 +2,9 @@
 
 /* The dialogs: enlarged portrait, the skill sheet, the NPC manager, the
    player's inventory and the administrateur's item catalogue. Each one
-   remembers what to return focus to on close, and each one is heard closing:
-   whichever dialog it was, dismissing it sounds the same, because the answer
-   to the player is the same.
+   remembers what to return focus to on close, and each one is heard opening
+   and closing: whichever dialog it was, throwing it open and dismissing it
+   each sound the same, because the answer to the player is the same.
 
    The skill sheet is the one dialog with a life of its own: it is built once
    and kept, so its header has to be told separately when the player's
@@ -86,6 +86,7 @@ export function openImage(name, image, role) {
 
   modalReturnFocus = activeFocus();
   dom.modal.hidden = false;
+  sfx.playModal();
   dom.modalClose.focus();
 }
 
@@ -134,6 +135,7 @@ export function openPsyche(sheetState, options) {
 
   psycheReturnFocus = activeFocus();
   dom.psycheModal.hidden = false;
+  sfx.playModal();
 
   /* Once, on the container rather than the cards: the sheet rebuilds those
      whenever a point lands. */
@@ -267,6 +269,7 @@ export function openNpcModal(isAdmin, npcs, onEdit, onRemove) {
   renderNpcList(npcs, onEdit, onRemove);
   npcReturnFocus = activeFocus();
   dom.npcModal.hidden = false;
+  sfx.playModal();
   dom.npcModalClose.focus();
 }
 
@@ -487,6 +490,7 @@ export function openInventory(list, onPick) {
   renderInventoryGrid(list, onPick);
   inventoryReturnFocus = activeFocus();
   dom.inventoryModal.hidden = false;
+  sfx.playModal();
   dom.inventoryModalClose.focus();
 }
 
@@ -602,6 +606,7 @@ export function openItemsModal(isAdmin, list, onEdit, onRemove) {
   renderItemList(list, onEdit, onRemove);
   itemsReturnFocus = activeFocus();
   dom.itemsModal.hidden = false;
+  sfx.playModal();
   dom.itemsModalClose.focus();
 }
 

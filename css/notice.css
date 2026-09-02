@@ -75,10 +75,11 @@
 }
 
 /* A wordless plate carries its meaning in the picture, so the picture gets
-   the words' room as well. */
+   the words' room and then twice over: a step of health or morale is read at
+   a glance or not at all. */
 .notice-overlay[data-kind^="health-"] .notice-art,
 .notice-overlay[data-kind^="morale-"] .notice-art {
-  width: clamp(7rem, 24vw, 15rem);
+  width: clamp(14rem, 48vw, 30rem);
 }
 
 .notice-title,

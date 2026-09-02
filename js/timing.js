@@ -27,7 +27,7 @@
 /* Named first, because the music duck holds for the whole sequence below. */
 const TAPE_ROLL_MS = 1200;
 const VERDICT_IN_MS = 220;
-const VERDICT_HOLD_MS = 2500;
+const VERDICT_HOLD_MS = 2000;
 const VERDICT_OUT_MS = 700;
 
 export const TIMING = {

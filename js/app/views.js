@@ -16,6 +16,28 @@ export function systemNote(text) {
   renderEntry({ system: true, text, at: Date.now() });
 }
 
+/* The player's own bars: off the dom map where it carries them, off the
+   document where it does not. They are moved into the strip rather than
+   rebuilt, so vitals.js goes on painting the same two elements it always
+   has. */
+function vitalBars() {
+  const health = dom.healthBar || document.getElementById("health-bar");
+  const morale = dom.moraleBar || document.getElementById("morale-bar");
+  return [health, morale].filter(Boolean);
+}
+
+/* Where the bars go when no row of yours was drawn — an empty strip, or the
+   administrateur's desk. Emptying the roster takes them out of the document
+   with it, and vitals.js would go on painting two elements nobody can see, so
+   they are put back in the foot they were declared in. */
+function parkVitals() {
+  const home = document.querySelector("#panel-foot .vitals");
+  if (!home) return;
+  vitalBars().forEach((bar) => {
+    if (bar.parentNode !== home) home.appendChild(bar);
+  });
+}
+
 export function renderRoster() {
   dom.roster.textContent = "";
   renderReadyBanner();
@@ -27,6 +49,7 @@ export function renderRoster() {
   });
 
   if (!people.length) {
+    parkVitals();
     const empty = document.createElement("p");
     empty.className = "roster-empty";
     empty.textContent = "Nobody here yet.";
@@ -34,6 +57,7 @@ export function renderRoster() {
     return;
   }
 
+  let mine = false;
   people.forEach((person) => {
     const wrapper = document.createElement("button");
     wrapper.type = "button";
@@ -54,13 +78,31 @@ export function renderRoster() {
     readyDot.className = "roster-ready";
     if (person.ready) readyDot.setAttribute("data-ready", "true");
 
+    /* The name, and under it — on your own row only — your two bars. A column
+       of its own, so they read below the name rather than beside the
+       portrait. */
+    const stack = document.createElement("span");
+    stack.className = "roster-stack";
+    stack.appendChild(name);
+    if (person.id === state.selfId && !state.isAdmin) {
+      const bars = document.createElement("span");
+      bars.className = "roster-vitals";
+      vitalBars().forEach((bar) => bars.appendChild(bar));
+      stack.appendChild(bars);
+      mine = true;
+    }
+
     wrapper.appendChild(thumb);
-    wrapper.appendChild(name);
+    wrapper.appendChild(stack);
     wrapper.appendChild(readyDot);
     wrapper.title = person.name;
     wrapper.setAttribute("aria-label", `Portrait of ${person.name}`);
     dom.roster.appendChild(wrapper);
   });
+
+  /* Your seat may not be in this payload yet; the bars wait in the foot until
+     it is. */
+  if (!mine) parkVitals();
 }
 
 export function renderReadyBanner() {

@@ -279,6 +279,8 @@ export function showXp(gained, granted) {
 
 /* ---------------- Voices ---------------- */
 
+let lastJingle = null;
+
 /* An active rolled check owns the moment: the dice are the only thing heard,
    so the speaker's jingle is left out — beginRoll has already queued them. A
    passive is rolled behind the reader's back: no tape, no dice, no cue, and
@@ -286,7 +288,10 @@ export function showXp(gained, granted) {
 export function playNode(voice, check) {
   const rolled = Boolean(check && check.result && !check.passive);
   const attribute = voice ? voice.attribute : null;
-  if (attribute && !rolled) sfx.playJingle(attribute, null);
+  if (!attribute || rolled) return;
+  if (attribute === lastJingle) return;
+  lastJingle = attribute;
+  sfx.playJingle(attribute, null);
 }
 
 /* A line being taken. Never queued: the press is the player's own doing and
@@ -322,6 +327,8 @@ export function reset() {
   /* And its own voices only, for the same reason — the plate that survives a
      reset survives with the sound it was given. */
   sfx.stopScene();
+  /* And the speaker with it: the next scene's first voice is news again. */
+  lastJingle = null;
   stopTape();
   releaseEntries();
   hideVerdict();
