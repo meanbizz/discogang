@@ -5,6 +5,20 @@ Usage: python3 apply_edits.py edits.txt [--dry-run]
 """
 import sys, pathlib
 
+
+def read_file(path):
+    """Read a file, normalising line endings; return (text, original_ending)."""
+    with path.open("r", encoding="utf-8-sig", newline="") as f:
+        raw = f.read()
+    return raw.replace("\r\n", "\n"), ("\r\n" if "\r\n" in raw else "\n")
+
+
+def write_file(path, text, ending):
+    if ending == "\r\n":
+        text = text.replace("\n", "\r\n")
+    with path.open("w", encoding="utf-8", newline="") as f:
+        f.write(text)
+
 MARKERS = ("<<<FILE", "<<<OLD", "<<<NEW", "<<<CREATE", "<<<WRITE", "<<<DELETE", "<<<END")
 
 
@@ -57,8 +71,10 @@ def main():
         sys.exit("usage: apply_edits.py <edits.txt> [--dry-run]")
 
     planned = {}  # path -> new contents, or None to delete
+    endings = {}  # path -> line ending to write back
 
-    for i, e in enumerate(parse(pathlib.Path(files[0]).read_text(encoding="utf-8")), 1):
+    payload, _ = read_file(pathlib.Path(files[0]))
+    for i, e in enumerate(parse(payload), 1):
         path = pathlib.Path(e["file"])
         key = str(path)
 
@@ -70,9 +86,10 @@ def main():
             body = e.get("new", "")
             if body and not body.endswith("\n"):
                 body += "\n"
-            if e["op"] == "create" and path.exists() \
-                    and path.read_text(encoding="utf-8") != body:
-                sys.exit(f"edit {i}: {path} exists with different content")
+            if path.exists():
+                disk, endings[key] = read_file(path)
+                if e["op"] == "create" and disk != body:
+                    sys.exit(f"edit {i}: {path} exists with different content")
             planned[key] = body
             continue
 
@@ -81,7 +98,7 @@ def main():
             if text is None:
                 sys.exit(f"edit {i}: {path} was deleted by an earlier edit")
         elif path.exists():
-            text = path.read_text(encoding="utf-8")
+            text, endings[key] = read_file(path)
         else:
             sys.exit(f"edit {i}: {path} not found")
 
@@ -111,7 +128,7 @@ def main():
             path.unlink(missing_ok=True)
         else:
             path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(text, encoding="utf-8")
+            write_file(path, text, endings.get(key, "\n"))
         print(f"{verb}d {path}")
 
 
