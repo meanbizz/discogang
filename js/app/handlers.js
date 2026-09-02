@@ -66,6 +66,7 @@ import {
   openDialogueRound,
   rememberRound,
   replaceRounds,
+  reportDialogueDone,
   showDialogueHistory,
 } from "./rounds.js";
 
@@ -376,10 +377,10 @@ function firstWelcome(data, current, live) {
    already on screen is rebuilt: the reader keeps the scene it is in, the log
    keeps its lines, and only what arrived while the wire was down is taken.
 
-   The scene in progress is the delicate part. If the room is still reading
-   the round this seat was reading, it is left entirely alone — restarting it
-   would replay the lines, spend the vitals again and pay the experience
-   again. A round this seat never saw is a new scene, and is started properly.
+   The scene in progress is the delicate part. A round this seat already holds
+   is left entirely alone, read to its end or not — restarting it would replay
+   the lines, spend the vitals again and pay the experience again. A round this
+   seat never saw is a new scene, and is started properly.
 
    Money that moved while the wire was down lands quietly. It is a state
    correction rather than an event, and a plate for it would be a plate for
@@ -429,16 +430,17 @@ function laterWelcome(data, current, live) {
      of it. */
   publishProgress();
 
-  fresh.forEach((entry) => {
-    state.logEntries.push(entry);
-  });
+  /* Lines that arrived while the wire was down: printed, not merely kept. */
+  fresh.forEach(commit);
   if (readable.length) showDialogueHistory(readable);
 
-  const sameScene = live && currentId && seen[currentId];
-  if (sameScene && wasReading) {
-    /* Still the round in hand: the reader is left exactly where it was. */
+  /* A round this seat already holds is never started again, mid-scene or
+     finished: a second reading pays its experience and spends its vitals twice. */
+  if (live && currentId && seen[currentId]) {
     state.dialoguePayload = current;
     state.dialogueLive = true;
+    /* Read to its end before the wire went: the host is simply reminded. */
+    if (!wasReading) reportDialogueDone();
     refreshPlanningLock();
     return;
   }
