@@ -1,8 +1,8 @@
 /* js/modals.js */
 
 /* The dialogs: enlarged portrait, the skill sheet, the NPC manager, the
-   player's inventory and the administrateur's item catalogue. Each one
-   remembers what to return focus to on close, and each one is heard opening
+   player's inventory, their goals and the administrateur's item catalogue.
+   Each one remembers what to return focus to on close, and is heard opening
    and closing: whichever dialog it was, throwing it open and dismissing it
    each sound the same, because the answer to the player is the same.
 
@@ -35,6 +35,7 @@ let psycheReturnFocus = null;
 let npcReturnFocus = null;
 let inventoryReturnFocus = null;
 let itemsReturnFocus = null;
+let goalsReturnFocus = null;
 let sheetInstance = null;
 let stagedNpcPortrait = null;
 let stagedItemImage = null;
@@ -504,6 +505,77 @@ export function closeInventory() {
     inventoryReturnFocus.focus();
   }
   inventoryReturnFocus = null;
+}
+
+/* ---------------- Goals (player) ---------------- */
+
+/* Read only: a goal is written by the administrateur's payload, so the
+   dashboard has nothing to press but the way out. */
+export function renderGoalsList(list) {
+  if (!dom.goalsList) return;
+  const goals = Array.isArray(list) ? list : [];
+  dom.goalsList.textContent = "";
+  if (dom.goalsEmpty) dom.goalsEmpty.hidden = goals.length > 0;
+
+  goals.forEach((goal) => {
+    const card = document.createElement("article");
+    card.className = "goal-card";
+    card.setAttribute("role", "listitem");
+    if (goal.done) card.classList.add("is-done");
+
+    const head = document.createElement("div");
+    head.className = "goal-head";
+
+    const name = document.createElement("h3");
+    name.className = "goal-name";
+    name.textContent = goal.name;
+    head.appendChild(name);
+
+    /* What completion pays, printed done or not: the reward is part of what
+       the goal says. */
+    const paid = document.createElement("span");
+    paid.className = "goal-reward";
+    paid.textContent = goal.xp ? "+" + goal.xp + " XP" : "No reward";
+    head.appendChild(paid);
+    card.appendChild(head);
+
+    const text = document.createElement("p");
+    text.className = "goal-text";
+    text.textContent = goal.description || "Nothing is written about it.";
+    card.appendChild(text);
+
+    const mark = document.createElement("p");
+    mark.className = "goal-state";
+    mark.textContent = goal.done ? "Completed" : "In progress";
+    card.appendChild(mark);
+
+    dom.goalsList.appendChild(card);
+  });
+}
+
+export function openGoals(list) {
+  if (!dom.goalsModal) return;
+  renderGoalsList(list);
+  goalsReturnFocus = activeFocus();
+  dom.goalsModal.hidden = false;
+  sfx.playModal();
+  dom.goalsModalClose.focus();
+}
+
+export function closeGoals() {
+  if (!dom.goalsModal || dom.goalsModal.hidden) return;
+  dom.goalsModal.hidden = true;
+  sfx.playCancel();
+  if (goalsReturnFocus && document.contains(goalsReturnFocus)) {
+    goalsReturnFocus.focus();
+  }
+  goalsReturnFocus = null;
+}
+
+/* A book that moved while the dashboard was open. */
+export function refreshGoals(list) {
+  if (!dom.goalsModal || dom.goalsModal.hidden) return;
+  renderGoalsList(list);
 }
 
 /* ---------------- Items (administrateur) ---------------- */

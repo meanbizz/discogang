@@ -109,6 +109,13 @@ export const dom = {
   npcFormError: document.getElementById("npc-form-error"),
   npcList: document.getElementById("npc-list"),
 
+  // Goals — the player's own dashboard, read only
+  goalsButton: document.getElementById("goals-button"),
+  goalsModal: document.getElementById("goals-modal"),
+  goalsModalClose: document.getElementById("goals-modal-close"),
+  goalsList: document.getElementById("goals-list"),
+  goalsEmpty: document.getElementById("goals-empty"),
+
   // Inventory — the player's own pockets
   inventoryButton: document.getElementById("inventory-button"),
   inventoryModal: document.getElementById("inventory-modal"),

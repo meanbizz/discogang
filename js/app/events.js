@@ -29,6 +29,7 @@ import {
   removeItem,
   submitItemForm,
 } from "./inventory.js";
+import { openGoals } from "./goals.js";
 import { leave } from "./room.js";
 
 /* Enter sends; Shift+Enter is a new line. requestSubmit keeps the form's own
@@ -208,6 +209,7 @@ function bindModals() {
     modals.closeNpcModal();
     modals.closeInventory();
     modals.closeItemsModal();
+    modals.closeGoals();
   });
 }
 
@@ -325,6 +327,22 @@ function bindInventory() {
   }
 }
 
+/* The player's own goals. Read only, so there is nothing to bind but the way
+   in and the ways out. */
+function bindGoals() {
+  if (dom.goalsButton) {
+    dom.goalsButton.addEventListener("click", openGoals);
+  }
+  if (dom.goalsModalClose) {
+    dom.goalsModalClose.addEventListener("click", modals.closeGoals);
+  }
+  if (dom.goalsModal) {
+    dom.goalsModal.addEventListener("click", (event) => {
+      if (event.target.dataset.close === "true") modals.closeGoals();
+    });
+  }
+}
+
 /* The administrateur's catalogue of everything in play. */
 function bindItemForm() {
   if (dom.itemsButton) {
@@ -423,6 +441,7 @@ export function bindSession() {
   bindModals();
   bindNpcForm();
   bindInventory();
+  bindGoals();
   bindItemForm();
 
   /* Player only: the button lives in the panel foot, which is detached for

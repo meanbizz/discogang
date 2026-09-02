@@ -262,5 +262,16 @@
         "dialogue": "The front door handle is loose in its plate. You catch it before it drops, set it back, and step out into the rain.<br>*Something starts here.*"
       }
     }
+  },
+  "goals": {
+    "Snyde": {
+      "add": [
+        {
+          "name": "Catch a Fish",
+          "description": "Either from a pond, or from the boring supermarket.",
+          "xp": 40
+        }
+      ]
+    }
   }
 }

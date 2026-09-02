@@ -195,6 +195,26 @@ export function vital(kind, gained) {
   });
 }
 
+/* A goal finished, and what completing it paid. A notice rather than the
+   experience overlay: that belongs to the scene's group, and a round opening
+   on the next frame would withdraw a plate the goal had already earned.
+
+   No art by default — the name is the sentence. */
+export function goal(name, gained, granted) {
+  const title = String(name == null ? "" : name).trim();
+  if (!title) return;
+  /* A point is the news when one landed; the experience under it is not. */
+  const cue = granted ? sfx.playPoint : gained ? sfx.playXp : null;
+
+  notice({
+    kind: "goal",
+    way: "gain",
+    title: "GOAL COMPLETED",
+    amount: title.toUpperCase() + (gained ? " — +" + gained + " XP" : ""),
+    sound: cue ? () => cue(null) : null,
+  });
+}
+
 /* Arriving in a room or leaving one: nothing still on its way belongs to it,
    and no voice still ringing for it either. */
 export function reset() {

@@ -1,8 +1,8 @@
 /* The administrateur's turn payload, rebuilt field by field: a peer can only
    ever contribute shapes the reader already understands. No DOM here.
 
-   Trees are keyed by character name or peer id; the reserved "inventory" key
-   carries item orders instead and is rebuilt by inventory/items.js.
+   Trees are keyed by character name or peer id; the reserved "inventory" and
+   "goals" keys carry orders instead, rebuilt by their own modules.
 
    A skillCheck comes in three shapes:
      1. No dice, no result — a passive read that only acts as a speaker.
@@ -19,6 +19,7 @@
 import { XP_MAX_PER_NODE } from "../config.js";
 import { own, pick, line, normalizeKey, bodyText } from "./text.js";
 import { INVENTORY_KEY, cleanOps } from "../inventory/items.js";
+import { GOALS_KEY, cleanGoalOps } from "../goals/goals.js";
 
 export const DIFFICULTY_TARGET = {
   trivial: 6,
@@ -233,6 +234,7 @@ export function cleanPayload(raw) {
     const key = line(keys[i], KEY_MAX);
     if (!key || own(out, key)) continue;
     if (normalizeKey(key) === INVENTORY_KEY) continue;
+    if (normalizeKey(key) === GOALS_KEY) continue;
     const cleaned = cleanTree(raw[keys[i]]);
     if (!cleaned) continue;
     out[key] = cleaned;
@@ -251,6 +253,16 @@ export function cleanInventoryOps(raw) {
   return null;
 }
 
+/* The goal orders riding along with the trees, or null when there are none. */
+export function cleanGoalOrders(raw) {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const keys = Object.keys(raw);
+  for (let i = 0; i < keys.length; i += 1) {
+    if (normalizeKey(keys[i]) === GOALS_KEY) return cleanGoalOps(raw[keys[i]]);
+  }
+  return null;
+}
+
 function stripFence(text) {
   const trimmed = String(text == null ? "" : text).trim();
   const fenced = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
@@ -262,12 +274,13 @@ function stripFence(text) {
 export function parsePayload(text) {
   const raw = stripFence(text);
   if (!raw || raw.charAt(0) !== "{") {
-    return { payload: null, inventory: null, error: null, raw };
+    return { payload: null, inventory: null, goals: null, error: null, raw };
   }
   if (raw.length > MAX_PAYLOAD_CHARS) {
     return {
       payload: null,
       inventory: null,
+      goals: null,
       error: "That payload is too large to send.",
       raw,
     };
@@ -280,6 +293,7 @@ export function parsePayload(text) {
     return {
       payload: null,
       inventory: null,
+      goals: null,
       error: "That looked like a turn payload, but the JSON is malformed.",
       raw,
     };
@@ -287,15 +301,17 @@ export function parsePayload(text) {
 
   const payload = cleanPayload(parsed);
   const inventory = cleanInventoryOps(parsed);
-  if (!payload && !inventory) {
+  const goals = cleanGoalOrders(parsed);
+  if (!payload && !inventory && !goals) {
     return {
       payload: null,
       inventory: null,
-      error: "No usable dialogue trees or item orders in that payload.",
+      goals: null,
+      error: "No usable dialogue trees, item orders or goals in that payload.",
       raw,
     };
   }
-  return { payload, inventory, error: null, raw };
+  return { payload, inventory, goals, error: null, raw };
 }
 
 /* Keys are character names or PeerJS ids — the id is tried first. */

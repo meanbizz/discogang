@@ -25,6 +25,7 @@ import {
 import { planningUnlocked } from "./locks.js";
 import { publishDialogue } from "./rounds.js";
 import { publishOps, selfItems, usedItemLines } from "./inventory.js";
+import { goalLines, publishGoalOps, selfGoals } from "./goals.js";
 import { skillLines } from "./progress.js";
 
 export function setSelfReady(next) {
@@ -47,7 +48,7 @@ export function setSelfReady(next) {
 }
 
 /* A payload takes precedence over prose: whatever parses as a turn is
-   published as one. Items move before the trees that mention them. */
+   published as one. Items and goals move before the trees that mention them. */
 export function shareText(text) {
   if (!state.isAdmin) return;
   if (!everyoneReady()) {
@@ -56,8 +57,9 @@ export function shareText(text) {
   }
 
   const attempt = dialogue.parsePayload(text);
-  if (attempt.payload || attempt.inventory) {
+  if (attempt.payload || attempt.inventory || attempt.goals) {
     if (attempt.inventory) publishOps(attempt.inventory);
+    if (attempt.goals) publishGoalOps(attempt.goals);
     if (attempt.payload) publishDialogue(attempt.payload, attempt.raw);
     else renderEntry({ text: attempt.raw, at: Date.now(), raw: true });
     return;
@@ -137,6 +139,7 @@ export function exportTurns() {
   const fresh = state.turnEntries.filter((entry) => !entry.stale);
   const used = usedItemLines(fresh.map((entry) => entry.text));
   const skills = skillLines();
+  const goals = goalLines();
 
   if (!fresh.length) {
     flashImport("Nothing new");
@@ -154,6 +157,11 @@ export function exportTurns() {
   if (skills.length) {
     parts.push("# Players skills\n" + skills.join("\n"));
   }
+  /* The administrateur has no modal for goals, so this is their only reading
+     of what the table is chasing. */
+  if (goals.length) {
+    parts.push("# Players goals\n" + goals.join("\n"));
+  }
 
   copyText(parts.join("\n\n"), (ok) => {
     flashImport(ok ? "Copied ✓" : "Copy failed");
@@ -161,9 +169,10 @@ export function exportTurns() {
 }
 
 /* A player's own character, written to a file they keep: the attributes and
-   skills their sheet holds, what they are carrying, and where their two bars
-   stand. Local from start to finish — nothing about this leaves the seat, and
-   the file is written in the shape the join form reads back. */
+   skills their sheet holds, what they are carrying, what they are after, and
+   where their two bars stand. Local from start to finish — nothing about this
+   leaves the seat, and the file is written in the shape the join form reads
+   back. */
 export function exportCharacter() {
   if (state.isAdmin) return;
 
@@ -171,6 +180,7 @@ export function exportCharacter() {
     name: state.profile.name,
     sheetState: state.sheetState,
     items: selfItems(),
+    goals: selfGoals(),
     vitals,
   });
 

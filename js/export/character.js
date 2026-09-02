@@ -1,7 +1,8 @@
 /* js/export/character.js */
 
 /* One player's character, written out for them to keep: what their sheet
-   holds, what they are carrying, and where their two bars stand.
+   holds, what they are carrying, what they are after, and where their two
+   bars stand.
 
    The shape is deliberately the one the join form already reads. Attributes
    are plain numbers and every skill keeps its points and its signature, so a
@@ -84,6 +85,19 @@ function inventoryOf(list) {
     .filter((item) => item.name);
 }
 
+/* The goals as the dashboard shows them, reward and all, so the file says
+   what the character was after and what it was worth. */
+function goalsOf(list) {
+  return (Array.isArray(list) ? list : [])
+    .map((goal) => ({
+      name: String(goal && goal.name ? goal.name : ""),
+      description: String(goal && goal.description ? goal.description : ""),
+      xp: count(goal && goal.xp, 0),
+      done: Boolean(goal && goal.done),
+    }))
+    .filter((goal) => goal.name);
+}
+
 /* A bar and the ceiling its skill gives it, so the number means something
    next to a sheet that may have moved since. */
 function barOf(bar) {
@@ -101,6 +115,7 @@ export function snapshot(source) {
     attributes: attributesOf(from.sheetState),
     skills: skillsOf(from.sheetState),
     inventory: inventoryOf(from.items),
+    goals: goalsOf(from.goals),
     vitals: {
       health: barOf(from.vitals && from.vitals.health),
       morale: barOf(from.vitals && from.vitals.morale),

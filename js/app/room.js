@@ -34,6 +34,7 @@ import {
 } from "./locks.js";
 import { applyScene } from "./scene.js";
 import { setInventory } from "./inventory.js";
+import { setGoals } from "./goals.js";
 import { refreshLedger } from "./progress.js";
 
 function seat(isAdmin) {
@@ -78,6 +79,8 @@ export function connect(room, name, portrait) {
   /* Empty, which the item sieve reads as "the money and nothing else": every
      character has a purse from the first frame, holding nothing. */
   setInventory([], {});
+  /* No goals until a payload or a save hands this seat some. */
+  setGoals({});
   renderRoster();
   replaceLog([]);
   replaceTurnLog([]);
@@ -132,6 +135,7 @@ export function leave() {
   modals.closeNpcModal();
   modals.closeInventory();
   modals.closeItemsModal();
+  modals.closeGoals();
 
   dialogue.reset();
   overlays.reset();
@@ -158,6 +162,7 @@ export function leave() {
   state.isAdmin = false;
   state.selfId = null;
   setInventory([], {});
+  setGoals({});
 
   dom.sessionPanel.hidden = true;
   dom.joinPanel.hidden = false;

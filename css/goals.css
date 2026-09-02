@@ -1,0 +1,98 @@
+/* css/goals.css */
+
+/* The goals dashboard: one card a goal, what it asks and what it pays. Read
+   only, so nothing here is pressable. */
+
+.goals-modal-card {
+  max-width: 44rem;
+}
+
+.goals-list {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.goals-list:empty {
+  display: none;
+}
+
+.goal-card {
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.75rem 0.9rem;
+  border: var(--hairline);
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.goal-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.goal-name {
+  margin: 0;
+  font-size: 1rem;
+  letter-spacing: 0.04em;
+}
+
+/* What completion pays, printed done or not. */
+.goal-reward {
+  flex: 0 0 auto;
+  padding: 0.1rem 0.5rem;
+  border: var(--hairline);
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  opacity: 0.85;
+}
+
+.goal-text {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  opacity: 0.85;
+}
+
+.goal-state {
+  margin: 0;
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  opacity: 0.55;
+}
+
+/* Done, and still worth reading: ruled through rather than taken away. */
+.goal-card.is-done {
+  opacity: 0.6;
+}
+
+.goal-card.is-done .goal-name {
+  text-decoration: line-through;
+}
+
+.goals-empty[hidden] {
+  display: none;
+}
+
+/* The completion plate. A goal's name is a sentence where a sum of money is a
+   number, so this one line is allowed to wrap. */
+.notice-overlay[data-kind="goal"] .notice-amount {
+  max-width: 24rem;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  white-space: normal;
+}
+
+@media (max-width: 32rem) {
+  .goal-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+}

@@ -20,14 +20,15 @@ import {
 } from "../utils.js";
 import { cleanPayload } from "../dialogue/sanitize.js";
 import { cleanItems, cleanInventories } from "../inventory/items.js";
+import { cleanGoalBooks } from "../goals/goals.js";
 import { cleanScores, cleanAllocated } from "../sheet.js";
 import { cleanXpLedger } from "../xp.js";
 import { cleanRounds, latestPayload, ROUND_ID_MAX } from "./rounds.js";
 
 export const SESSION_KIND = "salon-session";
-/* 4 added the per-person experience ledger and skill points. Version 3 saves
-   still load: a person with no ledger simply starts from nothing. */
-export const SESSION_VERSION = 4;
+/* 5 added each player's goals; 4 added the experience ledger. Older saves
+   still load: whatever they never recorded simply starts from nothing. */
+export const SESSION_VERSION = 5;
 
 const MAX_PEOPLE = 32;
 const MAX_NPCS = 64;
@@ -122,6 +123,7 @@ export function snapshot(state) {
     npcs: cleanNpcs(source.npcs),
     items: cleanItems(source.items),
     inventories: cleanInventories(source.inventories),
+    goals: cleanGoalBooks(source.goals),
     scene: cleanScene(source.scene),
     rounds,
     dialogue: cleanPayload(source.dialogue) || latestPayload(rounds),
@@ -148,6 +150,8 @@ export function clean(raw) {
     /* Empty for any save written before items were kept. */
     items: cleanItems(raw.items),
     inventories: cleanInventories(raw.inventories),
+    /* Empty for any save written before goals were kept. */
+    goals: cleanGoalBooks(raw.goals),
     scene: cleanScene(raw.scene),
     rounds,
     dialogue: cleanPayload(raw.dialogue) || latestPayload(rounds),

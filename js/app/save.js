@@ -31,6 +31,7 @@ import {
 } from "./locks.js";
 import { applyScene, setNpcs } from "./scene.js";
 import { setInventory } from "./inventory.js";
+import { setGoals } from "./goals.js";
 import { adoptProgress } from "./progress.js";
 import { replaceRounds, showDialogueHistory } from "./rounds.js";
 
@@ -59,6 +60,7 @@ export function exportSession() {
     npcs: state.npcs,
     items: state.items,
     inventories: state.inventories,
+    goals: state.goals,
     scene: state.scene,
     dialogue: state.dialoguePayload,
     rounds: state.dialogueRounds,
@@ -169,6 +171,7 @@ export function applySession(snap) {
   );
   setNpcs(snap.npcs);
   setInventory(snap.items, snap.inventories);
+  setGoals(snap.goals);
   applyScene(snap.scene);
 
   showDialogueHistory(state.dialogueRounds);

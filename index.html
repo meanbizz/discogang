@@ -309,6 +309,14 @@
             >
               Inv.
             </button>
+            <button
+              type="button"
+              id="goals-button"
+              class="option psyche"
+              title="What you are trying to do"
+            >
+              Goals
+            </button>
             <!-- The player's own character, written to a .json they keep. -->
             <button
               type="button"
@@ -403,6 +411,70 @@
             aria-label="Your items"
           ></div>
           <p id="inventory-empty" class="inv-empty">Your pockets are empty.</p>
+        </div>
+      </div>
+
+      <!-- Goals Modal — the player's own dashboard, read only -->
+      <div id="goals-modal" class="modal" hidden>
+        <div class="modal-backdrop" data-close="true"></div>
+        <div
+          class="modal-card modal-card-wide goals-modal-card"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="goals-modal-title"
+        >
+          <button
+            type="button"
+            id="goals-modal-close"
+            class="modal-close"
+            aria-label="Close goals"
+          >
+            ×
+          </button>
+
+          <h2 id="goals-modal-title" class="modal-name">What you are after</h2>
+
+          <div
+            id="goals-list"
+            class="goals-list"
+            role="list"
+            aria-label="Your goals"
+          ></div>
+          <p id="goals-empty" class="inv-empty goals-empty">
+            Nothing is asked of you yet.
+          </p>
+        </div>
+      </div>
+
+      <!-- Goals Modal — the player's own dashboard, read only -->
+      <div id="goals-modal" class="modal" hidden>
+        <div class="modal-backdrop" data-close="true"></div>
+        <div
+          class="modal-card modal-card-wide goals-modal-card"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="goals-modal-title"
+        >
+          <button
+            type="button"
+            id="goals-modal-close"
+            class="modal-close"
+            aria-label="Close goals"
+          >
+            ×
+          </button>
+
+          <h2 id="goals-modal-title" class="modal-name">What you are after</h2>
+
+          <div
+            id="goals-list"
+            class="goals-list"
+            role="list"
+            aria-label="Your goals"
+          ></div>
+          <p id="goals-empty" class="inv-empty goals-empty">
+            Nothing is asked of you yet.
+          </p>
         </div>
       </div>
 

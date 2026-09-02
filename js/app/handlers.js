@@ -33,6 +33,7 @@ import * as music from "../audio/music.js";
 import * as session from "../export/session.js";
 import { latestPayload } from "../export/rounds.js";
 import { cleanOps } from "../inventory/items.js";
+import { cleanGoalOps } from "../goals/goals.js";
 import {
   state,
   normalizeEntry,
@@ -57,6 +58,7 @@ import { refreshPlanningLock } from "./locks.js";
 import { applyScene, setNpcs } from "./scene.js";
 import { applySession } from "./save.js";
 import { commitOps, inventoryPayload, setInventory } from "./inventory.js";
+import { commitGoalOps, setGoals } from "./goals.js";
 import { adoptProgress, publishProgress } from "./progress.js";
 import {
   acceptChoice,
@@ -148,6 +150,8 @@ function onHostReceiveData(connection, data) {
       /* The catalogue and every bag, so a joiner can read their pockets. */
       items: state.items,
       inventories: state.inventories,
+      /* Every book at the table, read by the seat each one names. */
+      goals: state.goals,
       dialogue: state.dialoguePayload,
       /* Each round carries what was chosen in it, so a joiner inherits the
          whole record and not just the trees. */
@@ -266,6 +270,15 @@ function onHostReceiveData(connection, data) {
     return;
   }
 
+  /* Goals move here too, so every book agrees with this one. */
+  if (data.type === "goal-ops") {
+    if (!person?.admin) return;
+    const asked = cleanGoalOps(data.ops);
+    if (!asked) return;
+    commitGoalOps(asked);
+    return;
+  }
+
   /* The administrateur edited the catalogue, which can rename what people
      already carry but never moves a count, so there is nothing to announce. */
   if (data.type === "inventory-state") {
@@ -336,6 +349,7 @@ function firstWelcome(data, current, live) {
   applyScene(data.scene);
   if (Array.isArray(data.npcs)) setNpcs(data.npcs);
   setInventory(data.items, data.inventories);
+  setGoals(data.goals);
 
   /* A save the room already read may hold this seat's ledger. Adopting it
      publishes; otherwise the table is simply told what this seat brought. */
@@ -408,6 +422,8 @@ function laterWelcome(data, current, live) {
   applyScene(data.scene);
   if (Array.isArray(data.npcs)) setNpcs(data.npcs);
   setInventory(data.items, data.inventories);
+  /* A completion missed while the wire was down is still owed. */
+  setGoals(data.goals, true);
 
   /* This seat's own ledger is the better copy; the host is simply reminded
      of it. */
@@ -543,6 +559,11 @@ function onGuestReceiveData(data) {
      purse is news and is announced. */
   if (data.type === "inventory") {
     setInventory(data.items, data.inventories, true);
+    return;
+  }
+
+  if (data.type === "goals") {
+    setGoals(data.goals, true);
     return;
   }
 

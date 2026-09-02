@@ -23,6 +23,8 @@ export const state = {
   items: [],
   /* Who carries what: character name -> { item name: count }. */
   inventories: {},
+  /* What each character is after: character name -> [ goal ]. */
+  goals: {},
   selfReady: false,
   profile: { name: "", portrait: null },
   roomId: "",
