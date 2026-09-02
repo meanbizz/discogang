@@ -94,6 +94,54 @@
   }
 }
 
+/* ---------------- Experience overlay ---------------- */
+
+/* The same three beats as the verdict, on its own durations. The mask is set
+   up in xp.css. */
+.xp-overlay.is-in {
+  animation: xp-in var(--dur-xp-in) ease forwards;
+}
+
+.xp-overlay.is-out {
+  animation: xp-wipe var(--dur-xp-out) linear forwards;
+}
+
+@keyframes xp-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes xp-wipe {
+  from {
+    opacity: 1;
+    -webkit-mask-position: 100% 0;
+    mask-position: 100% 0;
+  }
+  to {
+    opacity: 1;
+    -webkit-mask-position: 0% 0;
+    mask-position: 0% 0;
+  }
+}
+
+/* Quicker than the words it frames, and only for a new skill point. */
+.xp-overlay[data-kind="point"] .xp-vignette {
+  animation: xp-vignette var(--dur-xp-vignette) ease-out forwards;
+}
+
+@keyframes xp-vignette {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 0.5;
+  }
+}
+
 /* ---------------- Vitals ---------------- */
 
 .vital.is-hit {
@@ -142,6 +190,21 @@
   .check-overlay.is-out {
     animation: none;
     opacity: 0;
+  }
+
+  .xp-overlay.is-in {
+    animation: none;
+    opacity: 1;
+  }
+
+  .xp-overlay.is-out {
+    animation: none;
+    opacity: 0;
+  }
+
+  .xp-overlay[data-kind="point"] .xp-vignette {
+    animation: none;
+    opacity: 0.5;
   }
 
   .vital.is-hit {

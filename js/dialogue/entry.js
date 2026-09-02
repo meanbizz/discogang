@@ -1,11 +1,13 @@
-/* One dialogue line as a DOM node: speaker, verdict tag, body, vitals note
-   and the narrator's read-aloud button. A live node and a restored one are
-   the same article; only what is appended after differs. */
+/* One dialogue line as a DOM node: speaker, verdict tag, body, the vitals and
+   experience note, and the narrator's read-aloud button. A live node and a
+   restored one are the same article; only what is appended after differs. */
 
 import { dom } from "../dom.js";
 import { paintMarkup } from "../utils.js";
 import * as vitals from "../vitals.js";
 import * as narration from "../audio/narration.js";
+import { DIFFICULTY_TARGET } from "./sanitize.js";
+import { PASSIVE_BONUS } from "./passive.js";
 import { findSkill, skillLabel } from "./skills.js";
 
 const VITAL_OF = { vitality: "health", morale: "morale" };
@@ -19,7 +21,65 @@ export function appendToLog(node) {
   dom.log.scrollTop = dom.log.scrollHeight;
 }
 
-/* [Medium 10+: success], with the dice breakdown as a title. */
+function capitalize(value) {
+  const text = String(value == null ? "" : value);
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+/* "+2" / "−1" / "none" — a modifier reads as a direction, not a bare number. */
+function signed(value) {
+  const number = Number(value) || 0;
+  if (!number) return "none";
+  return (number > 0 ? "+" : "−") + Math.abs(number);
+}
+
+/* What the tag says when it is hovered. Every number is named: which die was
+   which, what the modifier did, what the target was, and what the three came
+   to together. A bare "3 + 4 + 2 = 9" leaves the reader to guess which of
+   those was the roll and which the sheet. */
+function checkTitle(check) {
+  const lines = [];
+
+  if (check.difficulty) {
+    const target = DIFFICULTY_TARGET[check.difficulty];
+    lines.push(
+      "Difficulty: " +
+        capitalize(check.difficulty) +
+        (target ? " — " + target + " or more to pass" : ""),
+    );
+  }
+
+  if (check.passive) {
+    /* No dice were thrown, so the standing bonus is the whole of the roll. */
+    lines.push("Read passively — no dice");
+    lines.push("Passive bonus: +" + PASSIVE_BONUS + " in place of two dice");
+    lines.push("Modifier: " + signed(check.modifier));
+    return lines.join("\n");
+  }
+
+  if (check.dice1 && check.dice2) {
+    const total = check.dice1 + check.dice2 + check.modifier;
+    lines.push("Rolled: " + check.dice1 + " and " + check.dice2);
+    lines.push("Modifier: " + signed(check.modifier));
+    lines.push("Total: " + total);
+    if (
+      check.dice1 === check.dice2 &&
+      (check.dice1 === 1 || check.dice1 === 6)
+    ) {
+      lines.push(
+        check.dice1 === 6
+          ? "Двойная — critical success, whatever the target"
+          : "Snake eyes — critical failure, whatever the target",
+      );
+    }
+    return lines.join("\n");
+  }
+
+  if (check.modifier) lines.push("Modifier: " + signed(check.modifier));
+  return lines.join("\n");
+}
+
+/* [Medium 10+: success], with the breakdown as a title. */
 function checkTag(check) {
   const parts = [];
 
@@ -36,28 +96,15 @@ function checkTag(check) {
   if (check.result) tag.dataset.result = check.result;
   tag.textContent = "[" + parts.join(": ") + "]";
 
-  if (check.dice1 && check.dice2) {
-    if (
-      check.dice1 === check.dice2 &&
-      (check.dice1 === 1 || check.dice1 === 6)
-    ) {
-      tag.dataset.crit = "true";
-    }
-    const total = check.dice1 + check.dice2 + check.modifier;
-    tag.title =
-      skillLabel(check.skill) +
-      " — " +
-      check.dice1 +
-      " + " +
-      check.dice2 +
-      (check.modifier
-        ? (check.modifier > 0 ? " + " : " − ") + Math.abs(check.modifier)
-        : "") +
-      " = " +
-      total;
-  } else {
-    tag.title = skillLabel(check.skill);
+  if (
+    check.dice1 &&
+    check.dice2 &&
+    check.dice1 === check.dice2 &&
+    (check.dice1 === 1 || check.dice1 === 6)
+  ) {
+    tag.dataset.crit = "true";
   }
+  tag.title = checkTitle(check);
 
   return tag;
 }
@@ -100,30 +147,44 @@ function speakButton(speakKey, text) {
   return button;
 }
 
-/* apply is what separates a scene being played from one being read back: a
-   transcript shows the same note without spending anybody's vitals. */
-export function vitalsNote(effect, apply) {
-  if (!effect) return null;
+/* What a line cost and what it was worth, on one row.
 
+   apply is what separates a scene being played from one being read back: a
+   transcript shows the same note without spending anybody's vitals. The
+   experience is only ever labelled here — the ledger is moved by the reader,
+   which needs to know what landed before it can announce it. */
+export function vitalsNote(effect, apply, xpGained) {
   const note = document.createElement("p");
   note.className = "vitals-note";
   let any = false;
 
-  Object.keys(VITAL_OF).forEach((field) => {
-    const direction = effect[field];
-    if (!direction) return;
-    const kind = VITAL_OF[field];
-    if (apply) vitals.changeVital(kind, direction);
+  if (effect) {
+    Object.keys(VITAL_OF).forEach((field) => {
+      const direction = effect[field];
+      if (!direction) return;
+      const kind = VITAL_OF[field];
+      if (apply) vitals.changeVital(kind, direction);
 
+      const item = document.createElement("span");
+      item.className = "vitals-note-item";
+      item.dataset.vital = kind;
+      item.textContent =
+        (kind === "health" ? "Health" : "Morale") +
+        (direction === "gain" ? " +1" : " −1");
+      note.appendChild(item);
+      any = true;
+    });
+  }
+
+  const gained = Math.round(Number(xpGained)) || 0;
+  if (gained > 0) {
     const item = document.createElement("span");
     item.className = "vitals-note-item";
-    item.dataset.vital = kind;
-    item.textContent =
-      (kind === "health" ? "Health" : "Morale") +
-      (direction === "gain" ? " +1" : " −1");
+    item.dataset.vital = "xp";
+    item.textContent = "+" + gained + " XP: gained experience.";
     note.appendChild(item);
     any = true;
-  });
+  }
 
   return any ? note : null;
 }
@@ -170,7 +231,13 @@ export function buildEntry(node, voice, speakKey) {
   paintMarkup(body, node.dialogue);
   lead.appendChild(body);
 
-  if (node.dialogue && narration.isNarrator(node.speaker)) {
+  /* A line that is nothing but style has nothing to read aloud, so it is not
+     offered a button it could only fail with. */
+  if (
+    node.dialogue &&
+    narration.isNarrator(node.speaker) &&
+    narration.speakable(node.dialogue)
+  ) {
     article.dataset.narrated = "true";
     lead.appendChild(document.createTextNode(" "));
     lead.appendChild(speakButton(speakKey, node.dialogue));

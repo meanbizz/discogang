@@ -23,6 +23,7 @@ import {
 } from "./views.js";
 import { refreshLoadButton, refreshPlanningLock } from "./locks.js";
 import { setSceneOverride } from "./scene.js";
+import { publishProgress, refreshLedger } from "./progress.js";
 
 dialogue.setHooks({
   onFinish: () => {
@@ -31,6 +32,13 @@ dialogue.setHooks({
   },
   onSkillArt: setSceneOverride,
   onChoice: reportChoice,
+  /* The reader has already moved the ledger and put the overlay on screen.
+     What is left is telling the table, and the sheet's header if it happens to
+     be open behind the scene. */
+  onXp: () => {
+    refreshLedger();
+    publishProgress();
+  },
 });
 
 /* Rounds keep their name everywhere they travel, which is what makes this
@@ -133,9 +141,9 @@ export function reportChoice(raw) {
 }
 
 /* Rounds that are already over, read back as transcript: nothing to press, no
-   cues, no vitals spent twice, and each fork settled the way the player
-   settled it. The administrateur reads nothing back — the payloads stay in
-   dialogueRounds. */
+   cues, no vitals spent twice, no experience earned twice, and each fork
+   settled the way the player settled it. The administrateur reads nothing
+   back — the payloads stay in dialogueRounds. */
 export function showDialogueHistory(rounds) {
   if (!Array.isArray(rounds) || !rounds.length) return;
   if (state.isAdmin) return;

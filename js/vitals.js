@@ -1,10 +1,14 @@
 /* Health and morale: the two bars, their ceilings taken from the skill sheet,
    and the single-step changes a dialogue node spends. The is-hit flash is
-   animated in animations.css. */
+   animated in animations.css.
+
+   The arithmetic itself lives in js/sheet.js, so the save writer and the sheet
+   header read the same numbers this does. */
 
 import { dom } from "./dom.js";
 import { VITAL_SKILL } from "./config.js";
 import { TIMING } from "./timing.js";
+import { skillScores } from "./sheet.js";
 
 export const vitals = {
   health: { value: 0, max: 0 },
@@ -14,18 +18,12 @@ export const vitals = {
 const FLASH_CLEAR_MS = TIMING.vitals.flashMs + TIMING.vitals.clearBufferMs;
 const flashTimers = {};
 
+/* One skill's score, or 1 when there is no sheet to read it off. */
 export function skillScore(sheetState, skillId) {
-  if (!sheetState || !sheetState.attributes || !sheetState.skills) return 1;
-  const groups = window.DiscoSkillSheet?.ATTRIBUTES || [];
-  for (let i = 0; i < groups.length; i += 1) {
-    for (let j = 0; j < groups[i].skills.length; j += 1) {
-      if (groups[i].skills[j].id !== skillId) continue;
-      const owner = Number(sheetState.attributes[groups[i].id]) || 1;
-      const skill = sheetState.skills[skillId] || {};
-      return owner + (Number(skill.points) || 0) + (skill.signature ? 1 : 0);
-    }
-  }
-  return 1;
+  const scores = skillScores(sheetState);
+  return Object.prototype.hasOwnProperty.call(scores, skillId)
+    ? scores[skillId]
+    : 1;
 }
 
 export function vitalMax(sheetState, kind) {
@@ -50,7 +48,8 @@ export function renderVitals() {
 }
 
 /* fill tops both bars up; otherwise a raised ceiling adds its own difference,
-   so editing the sheet mid-session neither heals nor harms. */
+   so editing the sheet mid-session neither heals nor harms. A skill point
+   spent on endurance or volition arrives through exactly this path. */
 export function refreshVitals(sheetState, fill) {
   Object.keys(vitals).forEach((kind) => {
     const state = vitals[kind];

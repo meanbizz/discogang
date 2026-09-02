@@ -1,7 +1,8 @@
 /* js/export/session.js */
 
 /* Session saves: one JSON document holding what a room has said, planned and
-   drawn, every dialogue payload sent this session, and every item in play.
+   drawn, every dialogue payload sent this session, every item in play, and
+   what each player has earned.
 
    A save is untrusted input whoever wrote it, so every field is rebuilt here.
    Deliberately absent: the music track, whose startedAt means nothing hours
@@ -19,10 +20,14 @@ import {
 } from "../utils.js";
 import { cleanPayload } from "../dialogue/sanitize.js";
 import { cleanItems, cleanInventories } from "../inventory/items.js";
+import { cleanScores, cleanAllocated } from "../sheet.js";
+import { cleanXpLedger } from "../xp.js";
 import { cleanRounds, latestPayload, ROUND_ID_MAX } from "./rounds.js";
 
 export const SESSION_KIND = "salon-session";
-export const SESSION_VERSION = 3;
+/* 4 added the per-person experience ledger and skill points. Version 3 saves
+   still load: a person with no ledger simply starts from nothing. */
+export const SESSION_VERSION = 4;
 
 const MAX_PEOPLE = 32;
 const MAX_NPCS = 64;
@@ -58,8 +63,12 @@ function cleanEntries(raw, limit) {
 }
 
 /* A saved peer id means nothing in a later session, but a name still does —
-   the app uses these to hand returning players their old colour, and bags are
-   keyed by the same names. */
+   the app uses these to hand returning players their old colour, their bags,
+   and now their experience.
+
+   skills is the reading the administrateur imports; allocated is the half that
+   is actually given back, since the attributes come from whatever sheet the
+   player walks in with. */
 function cleanPerson(raw) {
   if (!raw || typeof raw !== "object") return null;
   const name = cleanName(raw.name);
@@ -71,6 +80,9 @@ function cleanPerson(raw) {
     portrait: cleanImageUrl(raw.portrait),
     admin: Boolean(raw.admin),
     slot,
+    skills: cleanScores(raw.skills),
+    allocated: cleanAllocated(raw.allocated),
+    xp: cleanXpLedger(raw.xp),
   };
 }
 

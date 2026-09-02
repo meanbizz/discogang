@@ -72,6 +72,12 @@ export const dom = {
   checkDie2: document.getElementById("check-die-2"),
   checkOverlayTitle: document.getElementById("check-overlay-title"),
 
+  // Experience overlay
+  xpOverlay: document.getElementById("xp-overlay"),
+  xpVignette: document.getElementById("xp-vignette"),
+  xpTitle: document.getElementById("xp-title"),
+  xpAmount: document.getElementById("xp-amount"),
+
   modal: document.getElementById("portrait-modal"),
   modalClose: document.getElementById("portrait-modal-close"),
   modalImage: document.getElementById("portrait-modal-image"),

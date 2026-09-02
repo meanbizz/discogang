@@ -6,6 +6,20 @@
        state: { attributes: { intellect: 2 }, skills: { encyclopedia: { signature: true } } },
        onChange: (state) => console.log(state)
      });
+
+   Two kinds of editing, deliberately separate:
+
+     editable   — the attributes may be stepped up and down. Character
+                  creation, not play.
+     upgradable — points earned in play may be spent on skills. The sheet
+                  holds no ledger of its own: it prints the one it is handed
+                  through setLedger, and asks onSpend before it moves a pip.
+                  A false answer leaves the sheet untouched.
+
+   A skill can only take a point while it has an outline pip left to fill —
+   one slot per point of its owning attribute — so intellect 2 caps logic's
+   spent points at 2. Raising the attribute is the only way to make more room,
+   and that is not something play grants.
    ============================================================ */
 (function (global) {
   "use strict";
@@ -234,6 +248,10 @@
     return Math.min(max, Math.max(min, value));
   }
 
+  function plural(count, one, many) {
+    return count === 1 ? one : many;
+  }
+
   function defaultState() {
     var state = { attributes: {}, skills: {}, selected: null };
     ATTRIBUTES.forEach(function (attribute) {
@@ -246,8 +264,11 @@
   }
 
   /* Every field is rebuilt from the known shape, so an outside object — a
-     pasted file, a peer's payload — can only ever contribute numbers and
-     flags that already belong on the sheet. */
+     pasted file, a peer's payload, a restored save — can only ever contribute
+     numbers and flags that already belong on the sheet.
+
+     Points are capped against the attribute that owns the skill, so nothing
+     from outside can smuggle in more filled pips than a card has room for. */
   function mergeState(incoming) {
     var state = defaultState();
     if (!incoming || typeof incoming !== "object") return state;
@@ -260,19 +281,26 @@
         }
       });
     }
+
     if (incoming.skills && typeof incoming.skills === "object") {
-      Object.keys(state.skills).forEach(function (id) {
-        var patch = incoming.skills[id];
-        if (!patch || typeof patch !== "object") return;
-        var points = Number(patch.points);
-        state.skills[id].points = clamp(
-          isFinite(points) ? Math.round(points) : 0,
-          0,
-          SKILL_POINT_MAX,
-        );
-        state.skills[id].signature = !!patch.signature;
+      /* Walked by attribute rather than by skill id, because the ceiling on a
+         skill's points is the attribute standing above it. */
+      ATTRIBUTES.forEach(function (attribute) {
+        var room = state.attributes[attribute.id];
+        attribute.skills.forEach(function (skill) {
+          var patch = incoming.skills[skill.id];
+          if (!patch || typeof patch !== "object") return;
+          var points = Number(patch.points);
+          state.skills[skill.id].points = clamp(
+            isFinite(points) ? Math.round(points) : 0,
+            0,
+            Math.min(SKILL_POINT_MAX, room),
+          );
+          state.skills[skill.id].signature = !!patch.signature;
+        });
       });
     }
+
     if (
       typeof incoming.selected === "string" &&
       state.skills[incoming.selected]
@@ -280,6 +308,22 @@
       state.selected = incoming.selected;
     }
     return state;
+  }
+
+  /* A ledger from outside. The sheet keeps it only to print it and to know
+     whether there is anything to spend — the arithmetic is the caller's. */
+  function mergeLedger(incoming) {
+    if (!incoming || typeof incoming !== "object") return null;
+    var whole = function (value) {
+      var number = Math.round(Number(value));
+      return isFinite(number) && number > 0 ? number : 0;
+    };
+    return {
+      points: whole(incoming.points),
+      current: whole(incoming.current),
+      required: whole(incoming.required),
+      total: whole(incoming.total),
+    };
   }
 
   function DiscoSkillSheet(root, options) {
@@ -290,11 +334,16 @@
 
     this.root = root;
     this.editable = options.editable !== false;
+    /* Off by default: a sheet nobody handed a ledger to is a sheet to read. */
+    this.upgradable = options.upgradable === true;
     this.onChange =
       typeof options.onChange === "function" ? options.onChange : null;
     this.onSelect =
       typeof options.onSelect === "function" ? options.onSelect : null;
+    this.onSpend =
+      typeof options.onSpend === "function" ? options.onSpend : null;
     this.state = mergeState(options.state);
+    this.ledger = mergeLedger(options.ledger);
     this.uid = "des-" + ++uid;
     this.tooltip = null;
 
@@ -334,27 +383,85 @@
     this.render();
   };
 
+  DiscoSkillSheet.prototype.setUpgradable = function (upgradable) {
+    this.upgradable = !!upgradable;
+    this.render();
+  };
+
+  /* Experience moved while the sheet was open. The header and every card's
+     upgrade state read off the ledger, so this is a full render — cheap, and
+     it keeps one path for what a card looks like. */
+  DiscoSkillSheet.prototype.setLedger = function (ledger) {
+    this.ledger = mergeLedger(ledger);
+    this.render();
+  };
+
+  DiscoSkillSheet.prototype.getLedger = function () {
+    return this.ledger ? JSON.parse(JSON.stringify(this.ledger)) : null;
+  };
+
   /* skill score = its attribute + allocated points + signature bonus */
   DiscoSkillSheet.prototype.scoreOf = function (skillId) {
     var owner = this._attributeOf(skillId);
     var skill = this.state.skills[skillId];
+    if (!owner || !skill) return 0;
     return (
       this.state.attributes[owner.id] + skill.points + (skill.signature ? 1 : 0)
     );
   };
 
+  /* How many more points this skill has room for: one slot per point of its
+     owning attribute, less what has already been spent. This is exactly the
+     count of outline pips left on the card. */
+  DiscoSkillSheet.prototype.roomOf = function (skillId) {
+    var owner = this._attributeOf(skillId);
+    if (!owner || !this.state.skills[skillId]) return 0;
+    var ceiling = Math.min(SKILL_POINT_MAX, this.state.attributes[owner.id]);
+    return Math.max(0, ceiling - this.state.skills[skillId].points);
+  };
+
+  DiscoSkillSheet.prototype.pointsAvailable = function () {
+    return this.ledger ? this.ledger.points : 0;
+  };
+
   DiscoSkillSheet.prototype.setAttribute = function (attributeId, value) {
     if (!(attributeId in this.state.attributes)) return;
     this.state.attributes[attributeId] = clamp(value, ATTR_MIN, ATTR_MAX);
+    /* Lowering an attribute can leave a skill holding more points than it has
+       room for, so the whole sheet is put back through the sieve. */
+    this.state = mergeState(this.state);
     this.render();
     this._emit("change");
   };
 
   DiscoSkillSheet.prototype.setSkillPoints = function (skillId, points) {
     if (!this.state.skills[skillId]) return;
-    this.state.skills[skillId].points = clamp(points, 0, SKILL_POINT_MAX);
+    var owner = this._attributeOf(skillId);
+    var ceiling = owner
+      ? Math.min(SKILL_POINT_MAX, this.state.attributes[owner.id])
+      : SKILL_POINT_MAX;
+    this.state.skills[skillId].points = clamp(points, 0, ceiling);
     this.render();
     this._emit("change");
+  };
+
+  /* Spending one earned point. The ledger belongs to the caller, so it is
+     asked first and its answer is final: a refusal leaves the pip exactly
+     where it was and nothing is emitted. */
+  DiscoSkillSheet.prototype.upgrade = function (skillId) {
+    if (!this.upgradable) return false;
+    if (!this.state.skills[skillId]) return false;
+    if (!this.roomOf(skillId)) return false;
+    if (this.pointsAvailable() <= 0) return false;
+    if (this.onSpend && this.onSpend(skillId) === false) return false;
+
+    this.state.skills[skillId].points += 1;
+    /* Kept in step for the render that follows; the caller's own count is
+       what a later setLedger will correct this to. */
+    if (this.ledger && this.ledger.points > 0) this.ledger.points -= 1;
+    this.render();
+    this._emit("change");
+    return true;
   };
 
   DiscoSkillSheet.prototype.setSignature = function (skillId, exclusive) {
@@ -377,8 +484,12 @@
     this._emit("select");
   };
 
+  /* Closed rather than forgotten: the selected card keeps its selection, so
+     reopening the sheet does not lose the skill a player was considering. */
   DiscoSkillSheet.prototype.hideTooltip = function () {
-    this.tooltip = null;
+    if (!this.tooltip) return;
+    this.tooltip.classList.remove("is-open");
+    this.tooltip.setAttribute("aria-hidden", "true");
   };
 
   DiscoSkillSheet.prototype._attributeOf = function (skillId) {
@@ -414,6 +525,8 @@
     var self = this;
     this.root.textContent = "";
 
+    this.root.appendChild(this._renderLedger());
+
     var groups = el("ul", "des-groups");
 
     ATTRIBUTES.forEach(function (attribute) {
@@ -432,6 +545,55 @@
     });
     this.root.appendChild(this.tooltip);
     this._syncTooltip();
+  };
+
+  /* The header: points in hand, progress towards the next one, and — only
+     while there is something to spend — how to spend it. A sheet with no
+     ledger prints nothing and takes up no room. */
+  DiscoSkillSheet.prototype._renderLedger = function () {
+    var bar = el("div", "des-ledger", {
+      role: "status",
+      "aria-live": "polite",
+    });
+    if (!this.ledger) {
+      bar.hidden = true;
+      return bar;
+    }
+
+    var points = this.ledger.points;
+    if (points > 0) bar.classList.add("has-points");
+
+    var count = el("p", "des-ledger-points");
+    count.textContent =
+      points === 0
+        ? "No skill points"
+        : points + " skill " + plural(points, "point", "points") + " to spend";
+    bar.appendChild(count);
+
+    var progress = el("p", "des-ledger-xp");
+    var written = [];
+    if (this.ledger.required > 0) {
+      written.push(
+        this.ledger.current +
+          " / " +
+          this.ledger.required +
+          " XP towards the next",
+      );
+    }
+    if (this.ledger.total > 0) {
+      written.push(this.ledger.total + " XP earned");
+    }
+    progress.textContent = written.join(" — ");
+    progress.hidden = !written.length;
+    bar.appendChild(progress);
+
+    var hint = el("p", "des-ledger-hint");
+    hint.textContent =
+      "Pick a skill, then press + on its card. A skill can only rise as high as the attribute above it.";
+    hint.hidden = !(points > 0 && this.upgradable);
+    bar.appendChild(hint);
+
+    return bar;
   };
 
   DiscoSkillSheet.prototype._renderAttribute = function (attribute) {
@@ -509,6 +671,8 @@
     var bonus = data.points + (data.signature ? 1 : 0);
     var selected = this.state.selected === skill.id;
     var attrValue = this.state.attributes[attribute.id];
+    var room = this.roomOf(skill.id);
+    var spendable = this.upgradable && this.pointsAvailable() > 0;
 
     var card = el("div", "des-card", {
       role: "button",
@@ -522,7 +686,10 @@
       card.classList.add("is-selected");
       card.setAttribute("aria-describedby", this.uid + "-tooltip");
     }
-    if (!this.editable) card.classList.add("is-readonly");
+    /* A card that could take a point says so even unselected, so a player
+       with something to spend can see where it is allowed to go. */
+    if (spendable && room > 0) card.classList.add("can-upgrade");
+    if (!this.editable && !this.upgradable) card.classList.add("is-readonly");
 
     var art = el("div", "des-card-art");
     art.appendChild(
@@ -558,8 +725,9 @@
     score.textContent = String(this.scoreOf(skill.id));
     card.appendChild(score);
 
-    /* pips: one filled diamond for a signature skill, then one outline
-       diamond per point of the owning attribute */
+    /* pips: one filled diamond for a signature skill, then the attribute's
+       worth of slots — filled for every point spent, outline for every one
+       still free. The outlines are exactly the room a new point can go into. */
     var pips = el("ul", "des-card-pips");
     if (data.signature) {
       var sigPip = el("li");
@@ -567,9 +735,9 @@
       pips.appendChild(sigPip);
     }
     for (var i = 0; i < attrValue; i++) {
-      var emptyItem = el("li");
-      emptyItem.appendChild(pip(false, 14));
-      pips.appendChild(emptyItem);
+      var slot = el("li");
+      slot.appendChild(pip(i < data.points, 14));
+      pips.appendChild(slot);
     }
     card.appendChild(pips);
 
@@ -579,6 +747,42 @@
     title.textContent = skill.name;
     card.appendChild(title);
 
+    /* The confirmation. It exists only on the selected card and only while a
+       point is in hand, so spending is always a second, deliberate press. A
+       skill with no room left keeps the button and says why instead of
+       vanishing, which would leave the player wondering. */
+    if (selected && spendable) {
+      var plus = el("button", "des-card-upgrade", {
+        type: "button",
+        "aria-label":
+          room > 0
+            ? "Spend a skill point on " + skill.name
+            : skill.name +
+              " is already as high as " +
+              attribute.name +
+              " allows",
+      });
+      plus.textContent = room > 0 ? "+" : "Full";
+      plus.disabled = room <= 0;
+      plus.title =
+        room > 0
+          ? "Spend one skill point — " +
+            room +
+            " " +
+            plural(room, "slot", "slots") +
+            " left"
+          : "Raise " + attribute.name + " to make room";
+      plus.addEventListener("click", function (event) {
+        /* The card underneath would otherwise read this as a deselect. */
+        event.stopPropagation();
+        self.upgrade(skill.id);
+      });
+      plus.addEventListener("keydown", function (event) {
+        if (event.key === "Enter" || event.key === " ") event.stopPropagation();
+      });
+      card.appendChild(plus);
+    }
+
     card.addEventListener("click", function () {
       self.select(selected ? null : skill.id);
     });
@@ -586,6 +790,14 @@
       if (event.key === "Enter" || event.key === " ") {
         event.preventDefault();
         self.select(selected ? null : skill.id);
+        return;
+      }
+      /* A selected card can be raised from the keyboard without reaching for
+         the button, which the render has only just put there. */
+      if ((event.key === "+" || event.key === "=") && selected) {
+        event.preventDefault();
+        self.upgrade(skill.id);
+        return;
       }
       if (event.key === "Escape" && selected) {
         self.select(null);

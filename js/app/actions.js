@@ -1,7 +1,7 @@
 /* js/app/actions.js */
 
 /* What the two seats can actually do: ready up, speak, plan, and lift the
-   plans, the choices and the items to the clipboard. */
+   plans, the items and the table's skills to the clipboard. */
 
 import { TURN_MIN_LENGTH } from "../config.js";
 import { dom } from "../dom.js";
@@ -18,8 +18,9 @@ import {
   systemNote,
 } from "./views.js";
 import { planningUnlocked } from "./locks.js";
-import { currentRound, publishDialogue } from "./rounds.js";
+import { publishDialogue } from "./rounds.js";
 import { publishOps, usedItemLines } from "./inventory.js";
+import { skillLines } from "./progress.js";
 
 export function setSelfReady(next) {
   if (state.isAdmin) return;
@@ -108,24 +109,6 @@ export function shareTurn(text) {
 
 let importResetTimer = null;
 
-/* What each player picked in the round now closing, in the order they picked
-   it. The administrateur writes the next round against this, so it goes to
-   the clipboard beside the plans. */
-function choiceLines() {
-  const round = currentRound();
-  if (!round || !round.choices) return [];
-
-  const out = [];
-  Object.keys(round.choices).forEach((author) => {
-    const list = round.choices[author];
-    if (!Array.isArray(list)) return;
-    list.forEach((choice) => {
-      out.push(author + " — " + dialogue.describeChoice(choice));
-    });
-  });
-  return out;
-}
-
 function flashImport(face) {
   if (importResetTimer) clearTimeout(importResetTimer);
   dom.importButton.textContent = face;
@@ -135,16 +118,20 @@ function flashImport(face) {
 }
 
 /* Only what was planned for the round in progress: anything stale belongs to
-   a scene already played out and was imported once already. The choices and
-   the items come from that same round, so every half describes one turn. */
+   a scene already played out and was imported once already.
+
+   What each player picked inside their own tree is deliberately absent. The
+   administrateur writes the next round against what the table means to do and
+   what it is capable of, and the forks are already recorded on the round
+   itself — repeating them here only buried the plans. */
 export function exportTurns() {
   if (!state.isAdmin) return;
 
   const fresh = state.turnEntries.filter((entry) => !entry.stale);
-  const chosen = choiceLines();
   const used = usedItemLines(fresh.map((entry) => entry.text));
+  const skills = skillLines();
 
-  if (!fresh.length && !chosen.length) {
+  if (!fresh.length) {
     flashImport("Nothing new");
     return;
   }
@@ -153,16 +140,12 @@ export function exportTurns() {
   if (used.length) {
     parts.push("# Players use the following items:\n" + used.join("\n"));
   }
-  if (fresh.length) {
-    parts.push(
-      "# Actions planned by players:\n" +
-        fresh.map((entry) => `${entry.author} — ${entry.text}`).join("\n"),
-    );
-  }
-  if (chosen.length) {
-    parts.push(
-      "# Options the players chose this round:\n" + chosen.join("\n"),
-    );
+  parts.push(
+    "# Actions planned by players:\n" +
+      fresh.map((entry) => `${entry.author} — ${entry.text}`).join("\n"),
+  );
+  if (skills.length) {
+    parts.push("# Players skills\n" + skills.join("\n"));
   }
 
   copyText(parts.join("\n\n"), (ok) => {

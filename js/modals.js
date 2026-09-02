@@ -2,7 +2,11 @@
 
 /* The dialogs: enlarged portrait, the skill sheet, the NPC manager, the
    player's inventory and the administrateur's item catalogue. Each one
-   remembers what to return focus to on close. */
+   remembers what to return focus to on close.
+
+   The skill sheet is the one dialog with a life of its own: it is built once
+   and kept, so its header has to be told separately when the player's
+   experience moves while it is open. */
 
 import { dom } from "./dom.js";
 import { paintThumb, clearThumb, cleanName } from "./utils.js";
@@ -16,6 +20,10 @@ let itemsReturnFocus = null;
 let sheetInstance = null;
 let stagedNpcPortrait = null;
 let stagedItemImage = null;
+
+/* Set on every open, so the sheet built on the first one still calls into
+   whatever the app wants today. */
+let psycheHandlers = { onChange: null, onSpend: null };
 
 const TOOLTIP_GAP = 8;
 
@@ -48,20 +56,36 @@ export function closePortrait() {
 
 /* ---------------- Psyche ---------------- */
 
-export function openPsyche(sheetState, onStateChange) {
+/* options: { ledger, onChange, onSpend }.
+
+   onSpend is asked before a pip moves and answers whether the point was
+   really there to spend — the sheet holds no ledger of its own. */
+export function openPsyche(sheetState, options) {
   if (!dom.psycheModal.hidden) return;
+  const opts = options || {};
+  psycheHandlers = {
+    onChange: opts.onChange || null,
+    onSpend: opts.onSpend || null,
+  };
 
   if (!sheetInstance && window.DiscoSkillSheet) {
     sheetInstance = new window.DiscoSkillSheet(dom.psycheSheet, {
+      /* Attributes are the character's, fixed at the door. Points earned in
+         play are not, which is what upgradable turns on. */
       editable: false,
+      upgradable: true,
       state: sheetState,
+      ledger: opts.ledger || null,
       onChange: (next) => {
-        onStateChange(next);
+        if (psycheHandlers.onChange) psycheHandlers.onChange(next);
         refreshVitals(next, false);
       },
+      onSpend: (skillId) =>
+        psycheHandlers.onSpend ? psycheHandlers.onSpend(skillId) : false,
     });
   } else if (sheetInstance) {
     sheetInstance.setState(sheetState, true);
+    sheetInstance.setLedger(opts.ledger || null);
   }
 
   psycheReturnFocus = activeFocus();
@@ -77,6 +101,12 @@ export function closePsyche() {
     psycheReturnFocus.focus();
   }
   psycheReturnFocus = null;
+}
+
+/* Experience earned while the sheet is open, or a spend just authorised. Only
+   the header repaints, so a selected card and its tooltip stay put. */
+export function refreshPsycheLedger(ledger) {
+  if (sheetInstance && sheetInstance.setLedger) sheetInstance.setLedger(ledger);
 }
 
 export function getSheetInstance() {

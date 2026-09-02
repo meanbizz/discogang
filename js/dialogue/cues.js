@@ -1,5 +1,3 @@
-/* js/dialogue/cues.js */
-
 /* Cue choreography: what plays when. The reader says only what happened; how
    long it takes on screen or in the speakers is settled here.
 
@@ -17,6 +15,7 @@ const TAPE_CLASS = "is-rolling";
 const FADE_CLASS = "is-fading";
 
 let timers = [];
+let xpTimers = [];
 
 function clearTimers() {
   for (let i = 0; i < timers.length; i += 1) clearTimeout(timers[i]);
@@ -25,6 +24,18 @@ function clearTimers() {
 
 function after(ms, action) {
   timers.push(setTimeout(action, Math.max(0, ms)));
+}
+
+/* The experience overlay keeps its own timers. A rolled node can hand over XP
+   as well, and clearing the verdict's schedule must not cancel what is queued
+   to follow it. */
+function clearXpTimers() {
+  for (let i = 0; i < xpTimers.length; i += 1) clearTimeout(xpTimers[i]);
+  xpTimers = [];
+}
+
+function afterXp(ms, action) {
+  xpTimers.push(setTimeout(action, Math.max(0, ms)));
 }
 
 /* Adding a class already there is deliberately a no-op: it goes on before the
@@ -102,6 +113,77 @@ function showVerdict(check, result) {
   });
 }
 
+/* ---------------- Experience ---------------- */
+
+export function hideXp() {
+  clearXpTimers();
+  const host = dom.xpOverlay;
+  if (!host) return;
+  host.classList.remove("is-in", "is-out");
+  host.hidden = true;
+}
+
+/* How long a rolled node owns the screen, tape and verdict together. An XP
+   overlay on the same node waits this out, so the two never share it. */
+export function checkDurationMs() {
+  return (
+    TIMING.tape.rollMs +
+    TIMING.verdict.inMs +
+    TIMING.verdict.holdMs +
+    TIMING.verdict.outMs
+  );
+}
+
+function paintXp(gained, granted) {
+  const host = dom.xpOverlay;
+  if (!host) return;
+
+  const point = Boolean(granted);
+  host.dataset.kind = point ? "point" : "gain";
+
+  if (dom.xpTitle) {
+    dom.xpTitle.textContent = point ? "New skill point!" : "Gained experience";
+  }
+  if (dom.xpAmount) {
+    dom.xpAmount.textContent = "+" + gained + " XP";
+    /* A point is the news; the experience that bought it would read as small
+       print beside it. */
+    dom.xpAmount.hidden = point;
+  }
+
+  host.classList.remove("is-in", "is-out");
+  host.hidden = false;
+  /* The vignette's own animation restarts with the display flip. */
+  void host.offsetWidth;
+  host.classList.add("is-in");
+
+  afterXp(TIMING.xp.inMs + TIMING.xp.holdMs, () => {
+    host.classList.remove("is-in");
+    host.classList.add("is-out");
+    afterXp(TIMING.xp.outMs, () => {
+      host.classList.remove("is-out");
+      host.hidden = true;
+    });
+  });
+}
+
+/* Two faces, one overlay: a plain gain says what it was worth, a new skill
+   point says only that, in green, with the rim lit.
+
+   delayMs is how long to stay out of the way first — a rolled node passes
+   checkDurationMs(), so the dice have finished before the words arrive. */
+export function showXp(gained, granted, delayMs) {
+  if (!dom.xpOverlay || (!gained && !granted)) return;
+
+  clearXpTimers();
+  const wait = Math.max(0, Number(delayMs) || 0);
+  if (!wait) {
+    paintXp(gained, granted);
+    return;
+  }
+  afterXp(wait, () => paintXp(gained, granted));
+}
+
 /* Called on the frame a rolled node arrives, before it is written: standing
    entries and the portrait fade as the texture starts moving. Any verdict
    still on screen is cleared, dropping its pending timers with it. */
@@ -161,6 +243,7 @@ export function reset() {
   sfx.stopAll();
   stopTape();
   hideVerdict();
+  hideXp();
   /* Whatever the deck was ducked for is over. */
   music.unduck(0);
 }

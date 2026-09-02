@@ -8,20 +8,15 @@ import { cleanImageUrl, cleanName, paintThumb } from "../utils.js";
 import { probeImage, rejectImageFile, uploadImage } from "../upload.js";
 import * as modals from "../modals.js";
 import * as music from "../audio/music.js";
-import * as dialogue from "../dialogue/dialogue.js";
 import { readFile } from "../export/file.js";
+import { ledger } from "../xp.js";
 import { state } from "./state.js";
 import { network } from "./net.js";
 import { exportTurns, setSelfReady, shareText, shareTurn } from "./actions.js";
 import { exportSession, loadSession, noteSession } from "./save.js";
 import { loadAllowed, refreshLoadButton } from "./locks.js";
-import {
-  broadcastNpcs,
-  currentSceneImage,
-  editNpc,
-  removeNpc,
-  submitNpcForm,
-} from "./scene.js";
+import { adoptSheet, spendSkillPoint } from "./progress.js";
+import { currentSceneImage, editNpc, removeNpc, submitNpcForm } from "./scene.js";
 import {
   editItem,
   openInventory,
@@ -185,12 +180,14 @@ function bindModals() {
     if (event.target.dataset.close === "true") modals.closePortrait();
   });
 
-  /* A sheet that changes changes what the reader notices, so the passive
-     reckoning is told at the same time as the app. */
+  /* A sheet that changes changes what the reader notices and what the table
+     is told, so adoptSheet is the single path out of it. onSpend is asked
+     before a pip moves: the ledger is the app's, not the sheet's. */
   dom.psycheButton.addEventListener("click", () =>
-    modals.openPsyche(state.sheetState, (next) => {
-      state.sheetState = next;
-      dialogue.setSheet(next);
+    modals.openPsyche(state.sheetState, {
+      ledger: ledger(),
+      onChange: adoptSheet,
+      onSpend: spendSkillPoint,
     }),
   );
   dom.psycheClose.addEventListener("click", modals.closePsyche);

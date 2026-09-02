@@ -1,14 +1,50 @@
 /* PeerJS plumbing. The first peer to claim the room id is the host; anybody
    who finds it taken becomes a guest and connects to it. Every callback the
-   app registers arrives through the handlers object. */
+   app registers arrives through the handlers object.
+
+   Staying up is most of this file. Four things used to end a session at around
+   the quarter-hour mark, and each has its answer here:
+
+     1. A reconnect that raced the signalling server's own bookkeeping came
+        back as unavailable-id, and the host read that as somebody else owning
+        the room — so it demoted itself to a guest and dialled a host that no
+        longer existed. heldId records that this peer has actually held the id,
+        which is what tells the two cases apart: before, the room is somebody
+        else's; after, it is our own stale registration, and it is reclaimed.
+
+     2. PeerJS pings the signalling socket on a JS timer, and a backgrounded
+        tab's timers are throttled to roughly one a minute — slack enough to
+        miss the server's idle window and have the socket reaped. pingInterval
+        is set explicitly, and the watchdog below re-checks the link the moment
+        the tab is looked at again rather than trusting any timer.
+
+     3. A dropped data connection was terminal: a guest printed "the room
+        closed" and stopped. Guests now re-dial with a growing delay, and the
+        host hands a returning seat its slot and flags back.
+
+     4. Nothing crossed an idle wire, so NAT mappings were collected out from
+        under a quiet table. A ping/pong now crosses every open connection, and
+        doubles as the liveness signal for links that die without ever firing
+        close. */
 
 import {
   ROOM_PREFIX,
   PLAYER_SLOTS,
   MAX_JOIN_ATTEMPTS,
   RETRY_DELAY_MS,
+  PEER_PING_MS,
+  KEEPALIVE_MS,
+  LINK_WATCH_MS,
+  LINK_STALE_MS,
+  MAX_RESUME_ATTEMPTS,
+  RESUME_DELAY_MS,
+  RESUME_MAX_DELAY_MS,
+  MAX_RECLAIM_ATTEMPTS,
+  RECLAIM_DELAY_MS,
 } from "./config.js";
-import { isAdminName } from "./utils.js";
+
+/* Ours, and never handed up to the app. */
+const WIRE_ONLY = { ping: true, pong: true };
 
 export class NetworkManager {
   constructor(handlers) {
@@ -20,6 +56,23 @@ export class NetworkManager {
     this.sessionGeneration = 0;
     this.joinAttempts = 0;
     this.selfId = null;
+
+    /* What the room is, kept so a lost link can be dialled again without the
+       app being asked to remember it. */
+    this.roomId = "";
+    this.profile = null;
+    /* Set once the signalling server has actually granted the room id. From
+       then on, unavailable-id is our own ghost rather than a rival. */
+    this.heldId = false;
+
+    this.resumeAttempts = 0;
+    this.resumeTimer = null;
+    this.reclaimAttempts = 0;
+    this.reclaimTimer = null;
+    this.keepaliveTimer = null;
+    this.watchTimer = null;
+    this.lastHeard = 0;
+    this.bound = false;
   }
 
   nextSlot(roster) {
@@ -55,26 +108,134 @@ export class NetworkManager {
     });
   }
 
+  /* ---------------- Liveness ---------------- */
+
+  /* Anything at all arriving is proof the wire is still there, so every data
+     handler reports through here. */
+  heard() {
+    this.lastHeard = Date.now();
+  }
+
+  clearTimer(name) {
+    if (this[name]) {
+      clearTimeout(this[name]);
+      this[name] = null;
+    }
+  }
+
+  stopKeepalive() {
+    if (this.keepaliveTimer) {
+      clearInterval(this.keepaliveTimer);
+      this.keepaliveTimer = null;
+    }
+    if (this.watchTimer) {
+      clearInterval(this.watchTimer);
+      this.watchTimer = null;
+    }
+  }
+
+  /* One ping across everything open, every KEEPALIVE_MS. Cheap, and it is what
+     keeps a NAT mapping from being collected while the table reads. */
+  startKeepalive() {
+    this.stopKeepalive();
+    this.lastHeard = Date.now();
+
+    this.keepaliveTimer = setInterval(() => {
+      const beat = { type: "ping", at: Date.now() };
+      if (this.isHost) {
+        this.broadcast(beat);
+        return;
+      }
+      if (this.upstream && this.upstream.open) {
+        try {
+          this.upstream.send(beat);
+        } catch (error) {}
+      }
+    }, KEEPALIVE_MS);
+
+    this.watchTimer = setInterval(() => this.checkLink(), LINK_WATCH_MS);
+  }
+
+  /* A link can die without ever firing close — the socket simply stops
+     answering. Silence past LINK_STALE_MS is treated as a death, and the
+     signalling connection is woken alongside it. */
+  checkLink() {
+    const instance = this.peer;
+    if (!instance || instance.destroyed) return;
+
+    if (instance.disconnected) {
+      try {
+        instance.reconnect();
+      } catch (error) {}
+    }
+
+    if (this.isHost) return;
+    const silent = Date.now() - this.lastHeard;
+    if (silent < LINK_STALE_MS) return;
+    if (this.upstream && this.upstream.open) {
+      /* Open but mute: the association is gone even though nobody said so. */
+      this.lastHeard = Date.now();
+      this.resumeUpstream("The line went quiet — redialling…");
+      return;
+    }
+    if (!this.upstream) this.resumeUpstream("Reconnecting to the room…");
+  }
+
+  /* A hidden tab's timers cannot be trusted, so the two moments a browser
+     hands back control are used directly. Bound once per manager. */
+  bindWake() {
+    if (this.bound) return;
+    this.bound = true;
+
+    const wake = () => {
+      if (!this.peer || document.visibilityState === "hidden") return;
+      this.checkLink();
+    };
+    document.addEventListener("visibilitychange", wake);
+    window.addEventListener("online", wake);
+    window.addEventListener("pageshow", wake);
+  }
+
+  /* ---------------- Opening the room ---------------- */
+
   openRoom(roomId, profile, generation) {
     if (generation !== this.sessionGeneration) return;
 
     this.upstream = null;
     this.downstream.clear();
     this.isHost = false;
+    this.roomId = roomId;
+    this.profile = profile;
+    this.bindWake();
 
     const hostId = ROOM_PREFIX + roomId;
-    const instance = new window.Peer(hostId, { debug: 1 });
+    const instance = new window.Peer(hostId, {
+      debug: 1,
+      /* Explicit, because the default outlives a throttled tab's timers. */
+      pingInterval: PEER_PING_MS,
+    });
     this.peer = instance;
 
     instance.on("open", () => {
       if (!this.sessionAlive(instance, generation)) return;
+      this.heldId = true;
+      this.reclaimAttempts = 0;
       this.startHost(generation, profile);
     });
 
     instance.on("error", (error) => {
       if (!this.sessionAlive(instance, generation)) return;
       if (error && error.type === "unavailable-id") {
-        this.swapToGuest(hostId, generation, profile);
+        /* Never held it: the room is somebody else's, so knock on it. Held it
+           once: this is our own registration still being let go of, and the
+           room is ours to take back. */
+        if (this.heldId) this.reclaimRoom(generation);
+        else this.swapToGuest(hostId, generation, profile);
+        return;
+      }
+      if (error && error.type === "network") {
+        /* Signalling only — the data connections are untouched. */
+        this.handlers.onStatus("connecting", "Reaching the signalling server…");
         return;
       }
       this.handlers.onStatus("error", "Network error");
@@ -86,21 +247,91 @@ export class NetworkManager {
     this.bindReconnect(instance, generation);
   }
 
+  /* The host's own room id, refused because the server has not finished
+     forgetting the socket we just lost. Waiting and asking again is the whole
+     of the fix; demoting ourselves would take the room down with us. */
+  reclaimRoom(generation) {
+    if (generation !== this.sessionGeneration) return;
+
+    const stale = this.peer;
+    this.peer = null;
+    this.destroyPeer(stale);
+    this.clearTimer("reclaimTimer");
+
+    if (this.reclaimAttempts >= MAX_RECLAIM_ATTEMPTS) {
+      this.handlers.onStatus("error", "Room unreachable");
+      this.handlers.onSystemNote(
+        "The signalling server will not hand this room back. Leave and rejoin to reopen it.",
+      );
+      return;
+    }
+
+    this.reclaimAttempts += 1;
+    this.handlers.onStatus("connecting", "Taking the room back…");
+    this.reclaimTimer = setTimeout(() => {
+      this.reclaimTimer = null;
+      if (generation !== this.sessionGeneration) return;
+      /* The seats we already hold are kept: this replaces the signalling
+         socket, not the table. */
+      this.reopenAsHost(this.roomId, this.profile, generation);
+    }, RECLAIM_DELAY_MS);
+  }
+
+  /* Like openRoom, but it knows it is coming back rather than arriving. */
+  reopenAsHost(roomId, profile, generation) {
+    if (generation !== this.sessionGeneration) return;
+
+    const hostId = ROOM_PREFIX + roomId;
+    const instance = new window.Peer(hostId, {
+      debug: 1,
+      pingInterval: PEER_PING_MS,
+    });
+    this.peer = instance;
+
+    instance.on("open", () => {
+      if (!this.sessionAlive(instance, generation)) return;
+      this.heldId = true;
+      this.reclaimAttempts = 0;
+      this.startHost(generation, profile);
+    });
+
+    instance.on("error", (error) => {
+      if (!this.sessionAlive(instance, generation)) return;
+      if (error && error.type === "unavailable-id") {
+        this.reclaimRoom(generation);
+        return;
+      }
+      if (error && error.type === "network") {
+        this.handlers.onStatus("connecting", "Reaching the signalling server…");
+        return;
+      }
+      this.handlers.onStatus("error", "Network error");
+    });
+
+    this.bindReconnect(instance, generation);
+  }
+
   startHost(generation, profile) {
     const instance = this.peer;
+    const returning = this.isHost;
     this.isHost = true;
     this.joinAttempts = 0;
     this.selfId = instance.id;
+    this.startKeepalive();
 
-    const admin = isAdminName(profile.name);
-    this.handlers.onHostStarted(this.selfId, {
-      id: this.selfId,
-      name: profile.name,
-      portrait: profile.portrait,
-      admin,
-      slot: admin ? 0 : 1,
-      ready: false,
-    });
+    /* Coming back to a room we never left: the roster stands, so it is not
+       announced again. */
+    if (!returning) {
+      const admin = this.handlers.isAdminName(profile.name);
+      this.handlers.onHostStarted(this.selfId, {
+        id: this.selfId,
+        name: profile.name,
+        portrait: profile.portrait,
+        admin,
+        slot: admin ? 0 : 1,
+        ready: false,
+      });
+    }
 
     this.handlers.onStatus("online", "Connected");
 
@@ -115,15 +346,26 @@ export class NetworkManager {
       connection.on("open", () => {
         if (!this.sessionAlive(instance, generation)) return;
         this.downstream.set(connection.peer, connection);
+        this.heard();
       });
 
       connection.on("data", (data) => {
         if (!this.sessionAlive(instance, generation) || !data?.type) return;
+        this.heard();
+        if (WIRE_ONLY[data.type]) {
+          if (data.type === "ping") {
+            try {
+              connection.send({ type: "pong", at: Date.now() });
+            } catch (error) {}
+          }
+          return;
+        }
         this.handlers.onHostReceiveData(connection, data);
       });
 
       const drop = () => {
         if (!this.sessionAlive(instance, generation)) return;
+        if (!this.downstream.has(connection.peer)) return;
         this.downstream.delete(connection.peer);
         this.handlers.onPeerDrop(connection.peer);
       };
@@ -138,7 +380,10 @@ export class NetworkManager {
     this.destroyPeer(stale);
     if (generation !== this.sessionGeneration) return;
 
-    const instance = new window.Peer({ debug: 1 });
+    const instance = new window.Peer({
+      debug: 1,
+      pingInterval: PEER_PING_MS,
+    });
     this.peer = instance;
 
     instance.on("open", () => {
@@ -149,7 +394,13 @@ export class NetworkManager {
     instance.on("error", (error) => {
       if (!this.sessionAlive(instance, generation)) return;
       if (error && error.type === "peer-unavailable") {
-        this.retryJoin(generation, hostId, profile);
+        /* Lost a host we had: re-dial it rather than starting over. */
+        if (this.resumeAttempts > 0) this.resumeUpstream("");
+        else this.retryJoin(generation, hostId, profile);
+        return;
+      }
+      if (error && error.type === "network") {
+        this.handlers.onStatus("connecting", "Reaching the signalling server…");
         return;
       }
       this.handlers.onStatus("error", "Network error");
@@ -164,6 +415,7 @@ export class NetworkManager {
   startGuest(hostId, generation, profile) {
     const instance = this.peer;
     this.isHost = false;
+    this.hostId = hostId;
     this.handlers.onStatus("connecting", "Knocking…");
 
     const connection = instance.connect(hostId, { reliable: true });
@@ -175,26 +427,92 @@ export class NetworkManager {
     connection.on("open", () => {
       if (!mine()) return;
       this.joinAttempts = 0;
+      const returning = this.resumeAttempts > 0;
+      this.resumeAttempts = 0;
       this.selfId = instance.id;
+      this.startKeepalive();
       this.handlers.onStatus("online", "Connected");
-      connection.send({ type: "hello", profile });
+      /* A resumed seat says so, so the host can hand back its slot and its
+         ready and finished flags instead of seating a stranger. */
+      connection.send({ type: "hello", profile, resuming: returning });
     });
 
     connection.on("data", (data) => {
       if (!mine() || !data?.type) return;
+      this.heard();
+      if (WIRE_ONLY[data.type]) {
+        if (data.type === "ping") {
+          try {
+            connection.send({ type: "pong", at: Date.now() });
+          } catch (error) {}
+        }
+        return;
+      }
       this.handlers.onGuestReceiveData(data);
     });
 
     connection.on("close", () => {
       if (!mine()) return;
-      this.handlers.onStatus("error", "Disconnected");
-      this.handlers.onUpstreamClose();
+      this.upstream = null;
+      this.resumeUpstream("The room went quiet — redialling…");
     });
 
     connection.on("error", () => {
       if (!mine()) return;
       this.handlers.onStatus("error", "Connection error");
     });
+  }
+
+  /* A guest that has lost its host dials again, waiting a little longer each
+     time. The app is only told the room is closed once the attempts run out —
+     a single dropped association is not the end of a session. */
+  resumeUpstream(note) {
+    if (this.isHost || !this.hostId) return;
+    if (this.resumeTimer) return;
+
+    const generation = this.sessionGeneration;
+    const stale = this.upstream;
+    this.upstream = null;
+    if (stale) {
+      try {
+        stale.close();
+      } catch (error) {}
+    }
+
+    if (this.resumeAttempts >= MAX_RESUME_ATTEMPTS) {
+      this.stopKeepalive();
+      this.handlers.onStatus("error", "Disconnected");
+      this.handlers.onUpstreamClose();
+      return;
+    }
+
+    this.resumeAttempts += 1;
+    const wait = Math.min(
+      RESUME_MAX_DELAY_MS,
+      RESUME_DELAY_MS * this.resumeAttempts,
+    );
+    this.handlers.onStatus(
+      "connecting",
+      note || `Reconnecting — attempt ${this.resumeAttempts}…`,
+    );
+
+    this.resumeTimer = setTimeout(() => {
+      this.resumeTimer = null;
+      if (generation !== this.sessionGeneration) return;
+
+      const instance = this.peer;
+      if (!instance || instance.destroyed) {
+        /* The whole peer is gone, so it is rebuilt around the same host id. */
+        this.swapToGuest(this.hostId, generation, this.profile);
+        return;
+      }
+      if (instance.disconnected) {
+        try {
+          instance.reconnect();
+        } catch (error) {}
+      }
+      this.startGuest(this.hostId, generation, this.profile);
+    }, wait);
   }
 
   /* The room may still be settling after the host claimed the id. */
@@ -234,10 +552,19 @@ export class NetworkManager {
   disconnect() {
     this.sessionGeneration += 1;
     this.joinAttempts = 0;
+    this.resumeAttempts = 0;
+    this.reclaimAttempts = 0;
+    this.heldId = false;
+    this.clearTimer("resumeTimer");
+    this.clearTimer("reclaimTimer");
+    this.stopKeepalive();
     const stale = this.peer;
     this.peer = null;
     this.destroyPeer(stale);
     this.upstream = null;
+    this.hostId = "";
+    this.roomId = "";
+    this.profile = null;
     this.downstream.clear();
     this.isHost = false;
     this.selfId = null;

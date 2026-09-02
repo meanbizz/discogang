@@ -1,14 +1,26 @@
 /* js/app/save.js */
 
 /* Export and Load, from the room's side: what a snapshot is written from, and
-   what happens to a room when one is read back. */
+   what happens to a room when one is read back.
+
+   A save carries each player's experience and the skill points they had spent,
+   so a campaign picked up next week is not picked up at zero. Restoring them
+   is per-seat: the host holds the record and hands each name its own half,
+   because nobody else's ledger is any seat's business. */
 
 import { dom } from "../dom.js";
 import * as session from "../export/session.js";
 import { download } from "../export/file.js";
 import { latestPayload } from "../export/rounds.js";
 import * as dialogue from "../dialogue/dialogue.js";
-import { state, normalizeEntry, rosterPayload } from "./state.js";
+import { cleanName } from "../utils.js";
+import {
+  state,
+  normalizeEntry,
+  rosterPayload,
+  rememberProgress,
+  recallProgress,
+} from "./state.js";
 import { network, broadcast, sendUpstream } from "./net.js";
 import { renderRoster, replaceLog, replaceTurnLog } from "./views.js";
 import {
@@ -19,6 +31,7 @@ import {
 } from "./locks.js";
 import { applyScene, setNpcs } from "./scene.js";
 import { setInventory } from "./inventory.js";
+import { adoptProgress } from "./progress.js";
 import { replaceRounds, showDialogueHistory } from "./rounds.js";
 
 let noteTimer = null;
@@ -79,6 +92,36 @@ function restoreSlots(people) {
   broadcast(rosterPayload());
 }
 
+/* Host only: everybody already in the room who the save has something to say
+   about is handed their own half of it, and nobody is handed anybody else's.
+   Whoever arrives later gets theirs in their welcome. */
+function restoreProgress(people) {
+  if (!network.isHost) return;
+  rememberProgress(people);
+
+  state.roster.forEach((person) => {
+    if (person.admin) return;
+    const held = recallProgress(person.name);
+    if (!held) return;
+
+    person.skills = held.skills || {};
+    person.allocated = held.allocated || {};
+    person.xp = held.xp || null;
+
+    if (person.id === network.selfId) {
+      /* The host is a player too, when they are not the administrateur. */
+      adoptProgress(held);
+      return;
+    }
+    const conn = network.downstream.get(person.id);
+    if (conn && conn.open) {
+      try {
+        conn.send({ type: "progress-restore", progress: held });
+      } catch (error) {}
+    }
+  });
+}
+
 /* Every plan in a save belongs to a round that is already over. They come
    back faded so the next Import cannot pick them up, and the last of them
    carries the rule separating the restored run from what is planned next. */
@@ -89,6 +132,18 @@ function restoredTurns(entries) {
   const last = entries[entries.length - 1];
   if (last) last.roundEnd = true;
   return entries;
+}
+
+/* This seat's own half of a save, when it is not the host handing it out: a
+   guest administrateur loads a file and applies it locally too. */
+function restoreSelf(people) {
+  if (network.isHost || state.isAdmin) return;
+  const wanted = cleanName(state.profile.name).toLowerCase();
+  if (!wanted) return;
+  (Array.isArray(people) ? people : []).forEach((saved) => {
+    if (saved.admin || cleanName(saved.name).toLowerCase() !== wanted) return;
+    adoptProgress(saved);
+  });
 }
 
 /* Everyone's side of a restore. Nothing replays: the reader stays closed and
@@ -117,6 +172,8 @@ export function applySession(snap) {
   state.sessionRestored = true;
 
   restoreSlots(snap.people);
+  restoreProgress(snap.people);
+  restoreSelf(snap.people);
   renderRoster();
   refreshPlanningLock();
   refreshSpeakLock();

@@ -1,5 +1,5 @@
 {
-  "Vlad": {
+  "Snyde": {
     "root": "wake",
     "nodes": {
       "wake": {
@@ -24,6 +24,7 @@
           "diceRoll": { "dice1": 4, "dice2": 3 },
           "modifier": 3
         },
+        "xpGained": 100,
         "next": "room"
       },
       "room": {

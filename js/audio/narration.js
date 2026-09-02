@@ -4,7 +4,11 @@
    The caller gets its state back through a report callback — "loading",
    "playing", "idle", "error" — so a button can paint itself without this
    module knowing any DOM. Clips are held as blob URLs keyed by their text.
-   isNarrator answers which speakers are offered aloud, from config.js. */
+   isNarrator answers which speakers are offered aloud, from config.js.
+
+   What is spoken is not quite what is written: *styled* passages are stage
+   directions rather than speech, so they are cut out before anything is
+   fetched. See speakable. */
 
 import { NARRATION } from "../config.js";
 import { halt, start } from "./channel.js";
@@ -35,6 +39,26 @@ export function isNarrator(speaker) {
 
 export function isSpeaking(id) {
   return key === id;
+}
+
+/* *like this* is style, not speech: the asterisks and everything between them
+   are dropped rather than read out. An asterisk with no partner takes the rest
+   of the line with it, so a half-written aside cannot be narrated either.
+
+   The tidying afterwards is what keeps the cut from being audible: doubled
+   spaces close up, and punctuation left stranded by the removal rejoins the
+   word before it. Because this runs before the cache key is taken, two lines
+   that differ only in their styling share one clip. */
+export function speakable(value) {
+  return String(value == null ? "" : value)
+    .replace(/\*[^*]*\*/g, " ")
+    .replace(/\*[^*]*$/g, " ")
+    .replace(/[ \t]{2,}/g, " ")
+    .replace(/\s+([,.;:!?…])/g, "$1")
+    .replace(/\(\s+/g, "(")
+    .replace(/\s+\)/g, ")")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 /* Hands the field back: whatever was active is dropped and told so. */
@@ -87,7 +111,8 @@ function fetchClip(text, signal) {
     signal,
     headers,
     body: JSON.stringify({
-      text: text.replaceAll("*", ""),
+      /* Already stripped by speakable — nothing to undo here. */
+      text,
       reference_id: NARRATION.modelId,
       format: NARRATION.format,
       normalize: true,
@@ -128,7 +153,8 @@ function play(url, mine) {
 }
 
 /* Click to read a line aloud, click again to cancel. id is whatever the
-   caller uses to recognise its own line. */
+   caller uses to recognise its own line. A line that is nothing but style has
+   nothing to say, so it settles straight back to idle. */
 export function toggle(id, text, report) {
   if (key === id) {
     stop();
@@ -136,9 +162,7 @@ export function toggle(id, text, report) {
   }
   stop();
 
-  const body = String(text == null ? "" : text)
-    .trim()
-    .slice(0, NARRATION.maxChars);
+  const body = speakable(text).slice(0, NARRATION.maxChars);
   if (!body) {
     if (report) report("idle");
     return;

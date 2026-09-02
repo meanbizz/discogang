@@ -1,5 +1,3 @@
-/* js/dialogue/sanitize.js */
-
 /* The administrateur's turn payload, rebuilt field by field: a peer can only
    ever contribute shapes the reader already understands. No DOM here.
 
@@ -12,8 +10,13 @@
         a difficulty. Not rolled: passive.js weighs it against the reader's own
         sheet. The administrateur only ever writes these as successes, so the
         result and any dice they carry are dropped here.
-     3. Active with a visible roll — the default. Tape, dice, verdict. */
+     3. Active with a visible roll — the default. Tape, dice, verdict.
 
+   A node may also carry xpGained: experience the reader earns by reading it.
+   It is the node's to hand over once, so it is capped here and spent by the
+   reader, not by whoever wrote the payload. */
+
+import { XP_MAX_PER_NODE } from "../config.js";
 import { own, pick, line, normalizeKey, bodyText } from "./text.js";
 import { INVENTORY_KEY, cleanOps } from "../inventory/items.js";
 
@@ -147,6 +150,16 @@ function cleanVitals(raw) {
   return Object.keys(out).length ? out : null;
 }
 
+/* Experience is a plain count, and only ever a gain: a node cannot take back
+   what an earlier one gave. Anything unreadable, negative or absurd is worth
+   nothing. */
+function cleanXp(raw) {
+  const value = raw && typeof raw === "object" ? raw.xpGained ?? raw.xp : raw;
+  const number = Math.round(Number(value));
+  if (!isFinite(number) || number <= 0) return 0;
+  return Math.min(XP_MAX_PER_NODE, number);
+}
+
 function cleanOptions(raw) {
   if (!Array.isArray(raw)) return [];
   const out = [];
@@ -169,7 +182,9 @@ function cleanNode(raw, id) {
   const dialogue = bodyText(raw.dialogue, BODY_MAX);
   const options = cleanOptions(raw.options);
   const check = cleanCheck(raw.skillCheck);
-  if (!dialogue && !options.length && !check) return null;
+  const xpGained = cleanXp(raw.xpGained != null ? raw.xpGained : raw.xp);
+  /* A node that only hands over experience is still worth walking through. */
+  if (!dialogue && !options.length && !check && !xpGained) return null;
 
   return {
     id,
@@ -178,6 +193,7 @@ function cleanNode(raw, id) {
     next: typeof raw.next === "string" ? line(raw.next, KEY_MAX) : null,
     vitals: cleanVitals(raw.vitals),
     skillCheck: check,
+    xpGained,
     options,
   };
 }

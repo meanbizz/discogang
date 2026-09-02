@@ -14,6 +14,9 @@
      + outMs        verdict wipes away left to right
      music.duckHoldMs from the roll, the music fades back in over duckInMs
 
+   A node that also hands over experience waits out that whole sequence before
+   the XP overlay takes the screen: cues.checkDurationMs is the same sum.
+
    Nothing here waits on how long an audio file happens to be. */
 
 /* Named first, because the music duck holds for the whole sequence below. */
@@ -35,6 +38,16 @@ export const TIMING = {
     inMs: VERDICT_IN_MS,
     holdMs: VERDICT_HOLD_MS,
     outMs: VERDICT_OUT_MS,
+  },
+
+  /* The experience overlay. vignetteMs is the green rim's fade for a new
+     skill point; it is shorter than inMs + holdMs on purpose, so the glow has
+     settled before the words are read. */
+  xp: {
+    inMs: 220,
+    holdMs: 1800,
+    outMs: 600,
+    vignetteMs: 260,
   },
 
   /* fallbackMs stands in for a duration the browser never reports; leadMs is
@@ -79,6 +92,9 @@ export const CSS_TIMING = {
   "--dur-verdict-in": TIMING.verdict.inMs + "ms",
   "--dur-verdict-out": TIMING.verdict.outMs + "ms",
   "--dur-vital-flash": TIMING.vitals.flashMs + "ms",
+  "--dur-xp-in": TIMING.xp.inMs + "ms",
+  "--dur-xp-out": TIMING.xp.outMs + "ms",
+  "--dur-xp-vignette": TIMING.xp.vignetteMs + "ms",
   "--tape-step": TIMING.tape.stepPx + "px",
 };
 

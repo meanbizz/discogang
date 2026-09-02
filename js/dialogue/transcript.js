@@ -1,12 +1,13 @@
-/* js/dialogue/transcript.js */
-
 /* A round that is already over, written back into the log: the same lines,
    nothing to press, nothing spent, no sound. The reader is untouched.
 
    A round that recorded what the player chose is read back along that path
    only, with the option they took still marked. A round with nothing recorded
    — anything saved before choices were kept — shows both sides of every fork,
-   as it always did. */
+   as it always did.
+
+   Experience is shown as it was earned and never earned again: the ledger it
+   went into was saved beside the round. */
 
 import { dom } from "../dom.js";
 import { own, pick } from "./text.js";
@@ -119,7 +120,9 @@ export function renderRound(round, selfId, name) {
     article.dataset.history = "true";
     article.style.opacity = HISTORY_OPACITY;
 
-    const note = vitalsNote(node.vitals, false);
+    /* apply is false, so the note reads as a record: no vitals move, and the
+       experience is only being remembered. */
+    const note = vitalsNote(node.vitals, false, node.xpGained);
     if (note) article.appendChild(note);
 
     if (node.options.length) {

@@ -10,6 +10,7 @@
   --des-card-bg: #05070a;
   --des-border: #2a2f36;
   --des-accent: #c8a24a;
+  --des-point: #4fbf6a;
   --des-font: "Trebuchet MS", "Segoe UI", Tahoma, sans-serif;
 
   box-sizing: border-box;
@@ -38,6 +39,58 @@
 .des-sheet h6,
 .des-sheet p {
   margin: 0;
+}
+
+/* ---------- ledger header ---------- */
+
+/* What the player has to spend, above the columns. Hidden outright when there
+   is no ledger to speak of, so a read-only sheet looks as it always did. */
+.des-ledger {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.35rem 1.1rem;
+  margin-bottom: 0.85rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--des-border);
+  text-align: center;
+}
+
+.des-ledger[hidden] {
+  display: none;
+}
+
+.des-ledger-points {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--des-dim);
+}
+
+/* Points waiting to be spent are the one thing on this sheet worth
+   interrupting the reader for. */
+.des-ledger.has-points .des-ledger-points {
+  color: var(--des-point);
+}
+
+.des-ledger-xp {
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  color: var(--des-dim);
+}
+
+.des-ledger-hint {
+  flex: 1 1 100%;
+  font-size: 0.72rem;
+  font-style: italic;
+  letter-spacing: 0.04em;
+  color: var(--des-dim);
+}
+
+.des-ledger-hint[hidden] {
+  display: none;
 }
 
 /* ---------- outer stack: mobile = 4 side-by-side columns ---------- */
@@ -265,6 +318,46 @@
   height: auto;
 }
 
+/* ---------- the upgrade button ---------- */
+
+/* Only on the selected card, and only while a point is in hand: the pips
+   above it are what say whether there is room to put one. It sits over the
+   title, since a card being upgraded is not a card being read. */
+.des-card-upgrade {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  z-index: 4;
+  width: 100%;
+  padding: 0.15rem 0;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.1;
+  color: #06120a;
+  background: var(--des-point);
+  border: 0;
+  border-top: 1px solid rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+}
+
+.des-card-upgrade:hover {
+  filter: brightness(1.12);
+}
+
+.des-card-upgrade:focus-visible {
+  outline: 2px solid var(--des-white);
+  outline-offset: -3px;
+}
+
+/* A skill already as high as its attribute allows has nowhere to put the
+   point, so the button says why rather than disappearing. */
+.des-card-upgrade:disabled {
+  color: var(--des-dim);
+  background: #171b21;
+  cursor: not-allowed;
+}
+
 /* ---------- states ---------- */
 
 .des-card:hover .des-card-overlay {
@@ -283,6 +376,12 @@
 
 .des-card.is-selected .des-card-art {
   filter: none;
+}
+
+/* A card that could take a point announces it even unselected, so a player
+   with something to spend can see where it will go. */
+.des-card.can-upgrade {
+  border-color: rgba(79, 191, 106, 0.55);
 }
 
 .des-card.is-readonly {
@@ -330,6 +429,15 @@
 @media (min-width: 768px) {
   .des-sheet {
     padding: 2rem 1rem;
+  }
+
+  .des-ledger-points {
+    font-size: 0.9rem;
+  }
+
+  .des-ledger-xp,
+  .des-ledger-hint {
+    font-size: 0.8rem;
   }
 
   .des-groups {
@@ -409,6 +517,11 @@
     font-size: 0.8rem;
     letter-spacing: -0.01em;
     line-height: 1rem;
+  }
+
+  .des-card-upgrade {
+    padding: 0.2rem 0;
+    font-size: 1rem;
   }
 
   .des-tooltip-title {

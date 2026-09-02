@@ -11,15 +11,15 @@ import { TIMING } from "../timing.js";
 import { halt, rewind, start } from "./channel.js";
 
 export const JINGLE_SRC = {
-  intellect: "sounds/IntellectJingle.mp3",
-  psyche: "sounds/PsyJingle.mp3",
-  physique: "sounds/PhysicalJingle.mp3",
-  motorics: "sounds/MotoricsJingle.mp3",
+  intellect: "sounds/interface-skill-passiveINT.wav",
+  psyche: "sounds/interface-skill-passivePSY.wav",
+  physique: "sounds/interface-skill-passiveFYS.wav",
+  motorics: "sounds/interface-skill-passiveMOT.wav",
 };
 
 export const ROLL_SRC = {
-  success: "sounds/RollSuccess.mp3",
-  failure: "sounds/RollFailure.mp3",
+  success: "sounds/interface-diceroll-success.wav",
+  failure: "sounds/interface-diceroll-fail.wav",
 };
 
 const cache = {};

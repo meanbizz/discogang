@@ -1,0 +1,100 @@
+/* css/xp.css */
+
+/* The experience overlay: what a node's xpGained looks like when it lands.
+
+   Same shape as the check verdict — fixed over the viewport, transparent
+   until cues.js fades it in, and masked off to the right so the wipe has
+   somewhere to travel from. Only the travel is in animations.css.
+
+   Nothing here paints a surface: the plate belongs to the words alone, so the
+   session stays readable behind them. */
+
+.xp-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 61;
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+  opacity: 0;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    transparent 50%,
+    #000 66.6%,
+    #000 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    transparent 50%,
+    #000 66.6%,
+    #000 100%
+  );
+  -webkit-mask-size: 300% 100%;
+  mask-size: 300% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: 100% 0;
+  mask-position: 100% 0;
+}
+
+.xp-overlay[hidden] {
+  display: none;
+}
+
+/* Only a new skill point lights the edges. Blurred and held at half alpha,
+   so it reads as a glow rather than a frame. */
+.xp-vignette {
+  position: absolute;
+  inset: -4%;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(0, 0, 0, 0) 42%,
+    var(--xp-glow) 100%
+  );
+  filter: blur(28px);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.xp-overlay-body {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 0.6rem;
+  margin-top: auto;
+  margin-bottom: 96px;
+  text-align: center;
+}
+
+.xp-title,
+.xp-amount {
+  margin: 0;
+  background: var(--xp-back);
+  color: var(--xp-ink);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  line-height: 1.2;
+}
+
+.xp-title {
+  padding: 0.4rem 1.1rem;
+  font-size: clamp(1.05rem, 3.4vw, 2rem);
+}
+
+.xp-amount {
+  padding: 0.25rem 0.85rem;
+  font-size: clamp(0.9rem, 2.4vw, 1.4rem);
+}
+
+.xp-amount[hidden] {
+  display: none;
+}
+
+/* A point is worth more than the experience that bought it, so it says so in
+   green and says only that. */
+.xp-overlay[data-kind="point"] .xp-title {
+  background: var(--xp-point);
+}

@@ -1,7 +1,10 @@
 /* js/app/room.js */
 
 /* Joining and leaving: which half of the interface is present, and what is
-   torn down on the way out. */
+   torn down on the way out.
+
+   Experience is the session's, not the browser's: a seat that leaves the room
+   drops its ledger with everything else, and only a save can hand it back. */
 
 import { dom, anchors, setPresent } from "../dom.js";
 import { isAdminName } from "../utils.js";
@@ -10,6 +13,7 @@ import * as music from "../audio/music.js";
 import * as dialogue from "../dialogue/dialogue.js";
 import * as modals from "../modals.js";
 import * as vitals from "../vitals.js";
+import { resetXp } from "../xp.js";
 import { state } from "./state.js";
 import { network } from "./net.js";
 import {
@@ -27,6 +31,7 @@ import {
 } from "./locks.js";
 import { applyScene } from "./scene.js";
 import { setInventory } from "./inventory.js";
+import { refreshLedger } from "./progress.js";
 
 function seat(isAdmin) {
   dom.roleLabel.hidden = !isAdmin;
@@ -64,6 +69,8 @@ export function connect(room, name, portrait) {
 
   setStatus("connecting", "Finding the room…");
   state.roster.clear();
+  state.seats.clear();
+  state.savedProgress.clear();
   state.npcs = [];
   setInventory([], {});
   renderRoster();
@@ -92,6 +99,10 @@ export function connect(room, name, portrait) {
   if (modals.getSheetInstance()) {
     modals.getSheetInstance().setState(state.sheetState, true);
   }
+  /* A new seat has earned nothing yet. Whatever the last session left in the
+     ledger is not this character's. */
+  resetXp();
+  refreshLedger();
   vitals.refreshVitals(state.sheetState, true);
   music.describeTrack();
   music.refreshAudioUnlockButton(state.isAdmin);
@@ -124,7 +135,12 @@ export function leave() {
   dialogue.setSheet(null);
   if (modals.getSheetInstance()) modals.getSheetInstance().setState(null, true);
 
+  resetXp();
+  refreshLedger();
+
   state.roster.clear();
+  state.seats.clear();
+  state.savedProgress.clear();
   state.npcs = [];
   state.logEntries = [];
   state.turnEntries = [];

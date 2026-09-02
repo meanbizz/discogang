@@ -1,7 +1,5 @@
-/* js/dialogue/dialogue.js */
-
 /* The reader: walks one dialogue tree a node at a time inside the session
-   log, spending vitals and firing cues as it goes.
+   log, spending vitals, earning experience and firing cues as it goes.
 
    Payload cleaning lives in sanitize.js, the line itself in entry.js, passive
    checks in passive.js, what was chosen in choices.js, past rounds in
@@ -14,6 +12,7 @@ import { blocksNode } from "./passive.js";
 import { findSkill } from "./skills.js";
 import * as cues from "./cues.js";
 import * as narration from "../audio/narration.js";
+import { grantXp } from "../xp.js";
 import { appendToLog, buildEntry, vitalsNote, voiceOf } from "./entry.js";
 
 export { cleanPayload, parsePayload, pickTree } from "./sanitize.js";
@@ -33,14 +32,17 @@ const MAX_STEPS = 400;
 let tree = null;
 let finished = true;
 let steps = 0;
-const vitalsSpent = new Set();
-let hooks = { onFinish: null, onSkillArt: null, onChoice: null };
+/* Nodes whose one-time effects have already landed: vitals spent, experience
+   earned. A tree that loops back must not pay twice. */
+const spentNodes = new Set();
+let hooks = { onFinish: null, onSkillArt: null, onChoice: null, onXp: null };
 
 export function setHooks(next) {
   hooks = {
     onFinish: (next && next.onFinish) || null,
     onSkillArt: (next && next.onSkillArt) || null,
     onChoice: (next && next.onChoice) || null,
+    onXp: (next && next.onXp) || null,
   };
 }
 
@@ -75,7 +77,7 @@ export function reset() {
   tree = null;
   finished = true;
   steps = 0;
-  vitalsSpent.clear();
+  spentNodes.clear();
   cues.reset();
   narration.stop();
   emitArt(null);
@@ -149,6 +151,22 @@ function renderContinue(host, nextId) {
   host.appendChild(button);
 }
 
+/* Experience the node hands over, announced once the screen is free. A rolled
+   node keeps the viewport for its dice, so the overlay queues behind them
+   rather than fighting for it. The ledger is moved here — the app is told
+   after the fact, so it can publish and repaint the sheet. */
+function earnXp(node, rolled) {
+  if (!node.xpGained) return;
+  const landed = grantXp(node.xpGained);
+  if (!landed.gained) return;
+  cues.showXp(
+    landed.gained,
+    landed.granted,
+    rolled ? cues.checkDurationMs() : 0,
+  );
+  if (hooks.onXp) hooks.onXp(landed);
+}
+
 function renderNode(id) {
   const node = tree ? pick(tree.nodes, id) : null;
   if (!node) {
@@ -163,8 +181,9 @@ function renderNode(id) {
   }
 
   /* A passive this reader is not sharp enough for is never read: nothing is
-     written, no vitals are spent, and the scene carries on with whatever
-     followed. Its options go with it — they were never offered. */
+     written, no vitals are spent, no experience is earned, and the scene
+     carries on with whatever followed. Its options go with it — they were
+     never offered. */
   if (blocksNode(node)) {
     if (node.next && own(tree.nodes, node.next)) {
       renderNode(node.next);
@@ -175,24 +194,28 @@ function renderNode(id) {
   }
 
   const voice = voiceOf(node);
+  const rolled = Boolean(
+    node.skillCheck && node.skillCheck.result && !node.skillCheck.passive,
+  );
 
   /* A rolled node hides its own arrival: the tape starts on this frame, so
      the incoming entry is already invisible when it lands. A passive is never
      rolled, so it hides nothing. */
-  if (node.skillCheck && node.skillCheck.result && !node.skillCheck.passive) {
-    cues.beginRoll();
-  }
+  if (rolled) cues.beginRoll();
 
   const article = buildEntry(node, voice, "node:" + node.id);
   article.classList.add("current");
 
-  const note = vitalsNote(node.vitals, !vitalsSpent.has(id));
-  vitalsSpent.add(id);
+  const first = !spentNodes.has(id);
+  spentNodes.add(id);
+
+  const note = vitalsNote(node.vitals, first, node.xpGained);
   if (note) article.appendChild(note);
 
   appendToLog(article);
   emitArt(voice ? voice.art : null);
   cues.playNode(voice, node.skillCheck);
+  if (first) earnXp(node, rolled);
 
   const choices = document.createElement("div");
   choices.className = "entry-choices";

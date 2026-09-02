@@ -2,7 +2,11 @@
 
 /* The two sides of the wire. Every message a peer sends lands in one of these
    handlers, which is also the only place a peer's claim is weighed against
-   who they are. */
+   who they are.
+
+   A seat that comes back after a dropped wire says so, and the host hands it
+   the slot, the flags and the progress it had rather than seating a stranger
+   in the middle of a round. */
 
 import { TURN_MIN_LENGTH, PLAYER_SLOTS } from "../config.js";
 import {
@@ -17,7 +21,15 @@ import * as music from "../audio/music.js";
 import * as session from "../export/session.js";
 import { latestPayload } from "../export/rounds.js";
 import { cleanOps } from "../inventory/items.js";
-import { state, normalizeEntry, rosterPayload } from "./state.js";
+import {
+  state,
+  normalizeEntry,
+  rosterPayload,
+  cleanProgress,
+  rememberSeat,
+  recallSeat,
+  recallProgress,
+} from "./state.js";
 import { network, setHandlers, broadcast } from "./net.js";
 import {
   commit,
@@ -33,6 +45,7 @@ import { refreshPlanningLock } from "./locks.js";
 import { applyScene, setNpcs } from "./scene.js";
 import { applySession } from "./save.js";
 import { commitOps, inventoryPayload, setInventory } from "./inventory.js";
+import { adoptProgress, publishProgress } from "./progress.js";
 import {
   acceptChoice,
   applyDialogue,
@@ -49,15 +62,30 @@ function onHostReceiveData(connection, data) {
     const name = cleanName(data.profile?.name) || "Unnamed";
     const joiningAdmin = isAdminName(name);
     const previous = state.roster.get(connection.peer);
+    /* What this name had when it last sat here, and what a loaded save
+       remembers of it. The seat wins: it is the more recent of the two. */
+    const seat = joiningAdmin ? null : recallSeat(name);
+    const saved = joiningAdmin ? null : recallProgress(name);
+    const held = seat || saved;
+    /* Only a peer that says it is resuming inherits the flags. A fresh join
+       under a familiar name is still a fresh join. */
+    const resuming = Boolean(seat && data.resuming);
 
     state.roster.set(connection.peer, {
       id: connection.peer,
       name,
       portrait: cleanImageUrl(data.profile?.portrait),
       admin: joiningAdmin,
-      slot: joiningAdmin ? 0 : previous?.slot || network.nextSlot(state.roster),
-      ready: false,
-      done: false,
+      slot: joiningAdmin
+        ? 0
+        : previous?.slot || (held && held.slot) || network.nextSlot(state.roster),
+      /* Readying up again, or re-reading a scene already finished, is not
+         something a dropped wire should cost anybody. */
+      ready: resuming && Boolean(seat.ready),
+      done: resuming && Boolean(seat.done),
+      skills: held ? held.skills || {} : {},
+      allocated: held ? held.allocated || {} : {},
+      xp: held ? held.xp || null : null,
     });
 
     renderRoster();
@@ -80,6 +108,10 @@ function onHostReceiveData(connection, data) {
       /* A round on record is not a scene in progress: after a restore this is
          false, and a joining player reads the history instead. */
       live: state.dialogueLive,
+      /* Only what a save recorded is worth handing back. A seat that merely
+         lost its wire still has its own ledger in memory, and its own copy is
+         the better one. */
+      progress: resuming ? null : saved || null,
     });
 
     connection.send(rosterPayload());
@@ -130,6 +162,22 @@ function onHostReceiveData(connection, data) {
     if (!person || person.admin) return;
     person.done = true;
     renderRoster();
+    broadcast(rosterPayload());
+    return;
+  }
+
+  /* A seat's own experience and skills. Nobody else's to claim, and nothing
+     the host does anything with beyond keeping and passing it on: the
+     administrateur reads it at import, and a save writes it down. */
+  if (data.type === "progress") {
+    if (!person || person.admin) return;
+    const reading = cleanProgress(data);
+    person.skills = reading.skills;
+    person.allocated = reading.allocated;
+    person.xp = reading.xp;
+    /* Remembered now rather than at the drop, so a wire that dies without
+       warning still leaves the ledger behind. */
+    rememberSeat(person);
     broadcast(rosterPayload());
     return;
   }
@@ -234,6 +282,11 @@ function onWelcome(data) {
   if (Array.isArray(data.npcs)) setNpcs(data.npcs);
   setInventory(data.items, data.inventories);
 
+  /* A save the room already read may hold this seat's ledger. Adopting it
+     publishes; otherwise the table is simply told what this seat brought. */
+  if (data.progress) adoptProgress(data.progress);
+  else publishProgress();
+
   if (state.dialogueRounds.length) {
     showDialogueHistory(
       live ? state.dialogueRounds.slice(0, -1) : state.dialogueRounds,
@@ -270,6 +323,7 @@ function onGuestReceiveData(data) {
       const name = cleanName(raw.name) || "Unnamed";
       let slot = Number(raw.slot) || 0;
       if (slot < 0 || slot > PLAYER_SLOTS) slot = 0;
+      const reading = cleanProgress(raw);
       state.roster.set(raw.id, {
         id: raw.id,
         name,
@@ -278,6 +332,9 @@ function onGuestReceiveData(data) {
         slot,
         ready: Boolean(raw.ready),
         done: Boolean(raw.done),
+        skills: reading.skills,
+        allocated: reading.allocated,
+        xp: reading.xp,
       });
     });
     renderRoster();
@@ -314,6 +371,13 @@ function onGuestReceiveData(data) {
   /* The host names the author; nothing is relayed on from here. */
   if (data.type === "choice") {
     acceptChoice(data.author, data.roundId, data.choice);
+    return;
+  }
+
+  /* A save landed on the table while this seat was already in it, and it had
+     something to say about this seat in particular. */
+  if (data.type === "progress-restore") {
+    adoptProgress(data.progress);
     return;
   }
 
@@ -360,10 +424,23 @@ setHandlers({
   onSystemNote: systemNote,
   onHostStarted: (selfId, hostProfile) => {
     state.selfId = selfId;
-    state.roster.set(selfId, Object.assign({ done: false }, hostProfile));
+    state.roster.set(
+      selfId,
+      Object.assign(
+        { done: false, skills: {}, allocated: {}, xp: null },
+        hostProfile,
+      ),
+    );
     renderRoster();
+    /* The host may be a player too, in which case the table should know what
+       they are carrying in their head. */
+    publishProgress();
   },
   onPeerDrop: (peerId) => {
+    const person = state.roster.get(peerId);
+    /* Kept before it is dropped: this is the whole of what lets a player who
+       lost their wire sit back down where they were. */
+    if (person) rememberSeat(person);
     state.roster.delete(peerId);
     renderRoster();
     broadcast(rosterPayload());
@@ -373,6 +450,8 @@ setHandlers({
   onUpstreamClose: () => {
     state.roster.clear();
     renderRoster();
-    systemNote("The room closed. Rejoin to reopen it.");
+    systemNote(
+      "The room stopped answering, after several tries. Rejoin to reopen it.",
+    );
   },
 });

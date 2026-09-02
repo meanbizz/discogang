@@ -20,6 +20,13 @@
   --health: #ff5f00;
   --morale: #107494;
 
+  /* Experience. The plate behind the words, and the green a new skill point
+     announces itself in. */
+  --xp-back: #000000;
+  --xp-ink: #ffffff;
+  --xp-point: #1f7a3a;
+  --xp-glow: rgba(72, 214, 110, 0.9);
+
   /* Player slot colours, 1–8. Mapped onto --slot in slots.css. */
   --p1: #ff6f4b;
   --p2: #ffc94a;
@@ -64,5 +71,8 @@
   --dur-verdict-in: 220ms;
   --dur-verdict-out: 700ms;
   --dur-vital-flash: 560ms;
+  --dur-xp-in: 220ms;
+  --dur-xp-out: 600ms;
+  --dur-xp-vignette: 260ms;
   --tape-step: 420px;
 }
