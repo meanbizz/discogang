@@ -10,6 +10,7 @@
   margin: 0;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+  text-indent: -5%;
 }
 
 .entry-speaker {
@@ -170,13 +171,6 @@ button.choice.continue {
   font-size: 23px;
   text-align: left;
   text-transform: uppercase;
-}
-
-/* Hover keeps whatever the slab was painted, so an inline tint survives it. */
-button.choice.continue:hover:not(:disabled) {
-  border-color: inherit;
-  color: var(--option-hi);
-  filter: brightness(1.15);
 }
 
 /* ---------------- Check verdict overlay ---------------- */
