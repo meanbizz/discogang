@@ -21,14 +21,15 @@ import {
 import { cleanPayload } from "../dialogue/sanitize.js";
 import { cleanItems, cleanInventories } from "../inventory/items.js";
 import { cleanGoalBooks } from "../goals/goals.js";
+import { cleanStatus } from "../status/status.js";
 import { cleanScores, cleanAllocated } from "../sheet.js";
 import { cleanXpLedger } from "../xp.js";
 import { cleanRounds, latestPayload, ROUND_ID_MAX } from "./rounds.js";
 
 export const SESSION_KIND = "salon-session";
-/* 5 added each player's goals; 4 added the experience ledger. Older saves
-   still load: whatever they never recorded simply starts from nothing. */
-export const SESSION_VERSION = 5;
+/* 6 added the down and K.I.A. rolls; 5 goals; 4 the experience ledger. Older
+   saves still load: whatever they never recorded starts from nothing. */
+export const SESSION_VERSION = 6;
 
 const MAX_PEOPLE = 32;
 const MAX_NPCS = 64;
@@ -112,6 +113,7 @@ function cleanNpcs(raw) {
 export function snapshot(state) {
   const source = state || {};
   const rounds = cleanRounds(source.rounds, source.dialogue);
+  const standing = cleanStatus(source);
   return {
     kind: SESSION_KIND,
     version: SESSION_VERSION,
@@ -124,6 +126,8 @@ export function snapshot(state) {
     items: cleanItems(source.items),
     inventories: cleanInventories(source.inventories),
     goals: cleanGoalBooks(source.goals),
+    down: standing.down,
+    kia: standing.kia,
     scene: cleanScene(source.scene),
     rounds,
     dialogue: cleanPayload(source.dialogue) || latestPayload(rounds),
@@ -137,6 +141,7 @@ export function clean(raw) {
   if (raw.kind && raw.kind !== SESSION_KIND) return null;
 
   const rounds = cleanRounds(raw.rounds, raw.dialogue);
+  const standing = cleanStatus(raw);
   return {
     kind: SESSION_KIND,
     version: Number(raw.version) || SESSION_VERSION,
@@ -152,6 +157,9 @@ export function clean(raw) {
     inventories: cleanInventories(raw.inventories),
     /* Empty for any save written before goals were kept. */
     goals: cleanGoalBooks(raw.goals),
+    /* Empty for any save written before anybody could be put on the floor. */
+    down: standing.down,
+    kia: standing.kia,
     scene: cleanScene(raw.scene),
     rounds,
     dialogue: cleanPayload(raw.dialogue) || latestPayload(rounds),

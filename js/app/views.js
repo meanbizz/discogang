@@ -4,7 +4,14 @@
 import { HISTORY_LIMIT, TURN_LIMIT } from "../config.js";
 import { dom } from "../dom.js";
 import { copyText, paintMarkup, paintThumb } from "../utils.js";
-import { state, everyoneReady, slotOf } from "./state.js";
+import {
+  state,
+  everyoneReady,
+  isDown,
+  isKia,
+  isSelfDown,
+  slotOf,
+} from "./state.js";
 import { refreshPlanningLock, refreshSpeakLock } from "./locks.js";
 
 export function setStatus(kind, text) {
@@ -95,9 +102,34 @@ export function renderRoster() {
     wrapper.appendChild(thumb);
     wrapper.appendChild(stack);
     wrapper.appendChild(readyDot);
+
+    const standing = isKia(person.name)
+      ? "kia"
+      : isDown(person.name)
+        ? "down"
+        : "";
+
     wrapper.title = person.name;
-    wrapper.setAttribute("aria-label", `Portrait of ${person.name}`);
-    dom.roster.appendChild(wrapper);
+    wrapper.setAttribute(
+      "aria-label",
+      `Portrait of ${person.name}` +
+        (standing === "kia" ? " — dead" : standing ? " — down" : ""),
+    );
+
+    /* The row sits in a seat of its own, which is what the plate covers whole
+       — portrait, name and bars — since a button cannot be relied on to. */
+    const seat = document.createElement("div");
+    seat.className = "roster-seat";
+    seat.appendChild(wrapper);
+    if (standing) {
+      seat.dataset.status = standing;
+      const plate = document.createElement("span");
+      plate.className = "roster-plate";
+      plate.textContent = standing === "kia" ? "K.I.A." : "DOWN";
+      plate.setAttribute("aria-hidden", "true");
+      seat.appendChild(plate);
+    }
+    dom.roster.appendChild(seat);
   });
 
   /* Your seat may not be in this payload yet; the bars wait in the foot until
@@ -111,6 +143,8 @@ export function renderReadyBanner() {
 }
 
 export function paintReadyButton() {
+  /* On the floor the switch is out of reach, whatever else repainted it. */
+  if (isSelfDown()) dom.turnReady.disabled = true;
   dom.turnReady.textContent = state.selfReady ? "Ready ✓" : "Ready";
   dom.turnReady.setAttribute(
     "aria-pressed",

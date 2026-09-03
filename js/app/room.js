@@ -35,6 +35,7 @@ import {
 import { applyScene } from "./scene.js";
 import { setInventory } from "./inventory.js";
 import { setGoals } from "./goals.js";
+import { setStatusRolls } from "./status.js";
 import { refreshLedger } from "./progress.js";
 
 function seat(isAdmin) {
@@ -81,6 +82,8 @@ export function connect(room, name, portrait) {
   setInventory([], {});
   /* No goals until a payload or a save hands this seat some. */
   setGoals({});
+  /* Nobody is on the floor in a room that has not started. */
+  setStatusRolls({});
   renderRoster();
   replaceLog([]);
   replaceTurnLog([]);
@@ -163,6 +166,7 @@ export function leave() {
   state.selfId = null;
   setInventory([], {});
   setGoals({});
+  setStatusRolls({});
 
   dom.sessionPanel.hidden = true;
   dom.joinPanel.hidden = false;

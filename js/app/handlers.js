@@ -34,8 +34,10 @@ import * as session from "../export/session.js";
 import { latestPayload } from "../export/rounds.js";
 import { cleanOps } from "../inventory/items.js";
 import { cleanGoalOps } from "../goals/goals.js";
+import { cleanStatusOrders } from "../status/status.js";
 import {
   state,
+  isFloored,
   normalizeEntry,
   rosterPayload,
   cleanProgress,
@@ -59,6 +61,7 @@ import { applyScene, setNpcs } from "./scene.js";
 import { applySession } from "./save.js";
 import { commitOps, inventoryPayload, setInventory } from "./inventory.js";
 import { commitGoalOps, setGoals } from "./goals.js";
+import { commitDown, commitStatusOps, setStatusRolls } from "./status.js";
 import { adoptProgress, publishProgress } from "./progress.js";
 import {
   acceptChoice,
@@ -153,6 +156,10 @@ function onHostReceiveData(connection, data) {
       inventories: state.inventories,
       /* Every book at the table, read by the seat each one names. */
       goals: state.goals,
+      /* Who is on the floor and who is past picking up, so a joiner reads the
+         same plates as everybody else. */
+      down: state.down,
+      kia: state.kia,
       dialogue: state.dialoguePayload,
       /* Each round carries what was chosen in it, so a joiner inherits the
          whole record and not just the trees. */
@@ -188,6 +195,8 @@ function onHostReceiveData(connection, data) {
 
   if (data.type === "turn") {
     if (!person || person.admin) return;
+    /* A seat on the floor plans nothing, whatever its composer says. */
+    if (isFloored(person.name)) return;
     const plan = cleanText(data.turn?.text);
     if (plan.length < TURN_MIN_LENGTH) return;
     const planned = {
@@ -204,6 +213,8 @@ function onHostReceiveData(connection, data) {
 
   if (data.type === "ready") {
     if (!person || person.admin) return;
+    /* A seat on the floor cannot reach the switch, whatever it sends. */
+    if (isFloored(person.name)) return;
     person.ready = Boolean(data.ready);
     renderRoster();
     broadcast(rosterPayload());
@@ -280,6 +291,23 @@ function onHostReceiveData(connection, data) {
     return;
   }
 
+  /* A player's own bars ran out. Nobody else's seat is theirs to put on the
+     floor, so the name is the connection's and never the peer's to claim. */
+  if (data.type === "down") {
+    if (!person || person.admin) return;
+    commitDown(person.name);
+    return;
+  }
+
+  /* The two rolls move here too, so every plate agrees with this one. */
+  if (data.type === "status-ops") {
+    if (!person?.admin) return;
+    const rolls = cleanStatusOrders(data.ops);
+    if (!rolls) return;
+    commitStatusOps(rolls);
+    return;
+  }
+
   /* The administrateur edited the catalogue, which can rename what people
      already carry but never moves a count, so there is nothing to announce. */
   if (data.type === "inventory-state") {
@@ -351,6 +379,7 @@ function firstWelcome(data, current, live) {
   if (Array.isArray(data.npcs)) setNpcs(data.npcs);
   setInventory(data.items, data.inventories);
   setGoals(data.goals);
+  setStatusRolls(data);
 
   /* A save the room already read may hold this seat's ledger. Adopting it
      publishes; otherwise the table is simply told what this seat brought. */
@@ -425,6 +454,9 @@ function laterWelcome(data, current, live) {
   setInventory(data.items, data.inventories);
   /* A completion missed while the wire was down is still owed. */
   setGoals(data.goals, true);
+  /* Going down while the wire was gone is a state correction, like money: the
+     plate is right either way, and there is no scene to announce it over. */
+  setStatusRolls(data);
 
   /* This seat's own ledger is the better copy; the host is simply reminded
      of it. */
@@ -566,6 +598,13 @@ function onGuestReceiveData(data) {
 
   if (data.type === "goals") {
     setGoals(data.goals, true);
+    return;
+  }
+
+  /* The live path: somebody has just gone down, been picked up or been
+     killed, so it is announced. */
+  if (data.type === "status") {
+    setStatusRolls(data, true);
     return;
   }
 

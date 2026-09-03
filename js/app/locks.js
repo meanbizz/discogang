@@ -2,9 +2,18 @@
 
 import { dom } from "../dom.js";
 import * as dialogue from "../dialogue/dialogue.js";
-import { state, countReady, countScene, everyoneReady } from "./state.js";
+import {
+  state,
+  countReady,
+  countScene,
+  everyoneReady,
+  isSelfDown,
+  isSelfKia,
+} from "./state.js";
 
 export function planningUnlocked() {
+  /* On the floor: nothing is planned from this seat until it is picked up. */
+  if (isSelfDown()) return false;
   if (!state.dialogueLive) return true;
   const tally = countScene();
   return tally.players > 0 && tally.done === tally.players;
@@ -22,6 +31,14 @@ export function refreshPlanningLock() {
   if (!locked) {
     dom.turnLock.hidden = true;
     dom.turnLock.textContent = "";
+    return;
+  }
+
+  if (isSelfDown()) {
+    dom.turnLock.hidden = false;
+    dom.turnLock.textContent = isSelfKia()
+      ? "You are dead. This seat plans nothing more."
+      : "You are down. Somebody else will have to pick you up.";
     return;
   }
 

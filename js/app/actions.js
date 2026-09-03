@@ -12,7 +12,7 @@ import * as sfx from "../audio/sfx.js";
 import { vitals } from "../vitals.js";
 import * as character from "../export/character.js";
 import { download } from "../export/file.js";
-import { state, everyoneReady, rosterPayload } from "./state.js";
+import { state, everyoneReady, isSelfDown, rosterPayload } from "./state.js";
 import { network, broadcast, sendUpstream } from "./net.js";
 import {
   commit,
@@ -26,10 +26,13 @@ import { planningUnlocked } from "./locks.js";
 import { publishDialogue } from "./rounds.js";
 import { publishOps, selfItems, usedItemLines } from "./inventory.js";
 import { goalLines, publishGoalOps, selfGoals } from "./goals.js";
+import { publishStatusOps } from "./status.js";
 import { skillLines } from "./progress.js";
 
 export function setSelfReady(next) {
   if (state.isAdmin) return;
+  /* Down or dead: the switch is nobody's to throw, however it was reached. */
+  if (isSelfDown()) return;
   if (!planningUnlocked()) return;
 
   state.selfReady = Boolean(next);
@@ -48,7 +51,7 @@ export function setSelfReady(next) {
 }
 
 /* A payload takes precedence over prose: whatever parses as a turn is
-   published as one. Items and goals move before the trees that mention them. */
+   published as one. Items, goals and the two rolls move before the trees. */
 export function shareText(text) {
   if (!state.isAdmin) return;
   if (!everyoneReady()) {
@@ -57,7 +60,9 @@ export function shareText(text) {
   }
 
   const attempt = dialogue.parsePayload(text);
-  if (attempt.payload || attempt.inventory || attempt.goals) {
+  if (attempt.payload || attempt.inventory || attempt.goals || attempt.status) {
+    /* Rolls first: a seat this payload puts down reads no tree inside it. */
+    if (attempt.status) publishStatusOps(attempt.status);
     if (attempt.inventory) publishOps(attempt.inventory);
     if (attempt.goals) publishGoalOps(attempt.goals);
     if (attempt.payload) publishDialogue(attempt.payload, attempt.raw);
@@ -140,8 +145,12 @@ export function exportTurns() {
   const used = usedItemLines(fresh.map((entry) => entry.text));
   const skills = skillLines();
   const goals = goalLines();
+  const down = state.down;
+  const kia = state.kia;
 
-  if (!fresh.length) {
+  /* A table on the floor plans nothing, and who is on it is exactly what the
+     administrateur still needs to read. */
+  if (!fresh.length && !down.length && !kia.length) {
     flashImport("Nothing new");
     return;
   }
@@ -150,10 +159,12 @@ export function exportTurns() {
   if (used.length) {
     parts.push("# Players use the following items:\n" + used.join("\n"));
   }
-  parts.push(
-    "# Actions planned by players:\n" +
-      fresh.map((entry) => `${entry.author} — ${entry.text}`).join("\n"),
-  );
+  if (fresh.length) {
+    parts.push(
+      "# Actions planned by players:\n" +
+        fresh.map((entry) => `${entry.author} — ${entry.text}`).join("\n"),
+    );
+  }
   if (skills.length) {
     parts.push("# Players skills\n" + skills.join("\n"));
   }
@@ -161,6 +172,14 @@ export function exportTurns() {
      of what the table is chasing. */
   if (goals.length) {
     parts.push("# Players goals\n" + goals.join("\n"));
+  }
+  /* Written back the same way they are read: a name dropped from Down next
+     round is a name back on its feet. */
+  if (down.length) {
+    parts.push("# Players Down\n" + down.join("\n"));
+  }
+  if (kia.length) {
+    parts.push("# Players K.I.A.\n" + kia.join("\n"));
   }
 
   copyText(parts.join("\n\n"), (ok) => {

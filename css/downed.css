@@ -1,0 +1,39 @@
+/* Down and K.I.A.: the plate over a roster row, and the plan log a seat on
+   the floor cannot read. */
+
+/* A <button> is an unreliable containing block, so the plate is measured
+   against the seat wrapped around the row instead. */
+.roster-seat {
+  position: relative;
+  display: flex;
+  flex: 0 0 auto;
+}
+
+.roster-plate {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 10, 12, 0.66);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-align: center;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+.roster-seat[data-status="kia"] .roster-plate {
+  background: rgba(46, 6, 8, 0.72);
+  letter-spacing: 0.14em;
+}
+
+/* The plans, unreadable: what the table means to do cannot be made out,
+   scrolled or pressed from the floor. */
+.turn-log.is-downed {
+  filter: blur(6px) grayscale(0.5);
+  pointer-events: none;
+  user-select: none;
+}

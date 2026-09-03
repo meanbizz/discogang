@@ -1,8 +1,8 @@
 /* The administrateur's turn payload, rebuilt field by field: a peer can only
    ever contribute shapes the reader already understands. No DOM here.
 
-   Trees are keyed by character name or peer id; the reserved "inventory" and
-   "goals" keys carry orders instead, rebuilt by their own modules.
+   Trees are keyed by character name or peer id; the reserved "inventory",
+   "goals", "down" and "kia" keys carry orders instead, rebuilt elsewhere.
 
    A skillCheck comes in three shapes:
      1. No dice, no result — a passive read that only acts as a speaker.
@@ -20,6 +20,7 @@ import { XP_MAX_PER_NODE } from "../config.js";
 import { own, pick, line, normalizeKey, bodyText } from "./text.js";
 import { INVENTORY_KEY, cleanOps } from "../inventory/items.js";
 import { GOALS_KEY, cleanGoalOps } from "../goals/goals.js";
+import { DOWN_KEY, KIA_KEY, cleanStatusOrders } from "../status/status.js";
 
 export const DIFFICULTY_TARGET = {
   trivial: 6,
@@ -235,6 +236,9 @@ export function cleanPayload(raw) {
     if (!key || own(out, key)) continue;
     if (normalizeKey(key) === INVENTORY_KEY) continue;
     if (normalizeKey(key) === GOALS_KEY) continue;
+    /* The rolls are orders about people, not trees written for them. */
+    if (normalizeKey(key) === DOWN_KEY) continue;
+    if (normalizeKey(key) === KIA_KEY) continue;
     const cleaned = cleanTree(raw[keys[i]]);
     if (!cleaned) continue;
     out[key] = cleaned;
@@ -302,16 +306,19 @@ export function parsePayload(text) {
   const payload = cleanPayload(parsed);
   const inventory = cleanInventoryOps(parsed);
   const goals = cleanGoalOrders(parsed);
-  if (!payload && !inventory && !goals) {
+  const status = cleanStatusOrders(parsed);
+  if (!payload && !inventory && !goals && !status) {
     return {
       payload: null,
       inventory: null,
       goals: null,
-      error: "No usable dialogue trees, item orders or goals in that payload.",
+      status: null,
+      error:
+        "No usable dialogue trees, item orders, goals or rolls in that payload.",
       raw,
     };
   }
-  return { payload, inventory, goals, error: null, raw };
+  return { payload, inventory, goals, status, error: null, raw };
 }
 
 /* Keys are character names or PeerJS ids — the id is tried first. */

@@ -12,6 +12,7 @@ import { PLAYER_SLOTS } from "../config.js";
 import { cleanName, cleanText, uid } from "../utils.js";
 import { cleanScores, cleanAllocated } from "../sheet.js";
 import { cleanXpLedger } from "../xp.js";
+import { holds } from "../status/status.js";
 
 export const state = {
   isAdmin: false,
@@ -25,6 +26,10 @@ export const state = {
   inventories: {},
   /* What each character is after: character name -> [ goal ]. */
   goals: {},
+  /* Who is on the floor, and who is past picking up. Character names, since a
+     peer id dies with the wire. */
+  down: [],
+  kia: [],
   selfReady: false,
   profile: { name: "", portrait: null },
   roomId: "",
@@ -120,6 +125,30 @@ export function recallProgress(name) {
   return key ? state.savedProgress.get(key) || null : null;
 }
 
+/* ---------------- Down and dead ---------------- */
+
+export function isDown(name) {
+  return holds(state.down, name);
+}
+
+export function isKia(name) {
+  return holds(state.kia, name);
+}
+
+/* Either way, that seat acts no further until somebody says otherwise. */
+export function isFloored(name) {
+  return isKia(name) || isDown(name);
+}
+
+/* The administrateur has no character to lose, so they are never either. */
+export function isSelfDown() {
+  return !state.isAdmin && isFloored(state.profile.name);
+}
+
+export function isSelfKia() {
+  return !state.isAdmin && isKia(state.profile.name);
+}
+
 /* ---------------- Tallies ---------------- */
 
 export function countReady() {
@@ -128,7 +157,8 @@ export function countReady() {
   state.roster.forEach((person) => {
     if (person.admin) return;
     players += 1;
-    if (person.ready) readied += 1;
+    /* A seat on the floor cannot reach the switch, so nothing waits on it. */
+    if (person.ready || isFloored(person.name)) readied += 1;
   });
   return { players, readied };
 }
@@ -144,7 +174,8 @@ export function countScene() {
   state.roster.forEach((person) => {
     if (person.admin) return;
     players += 1;
-    if (person.done) done += 1;
+    /* Down or dead reads no scene, so the round never waits on it either. */
+    if (person.done || isFloored(person.name)) done += 1;
   });
   return { players, done };
 }
