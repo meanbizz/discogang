@@ -81,3 +81,32 @@
 .modal-portrait[data-mark="unknown"] {
   color: #4a4a47;
 }
+
+/* Nothing to show beside the log: the box goes, its column stays. Two classes
+   and the attribute, so it out-specifies the bare .thumb display. */
+.thumb.scene-thumb[hidden] {
+  display: none;
+}
+
+/* A picker's row is too wide for a phone: the face goes above the fields
+   rather than beside them, and the controls take the width they are given. */
+@media (max-width: 32rem) {
+  .portrait-picker {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.6rem;
+  }
+
+  .portrait-controls {
+    width: 100%;
+  }
+
+  .portrait-controls input[type="url"] {
+    width: 100%;
+  }
+
+  .portrait-controls input[type="file"] {
+    width: 100%;
+    font-size: 0.8rem;
+  }
+}

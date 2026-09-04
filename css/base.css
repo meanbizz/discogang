@@ -40,7 +40,7 @@ html {
 
 body {
   margin: 0;
-  padding: 2rem 1.25rem 3rem;
+  padding: 2rem 0.25rem 3rem;
   background: var(--bg);
   color: var(--text-old);
   font-family: var(--font-serif);
@@ -74,6 +74,6 @@ body {
 
 @media (max-width: 32rem) {
   .panel {
-    padding: 1.1rem;
+    padding: 0.5rem;
   }
 }

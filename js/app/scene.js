@@ -2,22 +2,34 @@
 
 import { dom } from "../dom.js";
 import { cleanName, cleanNpc, cleanScene, paintThumb, uid } from "../utils.js";
+import { normalizeKey } from "../dialogue/text.js";
 import * as modals from "../modals.js";
 import { state } from "./state.js";
 import { network, broadcast, sendUpstream } from "./net.js";
 
 export function renderScene() {
-  if (dom.sceneThumb) {
-    paintThumb(dom.sceneThumb, {
-      portrait: state.sceneOverride || state.scene.image,
-    });
-  }
+  const face = currentSceneImage();
+  if (!dom.sceneThumb) return;
+  /* No face to show, no box. The column itself stays, so the log neither
+     reflows nor rescales its paper mid-scene. */
+  dom.sceneThumb.hidden = !face;
+  paintThumb(dom.sceneThumb, { portrait: face });
 }
 
-/* The reader hands over a skill's card art, or null to fall back to the
-   administrateur's scene image. */
-export function setSceneOverride(url) {
-  state.sceneOverride = url || null;
+/* An NPC the administrateur actually minted, matched by name. */
+function npcPortrait(speaker) {
+  const wanted = normalizeKey(speaker);
+  if (!wanted) return null;
+  const found = (state.npcs || []).find(
+    (npc) => normalizeKey(npc.name) === wanted,
+  );
+  return (found && found.thumbnail) || null;
+}
+
+/* The reader hands over a skill's card art and who spoke it: a minted NPC
+   lends their own face, the narrator and names nobody wrote lend none. */
+export function setSceneOverride(url, speaker) {
+  state.sceneOverride = url || npcPortrait(speaker);
   renderScene();
 }
 

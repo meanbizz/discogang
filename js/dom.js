@@ -121,7 +121,6 @@ export const dom = {
   inventoryModal: document.getElementById("inventory-modal"),
   inventoryModalClose: document.getElementById("inventory-modal-close"),
   inventoryGrid: document.getElementById("inventory-grid"),
-  inventoryEmpty: document.getElementById("inventory-empty"),
   inventoryLock: document.getElementById("inventory-lock"),
   inventoryTooltip: document.getElementById("inventory-tooltip"),
 
@@ -141,6 +140,13 @@ export const dom = {
   itemCancelButton: document.getElementById("item-cancel-button"),
   itemFormError: document.getElementById("item-form-error"),
   itemList: document.getElementById("item-list"),
+
+  // One item, looked at closely: its whole picture and what is written of it
+  itemViewModal: document.getElementById("item-view-modal"),
+  itemViewClose: document.getElementById("item-view-close"),
+  itemViewImage: document.getElementById("item-view-image"),
+  itemViewName: document.getElementById("item-view-name"),
+  itemViewText: document.getElementById("item-view-text"),
 };
 
 export const anchors = {

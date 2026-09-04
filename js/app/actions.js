@@ -105,6 +105,9 @@ export function shareTurn(text) {
     return false;
   }
   dom.turnError.textContent = "";
+  /* Heard on the press that actually sends something — a refused plan is
+     silent, the same as a dead click on a spent row. */
+  sfx.playSend();
 
   if (network.isHost) {
     const entry = {
@@ -147,13 +150,6 @@ export function exportTurns() {
   const goals = goalLines();
   const down = state.down;
   const kia = state.kia;
-
-  /* A table on the floor plans nothing, and who is on it is exactly what the
-     administrateur still needs to read. */
-  if (!fresh.length && !down.length && !kia.length) {
-    flashImport("Nothing new");
-    return;
-  }
 
   const parts = [];
   if (used.length) {

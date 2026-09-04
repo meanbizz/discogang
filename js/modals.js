@@ -397,33 +397,10 @@ export function noteInventory(text) {
   dom.inventoryLock.hidden = !body;
 }
 
-/* Money is always there, so "empty" has to mean something narrower than it
-   used to: nothing but the purse. What the purse holds decides which of the
-   two readings is true. */
-function paintInventoryEmpty(items) {
-  if (!dom.inventoryEmpty) return;
-  let things = 0;
-  let money = 0;
-  items.forEach((item) => {
-    if (item.currency) money = item.count || 0;
-    else things += 1;
-  });
-
-  if (things) {
-    dom.inventoryEmpty.hidden = true;
-    return;
-  }
-  dom.inventoryEmpty.hidden = false;
-  dom.inventoryEmpty.textContent = money
-    ? "Nothing but your money."
-    : "Your pockets are empty.";
-}
-
 export function renderInventoryGrid(list, onPick) {
   if (!dom.inventoryGrid) return;
   const items = Array.isArray(list) ? list : [];
   dom.inventoryGrid.textContent = "";
-  paintInventoryEmpty(items);
 
   items.forEach((item) => {
     const cell = document.createElement("div");
@@ -481,8 +458,70 @@ export function renderInventoryGrid(list, onPick) {
     });
     cell.appendChild(info);
 
+    /* The whole picture, under the square rather than in a tooltip. */
+    const look = document.createElement("button");
+    look.type = "button";
+    look.className = "inv-inspect";
+    look.textContent = "🔍";
+    look.title = "Look at it";
+    look.setAttribute("aria-label", "Look closely at " + item.name);
+    look.addEventListener("click", (event) => {
+      event.stopPropagation();
+      openItemView(item);
+    });
+    cell.appendChild(look);
+
     dom.inventoryGrid.appendChild(cell);
   });
+}
+
+/* ---------------- One item, looked at closely ---------------- */
+
+let itemViewReturnFocus = null;
+
+/* Over the grid it was opened from: the item's own picture at full size, with
+   what is written about it underneath. Read only, like the tooltip. */
+export function openItemView(item) {
+  if (!dom.itemViewModal || !item) return;
+  hideItemTooltip();
+
+  if (dom.itemViewImage) {
+    if (item.image) {
+      dom.itemViewImage.src = item.image;
+      dom.itemViewImage.alt = item.name || "";
+      dom.itemViewImage.hidden = false;
+    } else {
+      dom.itemViewImage.removeAttribute("src");
+      dom.itemViewImage.alt = "";
+      dom.itemViewImage.hidden = true;
+    }
+  }
+
+  if (dom.itemViewName) dom.itemViewName.textContent = item.name || "—";
+  if (dom.itemViewText) {
+    let body = item.description || "Nothing is written about it.";
+    /* A purse says what is in it, the same as its tooltip does. */
+    if (item.currency) {
+      body += "\nYou currently have " + (item.count || 0) + ".";
+    }
+    dom.itemViewText.textContent = body;
+  }
+
+  itemViewReturnFocus = activeFocus();
+  dom.itemViewModal.hidden = false;
+  sfx.playModal();
+  dom.itemViewClose.focus();
+}
+
+export function closeItemView() {
+  if (!dom.itemViewModal || dom.itemViewModal.hidden) return;
+  dom.itemViewModal.hidden = true;
+  if (dom.itemViewImage) dom.itemViewImage.removeAttribute("src");
+  sfx.playCancel();
+  if (itemViewReturnFocus && document.contains(itemViewReturnFocus)) {
+    itemViewReturnFocus.focus();
+  }
+  itemViewReturnFocus = null;
 }
 
 export function openInventory(list, onPick) {

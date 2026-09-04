@@ -202,8 +202,23 @@ function bindModals() {
     if (event.target.dataset.close === "true") modals.closePsyche();
   });
 
+  /* Looking closely at one item is the topmost dialog, so it owns the way out
+     before the grid it was opened from does. */
+  if (dom.itemViewClose) {
+    dom.itemViewClose.addEventListener("click", modals.closeItemView);
+  }
+  if (dom.itemViewModal) {
+    dom.itemViewModal.addEventListener("click", (event) => {
+      if (event.target.dataset.close === "true") modals.closeItemView();
+    });
+  }
+
   document.addEventListener("keydown", (event) => {
     if (event.key !== "Escape") return;
+    if (dom.itemViewModal && !dom.itemViewModal.hidden) {
+      modals.closeItemView();
+      return;
+    }
     modals.closePsyche();
     modals.closePortrait();
     modals.closeNpcModal();

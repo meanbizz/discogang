@@ -174,12 +174,17 @@
             <label class="visually-hidden" for="turn-input"
               >Plan your turn</label
             >
-            <input
-              type="text"
-              id="turn-input"
-              maxlength="200"
-              placeholder="Write a chunk of your plan here..."
-            />
+            <div
+              style="width: 100%; display: flex; align-items: center; gap: 4px"
+            >
+              <input
+                type="text"
+                id="turn-input"
+                maxlength="200"
+                placeholder="Write a chunk of your plan here..."
+              />
+              <button type="submit" id="turn-send" class="option">➤</button>
+            </div>
             <button
               type="button"
               id="turn-ready"
@@ -187,9 +192,6 @@
               aria-pressed="false"
             >
               Ready to End Turn
-            </button>
-            <button type="submit" id="turn-send" class="option">
-              Send Plan
             </button>
             <p
               id="turn-error"
@@ -410,7 +412,6 @@
             role="list"
             aria-label="Your items"
           ></div>
-          <p id="inventory-empty" class="inv-empty">Your pockets are empty.</p>
         </div>
       </div>
 
@@ -680,7 +681,53 @@
           </div>
         </div>
       </div>
+
+      <!-- One item, looked at closely — opened from the inventory grid -->
+      <div id="item-view-modal" class="modal item-view-modal" hidden>
+        <div class="modal-backdrop" data-close="true"></div>
+        <div
+          class="modal-card"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="item-view-name"
+        >
+          <button
+            type="button"
+            id="item-view-close"
+            class="modal-close"
+            aria-label="Close item"
+          >
+            ×
+          </button>
+          <img id="item-view-image" class="item-view-image" alt="" hidden />
+          <p id="item-view-name" class="modal-name">—</p>
+          <p id="item-view-text" class="item-view-text"></p>
+        </div>
+      </div>
     </main>
+
+    <!-- One item, looked at closely — opened from the inventory grid -->
+    <div id="item-view-modal" class="modal item-view-modal" hidden>
+      <div class="modal-backdrop" data-close="true"></div>
+      <div
+        class="modal-card"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="item-view-name"
+      >
+        <button
+          type="button"
+          id="item-view-close"
+          class="modal-close"
+          aria-label="Close item"
+        >
+          ×
+        </button>
+        <img id="item-view-image" class="item-view-image" alt="" hidden />
+        <p id="item-view-name" class="modal-name">—</p>
+        <p id="item-view-text" class="item-view-text"></p>
+      </div>
+    </div>
 
     <!-- Item tooltip: fixed to the viewport, so it lives outside the modals -->
     <div

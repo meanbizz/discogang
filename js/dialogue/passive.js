@@ -32,16 +32,21 @@ export function getSheet() {
   return sheet;
 }
 
-/* What the reader brings to a passive check, or null when there is nothing to
-   reckon with: an unnamed skill, a skill this build does not know, or a player
-   who never loaded a sheet at all. */
-export function passiveScore(check) {
+/* What the reader's own sheet is worth to a check, or null when there is
+   nothing to reckon with: no skill named, an unknown one, or no sheet at all. */
+export function skillValue(check) {
   if (!sheet || !check || !check.skill) return null;
   const found = findSkill(check.skill);
   if (!found) return null;
-  return (
-    skillScore(sheet, found.id) + PASSIVE_BONUS + (Number(check.modifier) || 0)
-  );
+  return skillScore(sheet, found.id);
+}
+
+/* What the reader brings to a passive check: the sheet, plus the standing
+   bonus that stands in for two dice. */
+export function passiveScore(check) {
+  const value = skillValue(check);
+  if (value == null) return null;
+  return value + PASSIVE_BONUS + (Number(check.modifier) || 0);
 }
 
 /* Whether a passive is noticed. Anything unreckonable is shown rather than

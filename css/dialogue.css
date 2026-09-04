@@ -302,10 +302,3 @@ button.choice.continue {
     opacity: 1;
   }
 }
-
-@media (max-width: 32rem) {
-  .entry-speaker,
-  .check-tag {
-    font-size: 0.66rem;
-  }
-}

@@ -34,7 +34,7 @@
 }
 
 .modal-card-wide {
-  width: min(96vw, 88rem);
+  width: min(100%, 88rem);
   max-height: 92vh;
   padding: 2.25rem 0.75rem 1rem;
   overflow-y: auto;

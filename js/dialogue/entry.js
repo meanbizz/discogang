@@ -9,7 +9,7 @@ import { paintMarkup } from "../utils.js";
 import * as vitals from "../vitals.js";
 import * as narration from "../audio/narration.js";
 import { DIFFICULTY_TARGET } from "./sanitize.js";
-import { PASSIVE_BONUS } from "./passive.js";
+import { PASSIVE_BONUS, passiveScore, skillValue } from "./passive.js";
 import { findSkill, skillLabel } from "./skills.js";
 
 const VITAL_OF = { vitality: "health", morale: "morale" };
@@ -56,18 +56,32 @@ function checkTitle(check) {
   }
 
   if (check.passive) {
-    /* No dice were thrown, so the standing bonus is the whole of the roll. */
+    /* No dice were thrown, so the sheet and the standing bonus are the whole
+       of the roll. */
+    const score = skillValue(check);
+    const total = passiveScore(check);
     lines.push("Read passively — no dice");
+    if (score != null) {
+      lines.push("Skill: " + skillLabel(check.skill) + " " + score);
+    }
     lines.push("Passive bonus: +" + PASSIVE_BONUS + " in place of two dice");
     lines.push("Modifier: " + signed(check.modifier));
+    if (total != null) lines.push("Total: " + total);
     return lines.join("\n");
   }
 
   if (check.dice1 && check.dice2) {
-    const total = check.dice1 + check.dice2 + check.modifier;
+    /* The pair, the sheet and the modifier together. A reader who loaded no
+       sheet rolls on the dice and the modifier alone. */
+    const score = skillValue(check);
     lines.push("Rolled: " + check.dice1 + " and " + check.dice2);
+    if (score != null) {
+      lines.push("Skill: " + skillLabel(check.skill) + " " + score);
+    }
     lines.push("Modifier: " + signed(check.modifier));
-    lines.push("Total: " + total);
+    lines.push(
+      "Total: " + (check.dice1 + check.dice2 + (score || 0) + check.modifier),
+    );
     return lines.join("\n");
   }
 

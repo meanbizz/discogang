@@ -52,8 +52,10 @@ export function isFinished() {
   return finished;
 }
 
-function emitArt(url) {
-  if (hooks.onSkillArt) hooks.onSkillArt(url || null);
+/* The art a skill brings, and who spoke the line: the name is what tells a
+   minted NPC from the narrator. */
+function emitArt(url, speaker) {
+  if (hooks.onSkillArt) hooks.onSkillArt(url || null, speaker || "");
 }
 
 /* The reader only says what was picked; remembering it is the app's business.
@@ -146,11 +148,22 @@ function renderContinue(host, nextId) {
     button.style.borderColor = tint;
   }
 
+  /* The paper drifts a notch each time the reader presses on, tiled so the
+     shift never opens a gap under the log. */
+  const drift = () => {
+    if (!dom.log) return;
+    const next = (Number(dom.log.dataset.drift || 0) + 24) % 480;
+    dom.log.dataset.drift = String(next);
+    dom.log.style.backgroundRepeat = "repeat-y";
+    dom.log.style.backgroundPositionY = "-" + next + "px";
+  };
+
   button.appendChild(face);
   button.addEventListener("click", () => {
     if (host.dataset.spent === "true") return;
     host.dataset.spent = "true";
     cues.playChoice();
+    drift();
     host.remove();
     renderNode(nextId);
   });
@@ -223,7 +236,7 @@ function renderNode(id) {
   if (note) article.appendChild(note);
 
   appendToLog(article);
-  emitArt(voice ? voice.art : null);
+  emitArt(voice ? voice.art : null, node.speaker);
   cues.playNode(voice, node.skillCheck);
   if (first) earnXp(node);
 

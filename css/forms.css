@@ -3,6 +3,7 @@
 .field {
   display: grid;
   gap: 0.35rem;
+  width: fit-content;
 }
 
 #join-form {
@@ -21,6 +22,7 @@ label {
   font-size: 0.68rem;
   letter-spacing: 0.1em;
   opacity: 0.75;
+  width: 300px;
 }
 
 /* A paragraph of help text under a field reads as prose, not a label. */
@@ -98,12 +100,18 @@ button.option {
   border-color: var(--option);
   background: rgba(126, 66, 44, 0.22);
   color: var(--option-hi);
+  width: fit-content;
 }
 
 button.option:hover {
   border-color: var(--option);
   background: var(--option);
   color: var(--option-hi);
+}
+
+button.option#join-button {
+  width: 200px;
+  margin: auto;
 }
 
 button[disabled] {

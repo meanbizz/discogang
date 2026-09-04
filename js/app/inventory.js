@@ -29,7 +29,7 @@ import {
   CURRENCY_MARK,
   CURRENCY_NAME,
 } from "../inventory/items.js";
-import { state } from "./state.js";
+import { state, isSelfDown, isSelfKia } from "./state.js";
 import { network, broadcast, sendUpstream } from "./net.js";
 import { planningUnlocked } from "./locks.js";
 
@@ -194,8 +194,17 @@ function publishState() {
 
 /* ---------------- The player's own grid ---------------- */
 
+/* Why the pockets are shut. An item is used by naming it in a plan, and a
+   seat on the floor writes none. */
+function flooredReason() {
+  return isSelfKia()
+    ? "You are dead. Nothing in your pockets is any use to you now."
+    : "You are down — nothing is reachable until somebody picks you up.";
+}
+
 export function openInventory() {
   modals.openInventory(selfItems(), pickItem);
+  if (isSelfDown()) modals.noteInventory(flooredReason());
 }
 
 /* A picked item is a word in the plan, not an action of its own — so there
@@ -207,9 +216,14 @@ export function pickItem(item) {
   const input = dom.turnInput;
   if (!input) return;
 
+  if (isSelfDown()) {
+    modals.noteInventory(flooredReason());
+    return;
+  }
+
   if (!planningUnlocked()) {
     modals.noteInventory(
-      "The scene is still playing out — items are named in a plan, and there is none to write yet.",
+      "Complete your current scene before using items.",
     );
     return;
   }
@@ -276,6 +290,15 @@ export function removeItem(name) {
   if (itemKey(dom.itemKeyInput.value) === key) modals.resetItemForm();
   publishState();
   refreshViews();
+}
+
+function emptied(bar) {
+  if (!bar || !bar.children.length) return false;
+  return !bar.querySelector('[data-filled="true"]');
+}
+
+function isDownOrKia() {
+  return emptied(dom.healthBar) || emptied(dom.moraleBar);
 }
 
 /* Payloads and saves only ever hand over data; the form is the one place an

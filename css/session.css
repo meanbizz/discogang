@@ -97,7 +97,6 @@
 @media (max-width: 32rem) {
   .session-actions {
     margin-left: 0;
-    width: 100%;
   }
 
   .admin-tools {

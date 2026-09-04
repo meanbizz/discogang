@@ -68,6 +68,7 @@ export const UI_SRC = {
   cancel: "sounds/cancel.wav",
   modal: "sounds/switch-02.wav",
   ready: "sounds/switch-04.wav",
+  send: "sounds/switch-01.wav",
   skillPick: "sounds/skill-choosing.wav",
   skillLevel: "sounds/skills-leveling.wav",
 };
@@ -291,9 +292,13 @@ export function playClick() {
   run(channels.ui, UI_SRC.click, { onEnd: null });
 }
 
-/* A dialog dismissed, whichever one it was. */
+/* A dialog dismissed, whichever one it was — a third under the rest, since a
+   panel closing is the least of what the interface says. clip() sets the
+   level on every call, so this only ever holds for the one clip. */
 export function playCancel() {
   run(channels.ui, UI_SRC.cancel, { onEnd: null });
+  const voice = channels.ui.voice;
+  if (voice) voice.volume = Math.max(0, TIMING.sound.volume * (2 / 3));
 }
 
 /* A dialog opened, whichever one it was: a switch thrown, answering the press
@@ -306,6 +311,11 @@ export function playModal() {
    is heard on the frame it happens. */
 export function playReady() {
   run(channels.ui, UI_SRC.ready, { onEnd: null });
+}
+
+/* A plan sent. Its own switch, so it is not mistaken for the ready one. */
+export function playSend() {
+  run(channels.ui, UI_SRC.send, { onEnd: null });
 }
 
 /* A skill card picked up in the sheet, and a point spent on one. Their own
