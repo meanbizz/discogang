@@ -4,7 +4,7 @@
    into the modules above — no logic lives here. */
 
 import { dom } from "../dom.js";
-import { cleanImageUrl, cleanName, paintThumb } from "../utils.js";
+import { appendPair, cleanImageUrl, cleanName, paintThumb } from "../utils.js";
 import { probeImage, rejectImageFile, uploadImage } from "../upload.js";
 import * as modals from "../modals.js";
 import * as music from "../audio/music.js";
@@ -69,6 +69,19 @@ function bindComposers() {
   dom.turnInput.addEventListener("keydown", (event) => {
     submitOnEnter(event, dom.turnComposer, () => {
       if (shareTurn(dom.turnInput.value)) dom.turnInput.value = "";
+    });
+  });
+
+  /* The three markup pairs, written at the end with the caret between them. */
+  [
+    [dom.markQuote, '"', '"'],
+    [dom.markAside, "(", ")"],
+    [dom.markStyle, "*", "*"],
+  ].forEach((pair) => {
+    if (!pair[0]) return;
+    pair[0].addEventListener("click", () => {
+      appendPair(dom.turnInput, pair[1], pair[2]);
+      if (dom.turnError) dom.turnError.textContent = "";
     });
   });
 
@@ -193,6 +206,7 @@ function bindModals() {
   dom.psycheButton.addEventListener("click", () =>
     modals.openPsyche(state.sheetState, {
       ledger: ledger(),
+      modifiers: state.activeModifiers,
       onChange: adoptSheet,
       onSpend: spendSkillPoint,
     }),
@@ -375,6 +389,11 @@ function bindItemForm() {
   }
   if (dom.itemCancelButton) {
     dom.itemCancelButton.addEventListener("click", modals.resetItemForm);
+  }
+  if (dom.itemModsInput) {
+    dom.itemModsInput.addEventListener("input", () => {
+      dom.itemFormError.textContent = "";
+    });
   }
 
   if (dom.itemNameInput) {

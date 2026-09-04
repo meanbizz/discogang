@@ -26,6 +26,10 @@ export const state = {
   inventories: {},
   /* What each character is after: character name -> [ goal ]. */
   goals: {},
+  /* What a consumed item is doing to somebody: name -> [ modifier ]. */
+  temporaryModifiers: {},
+  /* This seat's own standing, recomputed whenever a bag or an order moves. */
+  activeModifiers: null,
   /* Who is on the floor, and who is past picking up. Character names, since a
      peer id dies with the wire. */
   down: [],
@@ -78,6 +82,20 @@ export function cleanProgress(raw) {
 
 function seatKey(name) {
   return cleanName(name).toLowerCase();
+}
+
+/* What one character has consumed, whatever spelling the payload used for
+   their name. */
+export function temporaryFor(name) {
+  const wanted = seatKey(name);
+  if (!wanted) return [];
+  const holders = Object.keys(state.temporaryModifiers);
+  for (let i = 0; i < holders.length; i += 1) {
+    if (seatKey(holders[i]) === wanted) {
+      return state.temporaryModifiers[holders[i]];
+    }
+  }
+  return [];
 }
 
 /* ---------------- Seat memory (host only) ---------------- */

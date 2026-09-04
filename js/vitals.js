@@ -40,9 +40,20 @@ function floored() {
   return Boolean(hooks.floored && hooks.floored());
 }
 
+/* What is currently working on this seat. Held here because the two ceilings
+   are read off endurance and volition, so a modifier moves them with it. */
+let modifiers = null;
+
+export function setVitalsModifiers(next) {
+  modifiers = next || null;
+}
+
 /* One skill's score, or 1 when there is no sheet to read it off. */
-export function skillScore(sheetState, skillId) {
-  const scores = skillScores(sheetState);
+export function skillScore(sheetState, skillId, active) {
+  const scores = skillScores(
+    sheetState,
+    active === undefined ? modifiers : active,
+  );
   return Object.prototype.hasOwnProperty.call(scores, skillId)
     ? scores[skillId]
     : 1;

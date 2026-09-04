@@ -21,6 +21,10 @@ import { own, pick, line, normalizeKey, bodyText } from "./text.js";
 import { INVENTORY_KEY, cleanOps } from "../inventory/items.js";
 import { GOALS_KEY, cleanGoalOps } from "../goals/goals.js";
 import { DOWN_KEY, KIA_KEY, cleanStatusOrders } from "../status/status.js";
+import {
+  cleanTemporaryOps,
+  isModifiersKey,
+} from "../modifiers/modifiers.js";
 
 export const DIFFICULTY_TARGET = {
   trivial: 6,
@@ -239,6 +243,8 @@ export function cleanPayload(raw) {
     /* The rolls are orders about people, not trees written for them. */
     if (normalizeKey(key) === DOWN_KEY) continue;
     if (normalizeKey(key) === KIA_KEY) continue;
+    /* What a consumed item is doing to somebody, not a tree written for them. */
+    if (isModifiersKey(key)) continue;
     const cleaned = cleanTree(raw[keys[i]]);
     if (!cleaned) continue;
     out[key] = cleaned;
@@ -253,6 +259,17 @@ export function cleanInventoryOps(raw) {
   const keys = Object.keys(raw);
   for (let i = 0; i < keys.length; i += 1) {
     if (normalizeKey(keys[i]) === INVENTORY_KEY) return cleanOps(raw[keys[i]]);
+  }
+  return null;
+}
+
+/* The temporary modifiers riding along with the trees, or null when there are
+   none. */
+export function cleanModifierOrders(raw) {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const keys = Object.keys(raw);
+  for (let i = 0; i < keys.length; i += 1) {
+    if (isModifiersKey(keys[i])) return cleanTemporaryOps(raw[keys[i]]);
   }
   return null;
 }
@@ -307,18 +324,20 @@ export function parsePayload(text) {
   const inventory = cleanInventoryOps(parsed);
   const goals = cleanGoalOrders(parsed);
   const status = cleanStatusOrders(parsed);
-  if (!payload && !inventory && !goals && !status) {
+  const modifiers = cleanModifierOrders(parsed);
+  if (!payload && !inventory && !goals && !status && !modifiers) {
     return {
       payload: null,
       inventory: null,
       goals: null,
       status: null,
+      modifiers: null,
       error:
-        "No usable dialogue trees, item orders, goals or rolls in that payload.",
+        "No usable dialogue trees, item orders, goals, rolls or modifiers in that payload.",
       raw,
     };
   }
-  return { payload, inventory, goals, status, error: null, raw };
+  return { payload, inventory, goals, status, modifiers, error: null, raw };
 }
 
 /* Keys are character names or PeerJS ids — the id is tried first. */

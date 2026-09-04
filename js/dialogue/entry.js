@@ -9,7 +9,13 @@ import { paintMarkup } from "../utils.js";
 import * as vitals from "../vitals.js";
 import * as narration from "../audio/narration.js";
 import { DIFFICULTY_TARGET } from "./sanitize.js";
-import { PASSIVE_BONUS, passiveScore, skillValue } from "./passive.js";
+import {
+  PASSIVE_BONUS,
+  modifierValue,
+  passiveScore,
+  skillValue,
+} from "./passive.js";
+
 import { findSkill, skillLabel } from "./skills.js";
 
 const VITAL_OF = { vitality: "health", morale: "morale" };
@@ -63,6 +69,8 @@ function checkTitle(check) {
     lines.push("Read passively — no dice");
     if (score != null) {
       lines.push("Skill: " + skillLabel(check.skill) + " " + score);
+      const moved = modifierValue(check);
+      if (moved) lines.push("Of that, " + signed(moved) + " from modifiers");
     }
     lines.push("Passive bonus: +" + PASSIVE_BONUS + " in place of two dice");
     lines.push("Modifier: " + signed(check.modifier));
@@ -77,6 +85,8 @@ function checkTitle(check) {
     lines.push("Rolled: " + check.dice1 + " and " + check.dice2);
     if (score != null) {
       lines.push("Skill: " + skillLabel(check.skill) + " " + score);
+      const moved = modifierValue(check);
+      if (moved) lines.push("Of that, " + signed(moved) + " from modifiers");
     }
     lines.push("Modifier: " + signed(check.modifier));
     lines.push(

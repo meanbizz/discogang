@@ -22,14 +22,16 @@ import { cleanPayload } from "../dialogue/sanitize.js";
 import { cleanItems, cleanInventories } from "../inventory/items.js";
 import { cleanGoalBooks } from "../goals/goals.js";
 import { cleanStatus } from "../status/status.js";
+import { cleanTemporaryBooks } from "../modifiers/modifiers.js";
 import { cleanScores, cleanAllocated } from "../sheet.js";
 import { cleanXpLedger } from "../xp.js";
 import { cleanRounds, latestPayload, ROUND_ID_MAX } from "./rounds.js";
 
 export const SESSION_KIND = "salon-session";
-/* 6 added the down and K.I.A. rolls; 5 goals; 4 the experience ledger. Older
-   saves still load: whatever they never recorded starts from nothing. */
-export const SESSION_VERSION = 6;
+/* 7 added the temporary modifiers; 6 the down and K.I.A. rolls; 5 goals; 4 the
+   experience ledger. Older saves still load: whatever they never recorded
+   starts from nothing. */
+export const SESSION_VERSION = 7;
 
 const MAX_PEOPLE = 32;
 const MAX_NPCS = 64;
@@ -128,6 +130,7 @@ export function snapshot(state) {
     goals: cleanGoalBooks(source.goals),
     down: standing.down,
     kia: standing.kia,
+    modifiers: cleanTemporaryBooks(source.modifiers),
     scene: cleanScene(source.scene),
     rounds,
     dialogue: cleanPayload(source.dialogue) || latestPayload(rounds),
@@ -160,6 +163,8 @@ export function clean(raw) {
     /* Empty for any save written before anybody could be put on the floor. */
     down: standing.down,
     kia: standing.kia,
+    /* Empty for any save written before anything could be consumed. */
+    modifiers: cleanTemporaryBooks(raw.modifiers),
     scene: cleanScene(raw.scene),
     rounds,
     dialogue: cleanPayload(raw.dialogue) || latestPayload(rounds),

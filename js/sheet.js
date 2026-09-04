@@ -12,6 +12,7 @@ const SCORE_MAX = 40;
 const POINTS_MAX = 20;
 const ID_MAX = 64;
 const MAX_SKILLS = 64;
+const MOD_MAX = 20;
 
 function own(map, key) {
   return (
@@ -58,6 +59,24 @@ export function skillTitle(id) {
   return titleCase(String(id).replace(/[-_]+/g, " "));
 }
 
+export function attributeTitle(id) {
+  const groups = skillGroups();
+  for (let i = 0; i < groups.length; i += 1) {
+    if (groups[i].id === id) return titleCase(groups[i].name);
+  }
+  return titleCase(String(id).replace(/[-_]+/g, " "));
+}
+
+/* A modifier set is somebody else's reading, so it is read defensively: a
+   missing map is no movement at all. */
+function bonusOf(active, kind, id) {
+  const map = active && typeof active === "object" ? active[kind] : null;
+  if (!map || typeof map !== "object") return 0;
+  const value = Math.round(Number(map[id]));
+  if (!isFinite(value) || !value) return 0;
+  return Math.max(-MOD_MAX, Math.min(MOD_MAX, value));
+}
+
 function pointsOf(sheetState, id) {
   const skill = sheetState && sheetState.skills ? sheetState.skills[id] : null;
   if (!skill) return 0;
@@ -65,19 +84,25 @@ function pointsOf(sheetState, id) {
   return isFinite(points) && points > 0 ? Math.min(POINTS_MAX, points) : 0;
 }
 
-/* attribute + allocated points + the signature bonus — the number a check is
-   actually written against. */
-export function skillScores(sheetState) {
+/* attribute + allocated points + the signature bonus + whatever is currently
+   working on the character — the number a check is actually written against.
+   active is optional: without it this is the bare sheet, as it always was. */
+export function skillScores(sheetState, active) {
   const out = {};
   if (!sheetState || !sheetState.attributes || !sheetState.skills) return out;
 
   skillGroups().forEach((group) => {
-    const owner = Number(sheetState.attributes[group.id]) || 1;
+    const owner =
+      (Number(sheetState.attributes[group.id]) || 1) +
+      bonusOf(active, "attributes", group.id);
     (group.skills || []).forEach((skill) => {
       if (!skill || !skill.id) return;
       const held = sheetState.skills[skill.id] || {};
       const score =
-        owner + pointsOf(sheetState, skill.id) + (held.signature ? 1 : 0);
+        owner +
+        pointsOf(sheetState, skill.id) +
+        (held.signature ? 1 : 0) +
+        bonusOf(active, "skills", skill.id);
       out[skill.id] = Math.max(0, Math.min(SCORE_MAX, score));
     });
   });

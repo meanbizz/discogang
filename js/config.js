@@ -28,6 +28,12 @@ export const XP_PER_POINT = 100;
 export const XP_MAX_PER_NODE = 10000;
 export const XP_MAX_TOTAL = 1000000;
 
+/* Modifiers. MODIFIER_MAX is how far one entry may move a score either way;
+   the other two are what a payload or a form may carry at once. */
+export const MODIFIER_MAX = 10;
+export const MODIFIERS_PER_ITEM = 12;
+export const MODIFIER_HOLDERS = 32;
+
 export const IMAGE_HOST = {
   cloudName: "w9puemf3",
   uploadPreset: "portraits",

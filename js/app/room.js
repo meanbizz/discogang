@@ -77,6 +77,9 @@ export function connect(room, name, portrait) {
   state.seats.clear();
   state.savedProgress.clear();
   state.npcs = [];
+  /* Nothing another character consumed belongs to this one. */
+  state.temporaryModifiers = {};
+  state.activeModifiers = null;
   /* Empty, which the item sieve reads as "the money and nothing else": every
      character has a purse from the first frame, holding nothing. */
   setInventory([], {});
@@ -160,6 +163,8 @@ export function leave() {
   state.seats.clear();
   state.savedProgress.clear();
   state.npcs = [];
+  state.temporaryModifiers = {};
+  state.activeModifiers = null;
   state.logEntries = [];
   state.turnEntries = [];
   state.isAdmin = false;

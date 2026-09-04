@@ -31,6 +31,9 @@ export const dom = {
   turnComposer: document.getElementById("turn-composer"),
   turnInput: document.getElementById("turn-input"),
   turnReady: document.getElementById("turn-ready"),
+  markQuote: document.getElementById("mark-quote"),
+  markAside: document.getElementById("mark-aside"),
+  markStyle: document.getElementById("mark-style"),
   turnSend: document.getElementById("turn-send"),
   turnError: document.getElementById("turn-error"),
   turnLock: document.getElementById("turn-lock"),
@@ -49,6 +52,10 @@ export const dom = {
   psycheModal: document.getElementById("psyche-modal"),
   psycheClose: document.getElementById("psyche-modal-close"),
   psycheSheet: document.getElementById("psyche-sheet"),
+
+  // What is raising and lowering this seat's scores, under the sheet
+  modifierList: document.getElementById("modifier-list"),
+  modifierEmpty: document.getElementById("modifier-empty"),
 
   // The player's own character, written to a file they keep
   sheetExport: document.getElementById("sheet-export"),
@@ -133,6 +140,7 @@ export const dom = {
   itemKeyInput: document.getElementById("item-key"),
   itemNameInput: document.getElementById("item-name-input"),
   itemDescInput: document.getElementById("item-description-input"),
+  itemModsInput: document.getElementById("item-modifiers-input"),
   itemImageInput: document.getElementById("item-image-input"),
   itemImageUrl: document.getElementById("item-image-url"),
   itemImagePreview: document.getElementById("item-image-preview"),

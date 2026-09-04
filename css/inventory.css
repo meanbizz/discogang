@@ -228,6 +228,23 @@
   min-height: 5rem;
 }
 
+.item-mods-input {
+  min-height: 4rem;
+  font-family: inherit;
+}
+
+/* What an item does to a score, wherever the item is being read. */
+.inv-tooltip-mods,
+.npc-item-mods {
+  color: var(--ready, #6fbf73);
+}
+
+.npc-item-mods {
+  display: block;
+  font-size: 0.65rem;
+  letter-spacing: 0.04em;
+}
+
 /* ---------------- One item, looked at closely ---------------- */
 
 /* Opened from inside the grid, so it sits over the dialog it came from and

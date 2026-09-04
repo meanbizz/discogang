@@ -193,6 +193,33 @@
             >
               Ready to End Turn
             </button>
+            <!-- The three pairs, written with the caret left between them -->
+            <div class="turn-marks" role="group" aria-label="Insert markup">
+              <button
+                type="button"
+                id="mark-quote"
+                class="option turn-mark"
+                title="Verbal — something said aloud"
+              >
+                ""
+              </button>
+              <button
+                type="button"
+                id="mark-aside"
+                class="option turn-mark"
+                title="Non verbal — something done"
+              >
+                ()
+              </button>
+              <button
+                type="button"
+                id="mark-style"
+                class="option turn-mark"
+                title="Style — how it is done"
+              >
+                **
+              </button>
+            </div>
             <p
               id="turn-error"
               class="error turn-error"
@@ -380,6 +407,25 @@
             ×
           </button>
           <div id="psyche-sheet" class="psyche-sheet"></div>
+
+          <!-- What is moving those numbers, and what put it there -->
+          <section
+            class="psyche-modifiers"
+            aria-labelledby="modifier-list-title"
+          >
+            <h3 id="modifier-list-title" class="psyche-modifiers-title">
+              What is working on you
+            </h3>
+            <div
+              id="modifier-list"
+              class="modifier-list"
+              role="list"
+              aria-label="Active modifiers"
+            ></div>
+            <p id="modifier-empty" class="inv-empty modifier-empty">
+              Nothing is helping or hindering you.
+            </p>
+          </section>
         </div>
       </div>
 
@@ -412,38 +458,6 @@
             role="list"
             aria-label="Your items"
           ></div>
-        </div>
-      </div>
-
-      <!-- Goals Modal — the player's own dashboard, read only -->
-      <div id="goals-modal" class="modal" hidden>
-        <div class="modal-backdrop" data-close="true"></div>
-        <div
-          class="modal-card modal-card-wide goals-modal-card"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="goals-modal-title"
-        >
-          <button
-            type="button"
-            id="goals-modal-close"
-            class="modal-close"
-            aria-label="Close goals"
-          >
-            ×
-          </button>
-
-          <h2 id="goals-modal-title" class="modal-name">What you are after</h2>
-
-          <div
-            id="goals-list"
-            class="goals-list"
-            role="list"
-            aria-label="Your goals"
-          ></div>
-          <p id="goals-empty" class="inv-empty goals-empty">
-            Nothing is asked of you yet.
-          </p>
         </div>
       </div>
 
@@ -624,8 +638,7 @@
                 ></textarea>
               </div>
 
-              <div class="field">
-                <label for="item-image-input">Thumbnail</label>
+
                 <div class="portrait-picker">
                   <div
                     id="item-image-preview"
@@ -705,29 +718,6 @@
         </div>
       </div>
     </main>
-
-    <!-- One item, looked at closely — opened from the inventory grid -->
-    <div id="item-view-modal" class="modal item-view-modal" hidden>
-      <div class="modal-backdrop" data-close="true"></div>
-      <div
-        class="modal-card"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="item-view-name"
-      >
-        <button
-          type="button"
-          id="item-view-close"
-          class="modal-close"
-          aria-label="Close item"
-        >
-          ×
-        </button>
-        <img id="item-view-image" class="item-view-image" alt="" hidden />
-        <p id="item-view-name" class="modal-name">—</p>
-        <p id="item-view-text" class="item-view-text"></p>
-      </div>
-    </div>
 
     <!-- Item tooltip: fixed to the viewport, so it lives outside the modals -->
     <div

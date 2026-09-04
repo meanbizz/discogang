@@ -28,7 +28,9 @@ export function progressPayload() {
   return {
     type: "progress",
     xp: xpPayload(),
-    skills: skillScores(state.sheetState),
+    /* What a check is actually written against, modifiers and all — the
+       administrateur reads these to know what the table can do right now. */
+    skills: skillScores(state.sheetState, state.activeModifiers),
     allocated: allocatedPoints(state.sheetState),
   };
 }

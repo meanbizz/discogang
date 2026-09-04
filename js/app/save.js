@@ -33,6 +33,7 @@ import { applyScene, setNpcs } from "./scene.js";
 import { setInventory } from "./inventory.js";
 import { setGoals } from "./goals.js";
 import { setStatusRolls } from "./status.js";
+import { setTemporaryModifiers } from "./modifiers.js";
 import { adoptProgress } from "./progress.js";
 import { replaceRounds, showDialogueHistory } from "./rounds.js";
 
@@ -64,6 +65,7 @@ export function exportSession() {
     goals: state.goals,
     down: state.down,
     kia: state.kia,
+    modifiers: state.temporaryModifiers,
     scene: state.scene,
     dialogue: state.dialoguePayload,
     rounds: state.dialogueRounds,
@@ -177,6 +179,8 @@ export function applySession(snap) {
   setGoals(snap.goals);
   /* Put back as written, and silently: a restore is not somebody being hit. */
   setStatusRolls(snap);
+  /* Whatever the table had consumed, still working on them. */
+  setTemporaryModifiers(snap.modifiers);
   applyScene(snap.scene);
 
   showDialogueHistory(state.dialogueRounds);

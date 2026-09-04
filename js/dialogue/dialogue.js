@@ -20,7 +20,7 @@ import { appendToLog, buildEntry, vitalsNote, voiceOf } from "./entry.js";
 export { cleanPayload, parsePayload, pickTree } from "./sanitize.js";
 export { hasTreeFor, renderRound } from "./transcript.js";
 /* The app hands the reader's sheet over; passive checks are weighed on it. */
-export { setSheet, PASSIVE_BONUS } from "./passive.js";
+export { setSheet, setModifiers, PASSIVE_BONUS } from "./passive.js";
 /* A choice made here is kept by the app, so it needs the same vocabulary. */
 export {
   cleanChoice,

@@ -23,6 +23,7 @@ import { skillScore } from "../vitals.js";
 export const PASSIVE_BONUS = 6;
 
 let sheet = null;
+let modifiers = null;
 
 export function setSheet(next) {
   sheet = next || null;
@@ -32,13 +33,32 @@ export function getSheet() {
   return sheet;
 }
 
+/* What is raising and lowering this reader's scores. A passive is weighed
+   against the sheet as it stands, which includes whatever is working on it. */
+export function setModifiers(next) {
+  modifiers = next || null;
+}
+
+export function getModifiers() {
+  return modifiers;
+}
+
 /* What the reader's own sheet is worth to a check, or null when there is
    nothing to reckon with: no skill named, an unknown one, or no sheet at all. */
 export function skillValue(check) {
   if (!sheet || !check || !check.skill) return null;
   const found = findSkill(check.skill);
   if (!found) return null;
-  return skillScore(sheet, found.id);
+  return skillScore(sheet, found.id, modifiers);
+}
+
+/* How much of that score is borrowed rather than earned, so the breakdown can
+   say where the number came from. */
+export function modifierValue(check) {
+  if (!sheet || !check || !check.skill) return 0;
+  const found = findSkill(check.skill);
+  if (!found) return 0;
+  return skillScore(sheet, found.id, modifiers) - skillScore(sheet, found.id, null);
 }
 
 /* What the reader brings to a passive check: the sheet, plus the standing

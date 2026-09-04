@@ -29,6 +29,7 @@ import {
   CURRENCY_MARK,
   CURRENCY_NAME,
 } from "../inventory/items.js";
+import { refreshModifiers } from "./modifiers.js";
 import { state, isSelfDown, isSelfKia } from "./state.js";
 import { network, broadcast, sendUpstream } from "./net.js";
 import { planningUnlocked } from "./locks.js";
@@ -60,6 +61,8 @@ function describeHeld(name, count) {
     name: known ? known.name : itemName(name),
     image: known ? known.image : null,
     description: known ? known.description : "",
+    /* What carrying it does to a score, for the tooltip and the item view. */
+    modifiers: known && known.modifiers ? known.modifiers : [],
     count,
     currency,
     mark: currency ? CURRENCY_MARK : "",
@@ -144,6 +147,8 @@ export function setInventory(rawItems, rawInventories, announce) {
   /* Thumbnails are held the moment they are known, so the grid never waits. */
   state.items.forEach((item) => holdImage(item.image));
   refreshViews();
+  /* A bag that moved is a set of modifiers that moved with it. */
+  refreshModifiers();
 
   if (announce) announceMoney(before, selfMoney());
 }
@@ -246,6 +251,7 @@ export function editItem(name) {
   dom.itemKeyInput.value = item.name;
   dom.itemNameInput.value = item.name;
   dom.itemDescInput.value = item.description || "";
+  modals.paintItemModifiers(item.modifiers);
   dom.itemImageUrl.value = item.image || "";
   modals.setStagedItemImage(item.image || null);
   modals.paintItemPreview(item.name, item.image);
@@ -290,6 +296,7 @@ export function removeItem(name) {
   if (itemKey(dom.itemKeyInput.value) === key) modals.resetItemForm();
   publishState();
   refreshViews();
+  refreshModifiers();
 }
 
 function emptied(bar) {
@@ -308,6 +315,7 @@ export function submitItemForm() {
     name: dom.itemNameInput.value,
     image: modals.getStagedItemImage(),
     description: dom.itemDescInput.value,
+    modifiers: modals.readItemModifiers(),
   });
   if (!cleaned) {
     dom.itemFormError.textContent = "An item needs a name.";
@@ -338,6 +346,7 @@ export function submitItemForm() {
     existing.name = cleaned.name;
     existing.image = cleaned.image;
     existing.description = cleaned.description;
+    existing.modifiers = cleaned.modifiers;
   } else {
     state.items.push(cleaned);
   }
@@ -346,6 +355,8 @@ export function submitItemForm() {
   modals.resetItemForm();
   publishState();
   refreshViews();
+  /* The catalogue said what this item does, so what it is doing has changed. */
+  refreshModifiers();
 }
 
 /* ---------------- Import ---------------- */

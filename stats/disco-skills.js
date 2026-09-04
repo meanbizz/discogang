@@ -216,6 +216,7 @@
   var ATTR_MIN = 1;
   var ATTR_MAX = 6;
   var SKILL_POINT_MAX = 10;
+  var MOD_MAX = 20;
   var CONDENSE_AT = 15; // single word longer than this gets horizontally squeezed
   var TOOLTIP_GAP = 8;
   var uid = 0;
@@ -331,6 +332,28 @@
     };
   }
 
+  /* What is currently working on the character: a movement per skill and per
+     attribute. Only targets this build knows are kept, and only whole numbers.
+     The sheet prints these; it never decides them. */
+  function mergeModifiers(incoming) {
+    if (!incoming || typeof incoming !== "object") return null;
+    var out = { skills: {}, attributes: {} };
+    var move = function (value) {
+      var number = Math.round(Number(value));
+      return isFinite(number) && number ? clamp(number, -MOD_MAX, MOD_MAX) : 0;
+    };
+
+    ATTRIBUTES.forEach(function (attribute) {
+      var owner = incoming.attributes ? move(incoming.attributes[attribute.id]) : 0;
+      if (owner) out.attributes[attribute.id] = owner;
+      attribute.skills.forEach(function (skill) {
+        var one = incoming.skills ? move(incoming.skills[skill.id]) : 0;
+        if (one) out.skills[skill.id] = one;
+      });
+    });
+    return out;
+  }
+
   function DiscoSkillSheet(root, options) {
     if (!root) throw new Error("DiscoSkillSheet: a root element is required");
     options = options || {};
@@ -349,6 +372,7 @@
       typeof options.onSpend === "function" ? options.onSpend : null;
     this.state = mergeState(options.state);
     this.ledger = mergeLedger(options.ledger);
+    this.modifiers = mergeModifiers(options.modifiers);
     this.uid = "des-" + ++uid;
     this.tooltip = null;
 
@@ -405,14 +429,46 @@
     return this.ledger ? JSON.parse(JSON.stringify(this.ledger)) : null;
   };
 
-  /* skill score = its attribute + allocated points + signature bonus */
-  DiscoSkillSheet.prototype.scoreOf = function (skillId) {
+  /* An item picked up or a draught wearing off. Every card's number reads off
+     this, so it is a full render — the same as the ledger. */
+  DiscoSkillSheet.prototype.setModifiers = function (modifiers) {
+    this.modifiers = mergeModifiers(modifiers);
+    this.render();
+  };
+
+  DiscoSkillSheet.prototype.getModifiers = function () {
+    return this.modifiers ? JSON.parse(JSON.stringify(this.modifiers)) : null;
+  };
+
+  /* base score = its attribute + allocated points + signature bonus */
+  DiscoSkillSheet.prototype.baseScoreOf = function (skillId) {
     var owner = this._attributeOf(skillId);
     var skill = this.state.skills[skillId];
     if (!owner || !skill) return 0;
     return (
       this.state.attributes[owner.id] + skill.points + (skill.signature ? 1 : 0)
     );
+  };
+
+  DiscoSkillSheet.prototype.attributeBonus = function (attributeId) {
+    if (!this.modifiers) return 0;
+    return this.modifiers.attributes[attributeId] || 0;
+  };
+
+  /* Everything working on one skill: its own modifiers and its attribute's. */
+  DiscoSkillSheet.prototype.modifierOf = function (skillId) {
+    if (!this.modifiers) return 0;
+    var owner = this._attributeOf(skillId);
+    return (
+      (this.modifiers.skills[skillId] || 0) +
+      (owner ? this.attributeBonus(owner.id) : 0)
+    );
+  };
+
+  /* What the card prints, and what a check is written against. */
+  DiscoSkillSheet.prototype.scoreOf = function (skillId) {
+    if (!this.state.skills[skillId]) return 0;
+    return Math.max(0, this.baseScoreOf(skillId) + this.modifierOf(skillId));
   };
 
   /* How many more points this skill has room for: one slot per point of its
@@ -611,13 +667,20 @@
   DiscoSkillSheet.prototype._renderAttribute = function (attribute) {
     var self = this;
     var value = this.state.attributes[attribute.id];
+    /* The stepper, the pips and the room a point can go into stay on the
+       sheet's own number: borrowed room would strand a point when it lapses. */
+    var moved = this.attributeBonus(attribute.id);
 
     var holder = el("div", "des-attribute-holder");
     var aside = el("aside", "des-attribute");
 
     var valueRow = el("div", "des-attribute-value-row");
     var number = el("p", "des-attribute-value");
-    number.textContent = String(value);
+    number.textContent = String(Math.max(0, value + moved));
+    if (moved) {
+      number.setAttribute("data-modified", moved > 0 ? "up" : "down");
+      number.title = attribute.name + " base " + value;
+    }
     valueRow.appendChild(number);
 
     if (this.editable) {
@@ -681,6 +744,7 @@
     var self = this;
     var data = this.state.skills[skill.id];
     var bonus = data.points + (data.signature ? 1 : 0);
+    var moved = this.modifierOf(skill.id);
     var selected = this.state.selected === skill.id;
     var attrValue = this.state.attributes[attribute.id];
     var room = this.roomOf(skill.id);
@@ -693,7 +757,9 @@
       "aria-pressed": selected ? "true" : "false",
       "aria-label": skill.name + ", score " + this.scoreOf(skill.id),
     });
-    if (bonus === 0) card.classList.add("is-inert");
+    /* Something working on it is reason enough for the art to wake up. */
+    if (bonus === 0 && !moved) card.classList.add("is-inert");
+    if (moved) card.classList.add("is-modified");
     if (selected) {
       card.classList.add("is-selected");
       card.setAttribute("aria-describedby", this.uid + "-tooltip");
@@ -735,6 +801,14 @@
 
     var score = el("p", "des-card-score");
     score.textContent = String(this.scoreOf(skill.id));
+    if (moved) {
+      score.setAttribute("data-modified", moved > 0 ? "up" : "down");
+      score.title =
+        (moved > 0 ? "Raised by " : "Lowered by ") +
+        Math.abs(moved) +
+        " — base " +
+        this.baseScoreOf(skill.id);
+    }
     card.appendChild(score);
 
     /* pips: one filled diamond for a signature skill, then the attribute's

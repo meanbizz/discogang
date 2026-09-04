@@ -35,6 +35,7 @@ import { latestPayload } from "../export/rounds.js";
 import { cleanOps } from "../inventory/items.js";
 import { cleanGoalOps } from "../goals/goals.js";
 import { cleanStatusOrders } from "../status/status.js";
+import { cleanTemporaryOps } from "../modifiers/modifiers.js";
 import {
   state,
   isFloored,
@@ -62,6 +63,7 @@ import { applySession } from "./save.js";
 import { commitOps, inventoryPayload, setInventory } from "./inventory.js";
 import { commitGoalOps, setGoals } from "./goals.js";
 import { commitDown, commitStatusOps, setStatusRolls } from "./status.js";
+import { commitModifierOps, setTemporaryModifiers } from "./modifiers.js";
 import { adoptProgress, publishProgress } from "./progress.js";
 import {
   acceptChoice,
@@ -160,6 +162,9 @@ function onHostReceiveData(connection, data) {
          same plates as everybody else. */
       down: state.down,
       kia: state.kia,
+      /* What each seat has consumed, so a joiner's cards read like everybody
+         else's copy of them. */
+      modifiers: state.temporaryModifiers,
       dialogue: state.dialoguePayload,
       /* Each round carries what was chosen in it, so a joiner inherits the
          whole record and not just the trees. */
@@ -308,6 +313,15 @@ function onHostReceiveData(connection, data) {
     return;
   }
 
+  /* What was consumed moves here too, so every card agrees with this one. */
+  if (data.type === "modifier-ops") {
+    if (!person?.admin) return;
+    const asked = cleanTemporaryOps(data.ops);
+    if (!asked) return;
+    commitModifierOps(asked);
+    return;
+  }
+
   /* The administrateur edited the catalogue, which can rename what people
      already carry but never moves a count, so there is nothing to announce. */
   if (data.type === "inventory-state") {
@@ -380,6 +394,7 @@ function firstWelcome(data, current, live) {
   setInventory(data.items, data.inventories);
   setGoals(data.goals);
   setStatusRolls(data);
+  setTemporaryModifiers(data.modifiers);
 
   /* A save the room already read may hold this seat's ledger. Adopting it
      publishes; otherwise the table is simply told what this seat brought. */
@@ -457,6 +472,8 @@ function laterWelcome(data, current, live) {
   /* Going down while the wire was gone is a state correction, like money: the
      plate is right either way, and there is no scene to announce it over. */
   setStatusRolls(data);
+  /* Whatever wore off while the wire was down has worn off. */
+  setTemporaryModifiers(data.modifiers);
 
   /* This seat's own ledger is the better copy; the host is simply reminded
      of it. */
@@ -605,6 +622,12 @@ function onGuestReceiveData(data) {
      killed, so it is announced. */
   if (data.type === "status") {
     setStatusRolls(data, true);
+    return;
+  }
+
+  /* The live path: the host has just been told what somebody consumed. */
+  if (data.type === "modifiers") {
+    setTemporaryModifiers(data.modifiers);
     return;
   }
 

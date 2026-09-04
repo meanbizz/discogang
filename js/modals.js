@@ -27,6 +27,12 @@
 import { dom } from "./dom.js";
 import { paintThumb, clearThumb, cleanName } from "./utils.js";
 import { isCurrency, CURRENCY_MARK } from "./inventory/items.js";
+import {
+  describeModifierList,
+  describeSource,
+  parseModifierLines,
+  writeModifierLines,
+} from "./modifiers/modifiers.js";
 import { refreshVitals } from "./vitals.js";
 import * as sfx from "./audio/sfx.js";
 
@@ -153,6 +159,7 @@ export function openPsyche(sheetState, options) {
       upgradable: true,
       state: sheetState,
       ledger: opts.ledger || null,
+      modifiers: opts.modifiers || null,
       onChange: (next) => {
         if (psycheHandlers.onChange) psycheHandlers.onChange(next);
         refreshVitals(next, false);
@@ -169,7 +176,10 @@ export function openPsyche(sheetState, options) {
   } else if (sheetInstance) {
     sheetInstance.setState(sheetState, true);
     sheetInstance.setLedger(opts.ledger || null);
+    sheetInstance.setModifiers(opts.modifiers || null);
   }
+
+  renderModifierList(opts.modifiers);
 
   /* Measured again now that the cards are laid out, in case a render happened
      on the frame the dialog was still coming up. */
@@ -195,6 +205,33 @@ export function closePsyche() {
    the header repaints, so a selected card and its tooltip stay put. */
 export function refreshPsycheLedger(ledger) {
   if (sheetInstance && sheetInstance.setLedger) sheetInstance.setLedger(ledger);
+}
+
+/* What is raising and lowering the numbers on the cards, under the cards. Read
+   only: an item in the bag or a payload's order is the only way onto this list. */
+export function renderModifierList(active) {
+  if (!dom.modifierList) return;
+  const sources = active && Array.isArray(active.sources) ? active.sources : [];
+  dom.modifierList.textContent = "";
+  if (dom.modifierEmpty) dom.modifierEmpty.hidden = sources.length > 0;
+
+  sources.forEach((entry) => {
+    const row = document.createElement("p");
+    row.className = "modifier-row";
+    row.setAttribute("role", "listitem");
+    if (entry.temporary) row.classList.add("is-temporary");
+    row.dataset.direction = entry.amount > 0 ? "up" : "down";
+    row.textContent = describeSource(entry);
+    dom.modifierList.appendChild(row);
+  });
+}
+
+/* A bag or a payload moved something while the sheet was open. */
+export function refreshModifiers(active) {
+  if (sheetInstance && sheetInstance.setModifiers) {
+    sheetInstance.setModifiers(active || null);
+  }
+  renderModifierList(active);
 }
 
 export function getSheetInstance() {
@@ -371,6 +408,14 @@ function toggleItemTooltip(anchor, item) {
   tip.appendChild(title);
   tip.appendChild(body);
 
+  const moved = describeModifierList(item.modifiers);
+  if (moved) {
+    const mods = document.createElement("p");
+    mods.className = "inv-tooltip-text inv-tooltip-mods";
+    mods.textContent = "While carried: " + moved;
+    tip.appendChild(mods);
+  }
+
   /* A purse says what is in it, since its square carries a number rather than
      a count of things. */
   if (item.currency) {
@@ -504,6 +549,8 @@ export function openItemView(item) {
     if (item.currency) {
       body += "\nYou currently have " + (item.count || 0) + ".";
     }
+    const moved = describeModifierList(item.modifiers);
+    if (moved) body += "\nWhile carried: " + moved;
     dom.itemViewText.textContent = body;
   }
 
@@ -628,11 +675,23 @@ export function paintItemPreview(name, image) {
   });
 }
 
+/* The form's own shorthand, one skill a line. Written out titled, read back
+   through the same sieve a payload goes through. */
+export function paintItemModifiers(list) {
+  if (!dom.itemModsInput) return;
+  dom.itemModsInput.value = writeModifierLines(list);
+}
+
+export function readItemModifiers() {
+  return dom.itemModsInput ? parseModifierLines(dom.itemModsInput.value) : [];
+}
+
 export function resetItemForm() {
   if (!dom.itemForm) return;
   dom.itemKeyInput.value = "";
   dom.itemNameInput.value = "";
   dom.itemDescInput.value = "";
+  paintItemModifiers([]);
   dom.itemImageUrl.value = "";
   dom.itemImageInput.value = "";
   stagedItemImage = null;
@@ -675,6 +734,15 @@ export function renderItemList(list, onEdit, onRemove) {
     name.className = "npc-item-name";
     name.textContent = item.name;
     name.title = item.description || item.name;
+
+    /* What it does to a score, so the listing says it without being opened. */
+    const moved = describeModifierList(item.modifiers);
+    if (moved) {
+      const mods = document.createElement("span");
+      mods.className = "npc-item-mods";
+      mods.textContent = moved;
+      name.appendChild(mods);
+    }
 
     const actions = document.createElement("div");
     actions.className = "npc-item-actions";

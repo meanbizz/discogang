@@ -36,7 +36,7 @@
 
 /* Plans from a scene already played out stay on the board, only quieter. */
 .turn-entry[data-stale="true"] {
-  opacity: 0.5;
+  opacity: 0.6;
 }
 
 /* One round's plans ruled off from the next. The flag sits on the last plan
@@ -88,8 +88,23 @@
   flex: 0 0 auto;
 }
 
-.turn-composer #turn-send {
+/* The markup pairs and Send share the right of the row; Ready keeps the left. */
+.turn-marks {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 0.4rem;
   margin-left: auto;
+  margin-right: 0.4rem;
+}
+
+.turn-mark {
+  padding: 0.1rem 0.6rem;
+  font-size: 0.95rem;
+  letter-spacing: 0.08em;
+}
+
+.turn-composer #turn-send {
+  margin-left: 0;
 }
 
 .turn-error {

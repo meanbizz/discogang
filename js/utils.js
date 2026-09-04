@@ -170,6 +170,21 @@ export function paintMarkup(target, text) {
   }
 }
 
+/* One of the markup pairs written at the end of a field, with the caret left
+   between the two marks. Spacing follows the field, the way a named item does. */
+export function appendPair(input, open, close) {
+  if (!input) return;
+  const body = String(input.value == null ? "" : input.value);
+  const lead = !body || /\s$/.test(body) ? body : body + " ";
+  const next = lead + open + close;
+  if (input.maxLength > 0 && next.length > input.maxLength) return;
+
+  input.value = next;
+  const caret = next.length - close.length;
+  input.focus();
+  if (input.setSelectionRange) input.setSelectionRange(caret, caret);
+}
+
 export function copyText(text, done) {
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(text).then(

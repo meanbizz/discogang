@@ -27,6 +27,7 @@ import { publishDialogue } from "./rounds.js";
 import { publishOps, selfItems, usedItemLines } from "./inventory.js";
 import { goalLines, publishGoalOps, selfGoals } from "./goals.js";
 import { publishStatusOps } from "./status.js";
+import { modifierLines, publishModifierOps } from "./modifiers.js";
 import { skillLines } from "./progress.js";
 
 export function setSelfReady(next) {
@@ -60,10 +61,18 @@ export function shareText(text) {
   }
 
   const attempt = dialogue.parsePayload(text);
-  if (attempt.payload || attempt.inventory || attempt.goals || attempt.status) {
+  if (
+    attempt.payload ||
+    attempt.inventory ||
+    attempt.goals ||
+    attempt.status ||
+    attempt.modifiers
+  ) {
     /* Rolls first: a seat this payload puts down reads no tree inside it. */
     if (attempt.status) publishStatusOps(attempt.status);
     if (attempt.inventory) publishOps(attempt.inventory);
+    /* What was consumed, before any tree is read against the scores it moves. */
+    if (attempt.modifiers) publishModifierOps(attempt.modifiers);
     if (attempt.goals) publishGoalOps(attempt.goals);
     if (attempt.payload) publishDialogue(attempt.payload, attempt.raw);
     else renderEntry({ text: attempt.raw, at: Date.now(), raw: true });
@@ -147,6 +156,7 @@ export function exportTurns() {
   const fresh = state.turnEntries.filter((entry) => !entry.stale);
   const used = usedItemLines(fresh.map((entry) => entry.text));
   const skills = skillLines();
+  const mods = modifierLines();
   const goals = goalLines();
   const down = state.down;
   const kia = state.kia;
@@ -163,6 +173,11 @@ export function exportTurns() {
   }
   if (skills.length) {
     parts.push("# Players skills\n" + skills.join("\n"));
+  }
+  /* The scores above already carry these; they are named separately so the
+     administrateur can see what will stop carrying them. */
+  if (mods.length) {
+    parts.push("# Players active modifiers\n" + mods.join("\n"));
   }
   /* The administrateur has no modal for goals, so this is their only reading
      of what the table is chasing. */
@@ -196,6 +211,7 @@ export function exportCharacter() {
     sheetState: state.sheetState,
     items: selfItems(),
     goals: selfGoals(),
+    modifiers: state.activeModifiers,
     vitals,
   });
 

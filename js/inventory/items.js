@@ -20,6 +20,7 @@
    No DOM and no network. */
 
 import { cleanImageUrl } from "../utils.js";
+import { cleanModifiers } from "../modifiers/modifiers.js";
 
 export const INVENTORY_KEY = "inventory";
 
@@ -108,6 +109,7 @@ export function currencyItem() {
     name: CURRENCY_NAME,
     image: null,
     description: CURRENCY_DESC,
+    modifiers: [],
   };
 }
 
@@ -125,6 +127,8 @@ export function cleanItem(raw) {
     name,
     image: cleanImageUrl(raw.image),
     description: body(raw.description, DESC_MAX),
+    /* What carrying it does to a score, for as long as it is carried. */
+    modifiers: cleanModifiers(raw.modifiers),
   };
 }
 
@@ -286,11 +290,15 @@ function remember(items, asked) {
       name: asked.name,
       image: asked.image,
       description: asked.description,
+      modifiers: asked.modifiers,
     });
     return;
   }
   if (asked.image) found.image = asked.image;
   if (asked.description) found.description = asked.description;
+  if (asked.modifiers && asked.modifiers.length) {
+    found.modifiers = asked.modifiers;
+  }
 }
 
 function give(bag, asked) {

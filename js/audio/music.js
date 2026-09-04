@@ -29,6 +29,9 @@ let duckTimer = null;
 let pollTimer = null;
 let pollTries = 0;
 
+/* YT.PlayerState.ENDED, which is not to be relied on being loaded yet. */
+const ENDED = 0;
+
 function apiPresent() {
   return Boolean(window.YT && typeof window.YT.Player === "function");
 }
@@ -255,7 +258,10 @@ function createPlayer(track) {
         describeTrack();
         refreshAudioUnlockButton();
       },
-      onStateChange: describeTrack,
+      onStateChange: (event) => {
+        describeTrack();
+        if (event && event.data === ENDED) replayFromStart();
+      },
       onError: () => {
         if (dom.deckError) {
           dom.deckError.textContent = "That video refused to play here.";
@@ -263,6 +269,20 @@ function createPlayer(track) {
       },
     },
   });
+}
+
+/* The track ran out and nothing newer was asked for, so it goes round again
+   from the top at the level it was already playing at — a loop, not a fade. */
+function replayFromStart() {
+  if (!player || !currentTrack) return;
+  try {
+    player.seekTo(0, true);
+    if (audioUnlocked) player.unMute();
+    player.playVideo();
+  } catch (error) {
+    /* not ready */
+  }
+  applyVolume(level);
 }
 
 function fadeOutAndStop() {

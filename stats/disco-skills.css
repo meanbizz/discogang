@@ -388,6 +388,25 @@
   cursor: default;
 }
 
+/* A number that is not the sheet's own says so, on the card and above it. */
+.des-card-score[data-modified="up"],
+.des-attribute-value[data-modified="up"] {
+  color: var(--des-point);
+}
+
+.des-card-score[data-modified="down"],
+.des-attribute-value[data-modified="down"] {
+  color: #c9615a;
+}
+
+.des-card.is-modified {
+  border-color: rgba(200, 162, 74, 0.35);
+}
+
+.des-card.is-modified.is-selected {
+  border-color: var(--des-accent);
+}
+
 /* ---------- tooltip ---------- */
 
 .des-tooltip {

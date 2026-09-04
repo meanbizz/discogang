@@ -22,6 +22,10 @@ import {
   skillScores,
   skillTitle,
 } from "../sheet.js";
+import {
+  describeModifierList,
+  describeSource,
+} from "../modifiers/modifiers.js";
 import { stamp } from "./file.js";
 
 export const CHARACTER_KIND = "salon-character";
@@ -55,9 +59,10 @@ function attributesOf(sheetState) {
 
 /* points and signature are the two fields the sheet reads back; name and
    score are for the reader. */
-function skillsOf(sheetState) {
+function skillsOf(sheetState, active) {
   const held = (sheetState && sheetState.skills) || {};
-  const scores = skillScores(sheetState);
+  const base = skillScores(sheetState);
+  const scores = skillScores(sheetState, active);
   const out = {};
   orderedSkillIds().forEach((id) => {
     const skill = held[id] || {};
@@ -65,10 +70,26 @@ function skillsOf(sheetState) {
       name: skillTitle(id),
       points: count(skill.points, 0),
       signature: Boolean(skill.signature),
+      /* What the card printed, and the sheet alone underneath it. */
       score: own(scores, id) ? scores[id] : 0,
+      base: own(base, id) ? base[id] : 0,
     };
   });
   return out;
+}
+
+/* What was working on the character when the file was written, and what put it
+   there. Read back by nothing — it is for whoever opens the file. */
+function modifiersOf(active) {
+  const sources = active && Array.isArray(active.sources) ? active.sources : [];
+  return sources.map((entry) => ({
+    kind: String(entry.kind || ""),
+    target: String(entry.target || ""),
+    amount: Math.round(Number(entry.amount)) || 0,
+    from: String(entry.from || ""),
+    temporary: Boolean(entry.temporary),
+    reads: describeSource(entry),
+  }));
 }
 
 /* The bag as the grid shows it. Nameless entries cannot be anything, so they
@@ -80,6 +101,7 @@ function inventoryOf(list) {
       name: String(item && item.name ? item.name : ""),
       count: count(item && item.count, 0),
       description: String(item && item.description ? item.description : ""),
+      modifiers: describeModifierList(item && item.modifiers),
       image: item && item.image ? item.image : null,
     }))
     .filter((item) => item.name);
@@ -113,9 +135,10 @@ export function snapshot(source) {
     savedAt: new Date().toISOString(),
     name: cleanName(from.name),
     attributes: attributesOf(from.sheetState),
-    skills: skillsOf(from.sheetState),
+    skills: skillsOf(from.sheetState, from.modifiers),
     inventory: inventoryOf(from.items),
     goals: goalsOf(from.goals),
+    modifiers: modifiersOf(from.modifiers),
     vitals: {
       health: barOf(from.vitals && from.vitals.health),
       morale: barOf(from.vitals && from.vitals.morale),

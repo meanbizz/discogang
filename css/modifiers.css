@@ -1,0 +1,63 @@
+/* css/modifiers.css */
+
+/* What is working on the character, under their cards. Two kinds on one list:
+   what they carry, which moves single skills, and what they took, which moves
+   a whole attribute and only lasts as long as the administrateur says. */
+
+.psyche-modifiers {
+  margin-top: 1rem;
+  padding-top: 0.8rem;
+  border-top: var(--hairline);
+}
+
+.psyche-modifiers-title {
+  margin: 0 0 0.6rem;
+  color: var(--text-old);
+  font-size: 0.78rem;
+  font-weight: normal;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.modifier-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  justify-content: center;
+  gap: 0.35rem 0.5rem;
+}
+
+.modifier-row {
+  margin: 0;
+  padding: 0.2rem 0.55rem;
+  background: var(--bg-sunk);
+  border: var(--hairline);
+  color: var(--text-now);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+}
+
+.modifier-row[data-direction="up"] {
+  border-color: var(--ready, #6fbf73);
+  color: var(--ready, #6fbf73);
+}
+
+.modifier-row[data-direction="down"] {
+  border-color: #c9615a;
+  color: #c9615a;
+}
+
+/* Borrowed rather than earned: a temporary reads as a note, not a score. */
+.modifier-row.is-temporary {
+  font-style: italic;
+  border-style: dashed;
+}
+
+.modifier-empty {
+  margin: 0.5rem 0 0;
+}
+
+.modifier-empty[hidden] {
+  display: none;
+}
