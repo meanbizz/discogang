@@ -98,7 +98,19 @@ function evictGhost(name, keepPeerId) {
   });
 }
 
+/* One payload, handled once: a wire that ended up with more than one data
+   listener hands the same object over again, so identity marks the repeat. */
+const handled = new WeakSet();
+
+function seen(data) {
+  if (!data || typeof data !== "object") return false;
+  if (handled.has(data)) return true;
+  handled.add(data);
+  return false;
+}
+
 function onHostReceiveData(connection, data) {
+  if (seen(data)) return;
   const person = state.roster.get(connection.peer);
 
   if (data.type === "hello") {
@@ -211,7 +223,8 @@ function onHostReceiveData(connection, data) {
       text: plan,
       at: Date.now(),
     };
-    commitTurn(planned);
+    /* Not taken, not relayed: a repeat must not be sent to the table. */
+    if (!commitTurn(planned)) return;
     broadcast({ type: "turn", turn: planned });
     return;
   }
@@ -526,6 +539,7 @@ function onWelcome(data) {
 }
 
 function onGuestReceiveData(data) {
+  if (seen(data)) return;
   if (data.type === "welcome") {
     onWelcome(data);
     return;

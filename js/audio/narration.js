@@ -12,6 +12,7 @@
 
 import { NARRATION } from "../config.js";
 import { halt, start } from "./channel.js";
+import * as volume from "./volume.js";
 
 const clips = new Map();
 
@@ -131,9 +132,15 @@ function fetchClip(text, signal) {
     });
 }
 
+/* A dial moved mid-line: the clip in hand follows it rather than waiting for
+   the next one. */
+volume.onChange(() => {
+  if (audio) audio.volume = volume.apply("narration", NARRATION.volume);
+});
+
 function play(url, mine) {
   const voice = new Audio(url);
-  voice.volume = NARRATION.volume;
+  voice.volume = volume.apply("narration", NARRATION.volume);
   audio = voice;
 
   voice.onended = () => {

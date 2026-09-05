@@ -26,6 +26,7 @@
 
 import { TIMING } from "../timing.js";
 import { halt, rewind, start } from "./channel.js";
+import * as volume from "./volume.js";
 
 export const JINGLE_SRC = {
   intellect: "sounds/interface-skill-passiveINT.wav",
@@ -98,6 +99,24 @@ function own(map, key) {
   );
 }
 
+/* The cancel blip is deliberately a third under the rest of them. */
+const CANCEL_SHARE = 2 / 3;
+
+/* What one clip should be playing at: its own share of the cue level, scaled
+   by wherever the dial stands. */
+function levelFor(src) {
+  const own = src === UI_SRC.cancel ? CANCEL_SHARE : 1;
+  return volume.apply("sfx", TIMING.sound.volume * own);
+}
+
+/* A dial moved mid-cue: every clip in memory follows it, so whatever is
+   ringing right now goes with it. */
+volume.onChange(() => {
+  Object.keys(cache).forEach((src) => {
+    cache[src].volume = levelFor(src);
+  });
+});
+
 function clip(src) {
   if (!cache[src]) {
     const audio = new Audio();
@@ -111,7 +130,7 @@ function clip(src) {
     cache[src] = audio;
   }
   /* Set every time, so a cached clip picks up the current level. */
-  cache[src].volume = TIMING.sound.volume;
+  cache[src].volume = levelFor(src);
   return cache[src];
 }
 
@@ -293,12 +312,10 @@ export function playClick() {
 }
 
 /* A dialog dismissed, whichever one it was — a third under the rest, since a
-   panel closing is the least of what the interface says. clip() sets the
-   level on every call, so this only ever holds for the one clip. */
+   panel closing is the least of what the interface says. levelFor is what
+   holds it there, so nothing is set after the fact. */
 export function playCancel() {
   run(channels.ui, UI_SRC.cancel, { onEnd: null });
-  const voice = channels.ui.voice;
-  if (voice) voice.volume = Math.max(0, TIMING.sound.volume * (2 / 3));
 }
 
 /* A dialog opened, whichever one it was: a switch thrown, answering the press

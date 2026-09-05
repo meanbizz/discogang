@@ -15,7 +15,7 @@ import {
   goalKey,
   goalsFor,
 } from "../goals/goals.js";
-import { grantXp } from "../xp.js";
+import { grantGoalXp } from "../xp.js";
 import { state } from "./state.js";
 import { network, broadcast, sendUpstream } from "./net.js";
 import { systemNote } from "./views.js";
@@ -69,27 +69,31 @@ function forget(list) {
    so none of it is theirs to collect. */
 function collect(list) {
   if (state.isAdmin) return;
-  let moved = false;
+  const earned = [];
 
   list.forEach((goal) => {
     const key = goalKey(goal.name);
     if (!goal.done || held(key)) return;
     paid[key] = true;
-    const landed = grantXp(goal.xp);
-    moved = true;
-    /* A plate of its own, so two goals finishing together are read one after
-       the other rather than over each other. */
-    overlays.goal(goal.name, landed.gained, landed.granted);
+    earned.push({ goal, landed: grantGoalXp(goal.xp) });
+  });
+
+  if (!earned.length) return;
+  /* Counted before it is announced: a plate that fails must not cost the
+     skill point it was announcing. */
+  refreshLedger();
+  publishProgress();
+
+  earned.forEach(({ goal, landed }) => {
     systemNote(
       landed.gained
         ? "Goal completed: " + goal.name + ". +" + landed.gained + " XP."
         : "Goal completed: " + goal.name + ".",
     );
+    /* A plate of its own, so two goals finishing together are read one after
+       the other rather than over each other. */
+    overlays.goal(goal.name, landed.gained, landed.granted);
   });
-
-  if (!moved) return;
-  refreshLedger();
-  publishProgress();
 }
 
 /* news is whether a completion in these books is owed: false for a room read

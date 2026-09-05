@@ -72,6 +72,15 @@ body {
   border: var(--hairline);
 }
 
+/* Room either side of the panel to put a thumb on: without it a drag begun
+   anywhere over the two logs scrolls them instead of the page. */
+@media (max-width: 40rem) {
+  body {
+    padding-right: 1.25rem;
+    padding-left: 1.25rem;
+  }
+}
+
 @media (max-width: 32rem) {
   .panel {
     padding: 0.5rem;

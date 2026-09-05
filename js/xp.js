@@ -59,9 +59,9 @@ function amountOf(value, ceiling) {
 }
 
 /* Returns what actually landed: { gained, granted } — granted being how many
-   skill points that pushed over the line, usually one and occasionally more. */
-export function grantXp(amount) {
-  const gained = amountOf(amount, XP_MAX_PER_NODE);
+   skill points that pushed over the line. ceiling is what one award may carry. */
+export function grantXp(amount, ceiling) {
+  const gained = amountOf(amount, ceiling > 0 ? ceiling : XP_MAX_PER_NODE);
   if (!gained) return { gained: 0, granted: 0 };
 
   xp.total = Math.min(XP_MAX_TOTAL, xp.total + gained);
@@ -75,6 +75,12 @@ export function grantXp(amount) {
   }
   if (xp.current < 0) xp.current = 0;
   return { gained, granted };
+}
+
+/* A goal's reward is not a dialogue node's: it is weighed against the campaign
+   ceiling, so one worth a whole skill point is not cut down to a node's share. */
+export function grantGoalXp(amount) {
+  return grantXp(amount, XP_MAX_TOTAL);
 }
 
 /* Returns whether there was a point to spend. */

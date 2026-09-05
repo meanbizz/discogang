@@ -36,7 +36,7 @@
 
 /* Spent dialogue recedes as a whole, speaker colours included. */
 .entry.dialogue:not(.current) {
-  opacity: 0.6;
+  opacity: 0.7;
 }
 
 .check-tag {

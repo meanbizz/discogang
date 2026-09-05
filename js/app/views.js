@@ -273,10 +273,27 @@ export function renderTurn(entry) {
   if (pinned) dom.turnLog.scrollTop = dom.turnLog.scrollHeight;
 }
 
+/* Author, words and stamp together are what a duplicated delivery repeats;
+   two plans a player really wrote never match all three. */
+const TURN_DUP_MS = 1200;
+
+function alreadyPlanned(entry) {
+  return state.turnEntries.some(
+    (held) =>
+      held.author === entry.author &&
+      held.text === entry.text &&
+      Math.abs((held.at || 0) - (entry.at || 0)) <= TURN_DUP_MS,
+  );
+}
+
+/* Returns whether the plan was taken, so a caller that relays it on knows
+   not to relay a repeat. */
 export function commitTurn(entry) {
+  if (alreadyPlanned(entry)) return false;
   state.turnEntries.push(entry);
   if (state.turnEntries.length > TURN_LIMIT) state.turnEntries.shift();
   renderTurn(entry);
+  return true;
 }
 
 export function replaceTurnLog(entries) {

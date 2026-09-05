@@ -468,6 +468,24 @@ function bindItemForm() {
   }
 }
 
+/* Phone only: the scene column folds away so the log keeps the screen. The
+   fold itself is CSS; this is only the switch. */
+function bindStageSide() {
+  const toggle = document.getElementById("stage-side-toggle");
+  const stage = toggle ? toggle.closest(".stage") : null;
+  if (!stage) return;
+
+  toggle.addEventListener("click", () => {
+    const opening = stage.dataset.side !== "open";
+    stage.dataset.side = opening ? "open" : "folded";
+    toggle.setAttribute("aria-expanded", opening ? "true" : "false");
+    toggle.setAttribute(
+      "aria-label",
+      opening ? "Hide the scene image" : "Show the scene image",
+    );
+  });
+}
+
 export function bindSession() {
   bindComposers();
   bindSaveFiles();
@@ -477,6 +495,7 @@ export function bindSession() {
   bindInventory();
   bindGoals();
   bindItemForm();
+  bindStageSide();
 
   /* Player only: the button lives in the panel foot, which is detached for
      the administrateur. */

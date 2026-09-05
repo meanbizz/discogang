@@ -15,6 +15,7 @@
 
 import { dom } from "../dom.js";
 import { TIMING } from "../timing.js";
+import * as volume from "./volume.js";
 
 let youtubeReady = false;
 let player = null;
@@ -119,11 +120,15 @@ function applyVolume(value) {
   level = Math.max(0, Math.min(100, value));
   if (!player || !player.setVolume) return;
   try {
-    player.setVolume(Math.round(level));
+    player.setVolume(Math.round(level * volume.scale("music")));
   } catch (error) {
     /* not ready */
   }
 }
+
+/* The deck is already where it asked to be, so a moved dial only means
+   handing the player that same level again. */
+volume.onChange(() => applyVolume(level));
 
 function stopRamp() {
   if (rampTimer) {
@@ -202,7 +207,7 @@ export function markAudioUnlocked() {
   if (!player) return;
   try {
     if (player.unMute) player.unMute();
-    if (player.setVolume) player.setVolume(Math.round(level));
+    applyVolume(level);
     if (currentTrack) player.playVideo();
   } catch (error) {
     /* not ready */

@@ -87,6 +87,8 @@
 
       <!-- Session Section -->
       <section id="session-panel" class="panel" hidden>
+        <!-- Bar, strip and stage are held to one screen on a phone. -->
+        <div class="stage-fit">
         <div class="session-bar">
           <div class="session-meta">
             <span id="role-label" class="badge" data-role="admin" hidden
@@ -114,7 +116,19 @@
 
         <div id="roster" class="roster" aria-label="Characters"></div>
 
-        <div class="stage">
+        <div class="stage" data-side="folded">
+          <!-- Phone only: folds the scene away so the log keeps the screen. -->
+          <button
+            type="button"
+            id="stage-side-toggle"
+            class="stage-side-toggle"
+            aria-controls="stage-side"
+            aria-expanded="false"
+            aria-label="Show the scene image"
+          >
+            ➤
+          </button>
+
           <aside id="stage-side" class="stage-side">
             <button
               type="button"
@@ -132,6 +146,7 @@
             aria-live="polite"
             aria-label="Session log"
           ></div>
+        </div>
         </div>
 
         <!-- Turn Builder -->
@@ -181,17 +196,18 @@
                 type="text"
                 id="turn-input"
                 maxlength="200"
-                placeholder="Write a chunk of your plan here..."
+                placeholder="What is it you want to do?"
               />
               <button type="submit" id="turn-send" class="option">➤</button>
             </div>
+            <div style="width: 100%; display: flex; align-items: center; justify-content: space-between;">
             <button
               type="button"
               id="turn-ready"
               class="option ready-toggle"
               aria-pressed="false"
             >
-              Ready to End Turn
+              Ready
             </button>
             <!-- The three pairs, written with the caret left between them -->
             <div class="turn-marks" role="group" aria-label="Insert markup">
@@ -201,7 +217,7 @@
                 class="option turn-mark"
                 title="Verbal — something said aloud"
               >
-                ""
+                Verbal
               </button>
               <button
                 type="button"
@@ -209,7 +225,7 @@
                 class="option turn-mark"
                 title="Non verbal — something done"
               >
-                ()
+                Non Vb.
               </button>
               <button
                 type="button"
@@ -217,8 +233,9 @@
                 class="option turn-mark"
                 title="Style — how it is done"
               >
-                **
+                Style
               </button>
+            </div>
             </div>
             <p
               id="turn-error"
