@@ -165,12 +165,16 @@ button.choice.continue {
   width: 100%;
   height: 60px;
   padding: 0.5rem 1rem;
-  border: 1px solid var(--option);
   background: var(--option);
   color: white;
   font-size: 23px;
   text-align: left;
   text-transform: uppercase;
+}
+
+button.choice.continue:hover:not(:disabled) {
+  background: var(--option);
+  color: white;
 }
 
 /* ---------------- Check verdict overlay ---------------- */

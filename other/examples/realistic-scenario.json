@@ -1,0 +1,704 @@
+{
+  "down": [],
+  "kia": [],
+  "goals": {
+    "Danaerys Targaryen": {
+      "add": [
+        {
+          "name": "Get ready for work",
+          "description": "Dress junior officer uniform, pick an accessory, leave and grab the tram.",
+          "xp": 80,
+          "done": false
+        },
+        {
+          "name": "Reach the RCM Precinct 57",
+          "description": "It is located 28 kilometers to the northeast from Martinaise and meet your Sergeant Alem Taiba.",
+          "xp": 80,
+          "done": false
+        }
+      ]
+    },
+    "Snyde von Toten": {
+      "add": [
+        {
+          "name": "Get ready for work",
+          "description": "Dress junior officer uniform, pick an accessory, leave and grab the tram.",
+          "xp": 80,
+          "done": false
+        },
+        {
+          "name": "Reach the RCM Precinct 57",
+          "description": "It is located 28 kilometers to the northeast from Martinaise and meet your Sergeant Alem Taiba.",
+          "xp": 80,
+          "done": false
+        }
+      ]
+    },
+    "Grimka": {
+      "add": [
+        {
+          "name": "Get ready for work",
+          "description": "Dress junior officer uniform, pick an accessory, leave and grab the tram.",
+          "xp": 80,
+          "done": false
+        },
+        {
+          "name": "Reach the RCM Precinct 57",
+          "description": "It is located 28 kilometers to the northeast from Martinaise and meet your Sergeant Alem Taiba.",
+          "xp": 80,
+          "done": false
+        }
+      ]
+    },
+    "Alia Atreides": {
+      "add": [
+        {
+          "name": "Get ready for work",
+          "description": "Dress junior officer uniform, pick an accessory, leave and grab the tram.",
+          "xp": 80,
+          "done": false
+        },
+        {
+          "name": "Reach the RCM Precinct 57",
+          "description": "It is located 28 kilometers to the northeast from Martinaise and meet your Sergeant Alem Taiba.",
+          "xp": 80,
+          "done": false
+        }
+      ]
+    }
+  },
+  "inventory": {
+    "Danaerys Targaryen": {
+      "add": [{ "name": "Reals", "amount": 28, "centims": 65 }]
+    },
+    "Snyde von Toten": {
+      "add": [{ "name": "Reals", "amount": 42, "centims": 30 }]
+    },
+    "Grimka": {
+      "add": [{ "name": "Reals", "amount": 35, "centims": 45 }]
+    },
+    "Alia Atreides": {
+      "add": [{ "name": "Reals", "amount": 31, "centims": 70 }]
+    }
+  },
+  "Danaerys Targaryen": {
+    "root": "n1",
+    "nodes": {
+      "n1": {
+        "speaker": "Narrator",
+        "dialogue": "You are dreaming. The night club is crowded, the baron is there, you are stealing his watch. The music is loud, the lights are dim. You grab the watch and run. Then the scene shifts to a high stakes mission. You are an operative, the hostage is in the hands of the suicidal maniac. The building is about to explode. You have to save the hostage.",
+        "next": "n2"
+      },
+      "n2": {
+        "speaker": "Ancient Reptilian Brain",
+        "dialogue": "The baron is greedy, but the watch is not worth the risk. The mission is more important. The suicidal maniac is a threat to the hostage.",
+        "next": "n3"
+      },
+      "n3": {
+        "speaker": "Limbic System",
+        "dialogue": "The fear of the explosion is strong. The hostage is screaming. You must stay calm to save them.",
+        "next": "n4"
+      },
+      "n4": {
+        "speaker": "Ancient Reptilian Brain",
+        "dialogue": "Stealing from the baron feels exciting in the dream. But the mission is the real thing. The hostage is your priority.",
+        "next": "n5"
+      },
+      "n5": {
+        "speaker": "Limbic System",
+        "dialogue": "The two dreams are conflicting. The baron or the mission? The choice is yours in the dream. The Precinct 57 accident is in the news.",
+        "next": "n6"
+      },
+      "n6": {
+        "speaker": "Narrator",
+        "dialogue": "The dream fades as you wake up. You are in your old apartment block room. The room is small and cramped, with a single bed, a desk with a radio, and a window that looks out to the street. The rent is coming at 10 real a month. The radio is playing the news of a terrible accident at Precinct 57 where a man was hit by a Coupris 40.",
+        "next": "n7"
+      },
+      "n7": {
+        "speaker": "Narrator",
+        "dialogue": "You are in your bed, the alarm clock is ringing. The morning light is coming through the window. The room is filled with the sound of the radio playing the same news.",
+        "next": "n8"
+      },
+      "n8": {
+        "speaker": "Narrator",
+        "dialogue": "Your surroundings are typical for an old apartment block. The bed is unmade, the clothes are scattered on the floor. The rent is 10 real a month. The radio continues with the accident news.",
+        "next": "n9"
+      },
+      "n9": {
+        "speaker": "Psyche",
+        "dialogue": "The dream is fading, but the mission is still in your mind. You must get ready for work.",
+        "next": "n10"
+      },
+      "n10": {
+        "speaker": "Limbic System",
+        "dialogue": "The fear of being late is real. You must wake up now.",
+        "next": "n11"
+      },
+      "n11": {
+        "speaker": "Narrator",
+        "dialogue": "You are in your old apartment block room. The room is small and cramped, with a single bed, a desk with a radio, and a window that looks out to the street. The rent is coming at 10 real a month. The radio is playing the news of a terrible accident at Precinct 57 where a man was hit by a Coupris 40.",
+        "next": "n12"
+      },
+      "n12": {
+        "speaker": "Narrator",
+        "dialogue": "You are in your bed, the alarm clock is ringing. The morning light is coming through the window. The room is filled with the sound of the radio playing the same news.",
+        "next": "n13"
+      },
+      "n13": {
+        "speaker": "Narrator",
+        "dialogue": "Your surroundings are typical for an old apartment block. The bed is unmade, the clothes are scattered on the floor. The rent is 10 real a month. The radio continues with the accident news.",
+        "next": "n14"
+      },
+      "n14": {
+        "speaker": "Psyche",
+        "dialogue": "The dream is fading, but the mission is still in your mind. You must get ready for work.",
+        "next": "n15"
+      },
+      "n15": {
+        "speaker": "Limbic System",
+        "dialogue": "The fear of being late is real. You must wake up now.",
+        "next": "n16"
+      },
+      "n16": {
+        "speaker": "Narrator",
+        "dialogue": "You are in your old apartment block room. The room is small and cramped, with a single bed, a desk with a radio, and a window that looks out to the street. The rent is coming at 10 real a month. The radio is playing the news of a terrible accident at Precinct 57 where a man was hit by a Coupris 40.",
+        "next": "n17"
+      },
+      "n17": {
+        "speaker": "Narrator",
+        "dialogue": "You are in your bed, the alarm clock is ringing. The morning light is coming through the window. The room is filled with the sound of the radio playing the same news.",
+        "next": "n18"
+      },
+      "n18": {
+        "speaker": "Narrator",
+        "dialogue": "Your surroundings are typical for an old apartment block. The bed is unmade, the clothes are scattered on the floor. The rent is 10 real a month. The radio continues with the accident news.",
+        "next": "n19"
+      },
+      "n19": {
+        "speaker": "Psyche",
+        "dialogue": "The dream is fading, but the mission is still in your mind. You must get ready for work.",
+        "next": "n20"
+      },
+      "n20": {
+        "speaker": "Limbic System",
+        "dialogue": "The fear of being late is real. You must wake up now.",
+        "next": "n21"
+      },
+      "n21": {
+        "speaker": "Narrator",
+        "dialogue": "You are in your old apartment block room. The room is small and cramped, with a single bed, a desk with a radio, and a window that looks out to the street. The rent is coming at 10 real a month. The radio is playing the news of a terrible accident at Precinct 57 where a man was hit by a Coupris 40.",
+        "next": "n22"
+      },
+      "n22": {
+        "speaker": "Narrator",
+        "dialogue": "You are in your bed, the alarm clock is ringing. The morning light is coming through the window. The room is filled with the sound of the radio playing the same news.",
+        "next": "n23"
+      },
+      "n23": {
+        "speaker": "Narrator",
+        "dialogue": "Your surroundings are typical for an old apartment block. The bed is unmade, the clothes are scattered on the floor. The rent is 10 real a month. The radio continues with the accident news.",
+        "next": "n24"
+      },
+      "n24": {
+        "speaker": "Psyche",
+        "dialogue": "The dream is fading, but the mission is still in your mind. You must get ready for work.",
+        "next": "n25"
+      },
+      "n25": {
+        "speaker": "Limbic System",
+        "dialogue": "The fear of being late is real. You must wake up now.",
+        "next": "n26"
+      },
+      "n26": {
+        "speaker": "Narrator",
+        "dialogue": "You are in your old apartment block room. The room is small and cramped, with a single bed, a desk with a radio, and a window that looks out to the street. The rent is coming at 10 real a month. The radio is playing the news of a terrible accident at Precinct 57 where a man was hit by a Coupris 40.",
+        "next": "n27"
+      },
+      "n27": {
+        "speaker": "Narrator",
+        "dialogue": "You are in your bed, the alarm clock is ringing. The morning light is coming through the window. The room is filled with the sound of the radio playing the same news.",
+        "next": "n28"
+      },
+      "n28": {
+        "speaker": "Narrator",
+        "dialogue": "Your surroundings are typical for an old apartment block. The bed is unmade, the clothes are scattered on the floor. The rent is 10 real a month. The radio continues with the accident news.",
+        "next": "n29"
+      },
+      "n29": {
+        "speaker": "Psyche",
+        "dialogue": "The dream is fading, but the mission is still in your mind. You must get ready for work.",
+        "next": "n30"
+      },
+      "n30": {
+        "speaker": "Limbic System",
+        "dialogue": "The fear of being late is real. You must wake up now.",
+        "next": "n31"
+      }
+    }
+  },
+  "Snyde von Toten": {
+    "root": "n1",
+    "nodes": {
+      "n1": {
+        "speaker": "Narrator",
+        "dialogue": "You are dreaming. The night club is crowded, the baron is there, you are stealing his watch. The music is loud, the lights are dim. You grab the watch and run. Then the scene shifts to a high stakes mission. You are an operative, the hostage is in the hands of the suicidal maniac. The building is about to explode. You have to save the hostage.",
+        "next": "n2"
+      },
+      "n2": {
+        "speaker": "Ancient Reptilian Brain",
+        "dialogue": "The baron is greedy, but the watch is not worth the risk. The mission is more important. The suicidal maniac is a threat to the hostage.",
+        "next": "n3"
+      },
+      "n3": {
+        "speaker": "Limbic System",
+        "dialogue": "The fear of the explosion is strong. The hostage is screaming. You must stay calm to save them.",
+        "next": "n4"
+      },
+      "n4": {
+        "speaker": "Ancient Reptilian Brain",
+        "dialogue": "Stealing from the baron feels exciting in the dream. But the mission is the real thing. The hostage is your priority.",
+        "next": "n5"
+      },
+      "n5": {
+        "speaker": "Limbic System",
+        "dialogue": "The two dreams are conflicting. The baron or the mission? The choice is yours in the dream. The Precinct 57 accident is in the news.",
+        "next": "n6"
+      },
+      "n6": {
+        "speaker": "Narrator",
+        "dialogue": "The dream fades as you wake up. You are in your room. The room is small and cramped, with a single bed, a desk with a radio, and a window that looks out to the street. The rent is coming at 5 real a month. The radio is playing the news of a terrible accident at Precinct 57 where a man was hit by a Coupris 40.",
+        "next": "n7"
+      },
+      "n7": {
+        "speaker": "Narrator",
+        "dialogue": "You are in your bed, the alarm clock is ringing. The morning light is coming through the window. The room is filled with the sound of the radio playing the same news.",
+        "next": "n8"
+      },
+      "n8": {
+        "speaker": "Narrator",
+        "dialogue": "Your surroundings are typical for a slum. The bed is unmade, the clothes are scattered on the floor. The rent is 5 real a month. The radio continues with the accident news.",
+        "next": "n9"
+      },
+      "n9": {
+        "speaker": "Motorics",
+        "dialogue": "The dream is fading, but the mission is still in your mind. You must get ready for work.",
+        "next": "n10"
+      },
+      "n10": {
+        "speaker": "Limbic System",
+        "dialogue": "The fear of being late is real. You must wake up now.",
+        "next": "n11"
+      },
+      "n11": {
+        "speaker": "Narrator",
+        "dialogue": "You are in your room. The room is small and cramped, with a single bed, a desk with a radio, and a window that looks out to the street. The rent is coming at 5 real a month. The radio is playing the news of a terrible accident at Precinct 57 where a man was hit by a Coupris 40.",
+        "next": "n12"
+      },
+      "n12": {
+        "speaker": "Narrator",
+        "dialogue": "You are in your bed, the alarm clock is ringing. The morning light is coming through the window. The room is filled with the sound of the radio playing the same news.",
+        "next": "n13"
+      },
+      "n13": {
+        "speaker": "Narrator",
+        "dialogue": "Your surroundings are typical for a slum. The bed is unmade, the clothes are scattered on the floor. The rent is 5 real a month. The radio continues with the accident news.",
+        "next": "n14"
+      },
+      "n14": {
+        "speaker": "Motorics",
+        "dialogue": "The dream is fading, but the mission is still in your mind. You must get ready for work.",
+        "next": "n15"
+      },
+      "n15": {
+        "speaker": "Limbic System",
+        "dialogue": "The fear of being late is real. You must wake up now.",
+        "next": "n16"
+      },
+      "n16": {
+        "speaker": "Narrator",
+        "dialogue": "You are in your room. The room is small and cramped, with a single bed, a desk with a radio, and a window that looks out to the street. The rent is coming at 5 real a month. The radio is playing the news of a terrible accident at Precinct 57 where a man was hit by a Coupris 40.",
+        "next": "n17"
+      },
+      "n17": {
+        "speaker": "Narrator",
+        "dialogue": "You are in your bed, the alarm clock is ringing. The morning light is coming through the window. The room is filled with the sound of the radio playing the same news.",
+        "next": "n18"
+      },
+      "n18": {
+        "speaker": "Narrator",
+        "dialogue": "Your surroundings are typical for a slum. The bed is unmade, the clothes are scattered on the floor. The rent is 5 real a month. The radio continues with the accident news.",
+        "next": "n19"
+      },
+      "n19": {
+        "speaker": "Motorics",
+        "dialogue": "The dream is fading, but the mission is still in your mind. You must get ready for work.",
+        "next": "n20"
+      },
+      "n20": {
+        "speaker": "Limbic System",
+        "dialogue": "The fear of being late is real. You must wake up now.",
+        "next": "n21"
+      },
+      "n21": {
+        "speaker": "Narrator",
+        "dialogue": "You are in your room. The room is small and cramped, with a single bed, a desk with a radio, and a window that looks out to the street. The rent is coming at 5 real a month. The radio is playing the news of a terrible accident at Precinct 57 where a man was hit by a Coupris 40.",
+        "next": "n22"
+      },
+      "n22": {
+        "speaker": "Narrator",
+        "dialogue": "You are in your bed, the alarm clock is ringing. The morning light is coming through the window. The room is filled with the sound of the radio playing the same news.",
+        "next": "n23"
+      },
+      "n23": {
+        "speaker": "Narrator",
+        "dialogue": "Your surroundings are typical for a slum. The bed is unmade, the clothes are scattered on the floor. The rent is 5 real a month. The radio continues with the accident news.",
+        "next": "n24"
+      },
+      "n24": {
+        "speaker": "Motorics",
+        "dialogue": "The dream is fading, but the mission is still in your mind. You must get ready for work.",
+        "next": "n25"
+      },
+      "n25": {
+        "speaker": "Limbic System",
+        "dialogue": "The fear of being late is real. You must wake up now.",
+        "next": "n26"
+      },
+      "n26": {
+        "speaker": "Narrator",
+        "dialogue": "You are in your room. The room is small and cramped, with a single bed, a desk with a radio, and a window that looks out to the street. The rent is coming at 5 real a month. The radio is playing the news of a terrible accident at Precinct 57 where a man was hit by a Coupris 40.",
+        "next": "n27"
+      },
+      "n27": {
+        "speaker": "Narrator",
+        "dialogue": "You are in your bed, the alarm clock is ringing. The morning light is coming through the window. The room is filled with the sound of the radio playing the same news.",
+        "next": "n28"
+      },
+      "n28": {
+        "speaker": "Narrator",
+        "dialogue": "Your surroundings are typical for a slum. The bed is unmade, the clothes are scattered on the floor. The rent is 5 real a month. The radio continues with the accident news.",
+        "next": "n29"
+      },
+      "n29": {
+        "speaker": "Motorics",
+        "dialogue": "The dream is fading, but the mission is still in your mind. You must get ready for work.",
+        "next": "n30"
+      },
+      "n30": {
+        "speaker": "Limbic System",
+        "dialogue": "The fear of being late is real. You must wake up now.",
+        "next": "n31"
+      }
+    }
+  },
+  "Grimka": {
+    "root": "n1",
+    "nodes": {
+      "n1": {
+        "speaker": "Narrator",
+        "dialogue": "You are dreaming. The night club is crowded, the baron is there, you are stealing his watch. The music is loud, the lights are dim. You grab the watch and run. Then the scene shifts to a high stakes mission. You are an operative, the hostage is in the hands of the suicidal maniac. The building is about to explode. You have to save the hostage.",
+        "next": "n2"
+      },
+      "n2": {
+        "speaker": "Ancient Reptilian Brain",
+        "dialogue": "The baron is greedy, but the watch is not worth the risk. The mission is more important. The suicidal maniac is a threat to the hostage.",
+        "next": "n3"
+      },
+      "n3": {
+        "speaker": "Limbic System",
+        "dialogue": "The fear of the explosion is strong. The hostage is screaming. You must stay calm to save them.",
+        "next": "n4"
+      },
+      "n4": {
+        "speaker": "Ancient Reptilian Brain",
+        "dialogue": "Stealing from the baron feels exciting in the dream. But the mission is the real thing. The hostage is your priority.",
+        "next": "n5"
+      },
+      "n5": {
+        "speaker": "Limbic System",
+        "dialogue": "The two dreams are conflicting. The baron or the mission? The choice is yours in the dream. The Precinct 57 accident is in the news.",
+        "next": "n6"
+      },
+      "n6": {
+        "speaker": "Narrator",
+        "dialogue": "The dream fades as you wake up. You are in your old apartment block room. The room is small and cramped, with a single bed, a desk with a radio, and a window that looks out to the street. The rent is coming at 10 real a month. The radio is playing the news of a terrible accident at Precinct 57 where a man was hit by a Coupris 40.",
+        "next": "n7"
+      },
+      "n7": {
+        "speaker": "Narrator",
+        "dialogue": "You are in your bed, the alarm clock is ringing. The morning light is coming through the window. The room is filled with the sound of the radio playing the same news.",
+        "next": "n8"
+      },
+      "n8": {
+        "speaker": "Narrator",
+        "dialogue": "Your surroundings are typical for a slum apartment. The bed is unmade, the clothes are scattered on the floor. The rent is 10 real a month. The radio continues with the accident news.",
+        "next": "n9"
+      },
+      "n9": {
+        "speaker": "Perception",
+        "dialogue": "The dream is fading, but the mission is still in your mind. You must get ready for work.",
+        "next": "n10"
+      },
+      "n10": {
+        "speaker": "Limbic System",
+        "dialogue": "The fear of being late is real. You must wake up now.",
+        "next": "n11"
+      },
+      "n11": {
+        "speaker": "Narrator",
+        "dialogue": "You are in your old apartment block room. The room is small and cramped, with a single bed, a desk with a radio, and a window that looks out to the street. The rent is coming at 10 real a month. The radio is playing the news of a terrible accident at Precinct 57 where a man was hit by a Coupris 40.",
+        "next": "n12"
+      },
+      "n12": {
+        "speaker": "Narrator",
+        "dialogue": "You are in your bed, the alarm clock is ringing. The morning light is coming through the window. The room is filled with the sound of the radio playing the same news.",
+        "next": "n13"
+      },
+      "n13": {
+        "speaker": "Narrator",
+        "dialogue": "Your surroundings are typical for a slum apartment. The bed is unmade, the clothes are scattered on the floor. The rent is 10 real a month. The radio continues with the accident news.",
+        "next": "n14"
+      },
+      "n14": {
+        "speaker": "Perception",
+        "dialogue": "The dream is fading, but the mission is still in your mind. You must get ready for work.",
+        "next": "n15"
+      },
+      "n15": {
+        "speaker": "Limbic System",
+        "dialogue": "The fear of being late is real. You must wake up now.",
+        "next": "n16"
+      },
+      "n16": {
+        "speaker": "Narrator",
+        "dialogue": "You are in your old apartment block room. The room is small and cramped, with a single bed, a desk with a radio, and a window that looks out to the street. The rent is coming at 10 real a month. The radio is playing the news of a terrible accident at Precinct 57 where a man was hit by a Coupris 40.",
+        "next": "n17"
+      },
+      "n17": {
+        "speaker": "Narrator",
+        "dialogue": "You are in your bed, the alarm clock is ringing. The morning light is coming through the window. The room is filled with the sound of the radio playing the same news.",
+        "next": "n18"
+      },
+      "n18": {
+        "speaker": "Narrator",
+        "dialogue": "Your surroundings are typical for a slum apartment. The bed is unmade, the clothes are scattered on the floor. The rent is 10 real a month. The radio continues with the accident news.",
+        "next": "n19"
+      },
+      "n19": {
+        "speaker": "Perception",
+        "dialogue": "The dream is fading, but the mission is still in your mind. You must get ready for work.",
+        "next": "n20"
+      },
+      "n20": {
+        "speaker": "Limbic System",
+        "dialogue": "The fear of being late is real. You must wake up now.",
+        "next": "n21"
+      },
+      "n21": {
+        "speaker": "Narrator",
+        "dialogue": "You are in your old apartment block room. The room is small and cramped, with a single bed, a desk with a radio, and a window that looks out to the street. The rent is coming at 10 real a month. The radio is playing the news of a terrible accident at Precinct 57 where a man was hit by a Coupris 40.",
+        "next": "n22"
+      },
+      "n22": {
+        "speaker": "Narrator",
+        "dialogue": "You are in your bed, the alarm clock is ringing. The morning light is coming through the window. The room is filled with the sound of the radio playing the same news.",
+        "next": "n23"
+      },
+      "n23": {
+        "speaker": "Narrator",
+        "dialogue": "Your surroundings are typical for a slum apartment. The bed is unmade, the clothes are scattered on the floor. The rent is 10 real a month. The radio continues with the accident news.",
+        "next": "n24"
+      },
+      "n24": {
+        "speaker": "Perception",
+        "dialogue": "The dream is fading, but the mission is still in your mind. You must get ready for work.",
+        "next": "n25"
+      },
+      "n25": {
+        "speaker": "Limbic System",
+        "dialogue": "The fear of being late is real. You must wake up now.",
+        "next": "n26"
+      },
+      "n26": {
+        "speaker": "Narrator",
+        "dialogue": "You are in your old apartment block room. The room is small and cramped, with a single bed, a desk with a radio, and a window that looks out to the street. The rent is coming at 10 real a month. The radio is playing the news of a terrible accident at Precinct 57 where a man was hit by a Coupris 40.",
+        "next": "n27"
+      },
+      "n27": {
+        "speaker": "Narrator",
+        "dialogue": "You are in your bed, the alarm clock is ringing. The morning light is coming through the window. The room is filled with the sound of the radio playing the same news.",
+        "next": "n28"
+      },
+      "n28": {
+        "speaker": "Narrator",
+        "dialogue": "Your surroundings are typical for a slum apartment. The bed is unmade, the clothes are scattered on the floor. The rent is 10 real a month. The radio continues with the accident news.",
+        "next": "n29"
+      },
+      "n29": {
+        "speaker": "Perception",
+        "dialogue": "The dream is fading, but the mission is still in your mind. You must get ready for work.",
+        "next": "n30"
+      },
+      "n30": {
+        "speaker": "Limbic System",
+        "dialogue": "The fear of being late is real. You must wake up now.",
+        "next": "n31"
+      }
+    }
+  },
+  "Alia Atreides": {
+    "root": "n1",
+    "nodes": {
+      "n1": {
+        "speaker": "Narrator",
+        "dialogue": "You are dreaming. The night club is crowded, the baron is there, you are stealing his watch. The music is loud, the lights are dim. You grab the watch and run. Then the scene shifts to a high stakes mission. You are an operative, the hostage is in the hands of the suicidal maniac. The building is about to explode. You have to save the hostage.",
+        "next": "n2"
+      },
+      "n2": {
+        "speaker": "Ancient Reptilian Brain",
+        "dialogue": "The baron is greedy, but the watch is not worth the risk. The mission is more important. The suicidal maniac is a threat to the hostage.",
+        "next": "n3"
+      },
+      "n3": {
+        "speaker": "Limbic System",
+        "dialogue": "The fear of the explosion is strong. The hostage is screaming. You must stay calm to save them.",
+        "next": "n4"
+      },
+      "n4": {
+        "speaker": "Ancient Reptilian Brain",
+        "dialogue": "Stealing from the baron feels exciting in the dream. But the mission is the real thing. The hostage is your priority.",
+        "next": "n5"
+      },
+      "n5": {
+        "speaker": "Limbic System",
+        "dialogue": "The two dreams are conflicting. The baron or the mission? The choice is yours in the dream. The Precinct 57 accident is in the news.",
+        "next": "n6"
+      },
+      "n6": {
+        "speaker": "Narrator",
+        "dialogue": "The dream fades as you wake up. You are in your old apartment block room. The room is small and cramped, with a single bed, a desk with a radio, and a window that looks out to the street. The rent is coming at 10 real a month. The radio is playing the news of a terrible accident at Precinct 57 where a man was hit by a Coupris 40.",
+        "next": "n7"
+      },
+      "n7": {
+        "speaker": "Narrator",
+        "dialogue": "You are in your bed, the alarm clock is ringing. The morning light is coming through the window. The room is filled with the sound of the radio playing the same news.",
+        "next": "n8"
+      },
+      "n8": {
+        "speaker": "Narrator",
+        "dialogue": "Your surroundings are typical for a slum apartment. The bed is unmade, the clothes are scattered on the floor. The rent is 10 real a month. The radio continues with the accident news.",
+        "next": "n9"
+      },
+      "n9": {
+        "speaker": "Perception",
+        "dialogue": "The dream is fading, but the mission is still in your mind. You must get ready for work.",
+        "next": "n10"
+      },
+      "n10": {
+        "speaker": "Limbic System",
+        "dialogue": "The fear of being late is real. You must wake up now.",
+        "next": "n11"
+      },
+      "n11": {
+        "speaker": "Narrator",
+        "dialogue": "You are in your old apartment block room. The room is small and cramped, with a single bed, a desk with a radio, and a window that looks out to the street. The rent is coming at 10 real a month. The radio is playing the news of a terrible accident at Precinct 57 where a man was hit by a Coupris 40.",
+        "next": "n12"
+      },
+      "n12": {
+        "speaker": "Narrator",
+        "dialogue": "You are in your bed, the alarm clock is ringing. The morning light is coming through the window. The room is filled with the sound of the radio playing the same news.",
+        "next": "n13"
+      },
+      "n13": {
+        "speaker": "Narrator",
+        "dialogue": "Your surroundings are typical for a slum apartment. The bed is unmade, the clothes are scattered on the floor. The rent is 10 real a month. The radio continues with the accident news.",
+        "next": "n14"
+      },
+      "n14": {
+        "speaker": "Perception",
+        "dialogue": "The dream is fading, but the mission is still in your mind. You must get ready for work.",
+        "next": "n15"
+      },
+      "n15": {
+        "speaker": "Limbic System",
+        "dialogue": "The fear of being late is real. You must wake up now.",
+        "next": "n16"
+      },
+      "n16": {
+        "speaker": "Narrator",
+        "dialogue": "You are in your old apartment block room. The room is small and cramped, with a single bed, a desk with a radio, and a window that looks out to the street. The rent is coming at 10 real a month. The radio is playing the news of a terrible accident at Precinct 57 where a man was hit by a Coupris 40.",
+        "next": "n17"
+      },
+      "n17": {
+        "speaker": "Narrator",
+        "dialogue": "You are in your bed, the alarm clock is ringing. The morning light is coming through the window. The room is filled with the sound of the radio playing the same news.",
+        "next": "n18"
+      },
+      "n18": {
+        "speaker": "Narrator",
+        "dialogue": "Your surroundings are typical for a slum apartment. The bed is unmade, the clothes are scattered on the floor. The rent is 10 real a month. The radio continues with the accident news.",
+        "next": "n19"
+      },
+      "n19": {
+        "speaker": "Perception",
+        "dialogue": "The dream is fading, but the mission is still in your mind. You must get ready for work.",
+        "next": "n20"
+      },
+      "n20": {
+        "speaker": "Limbic System",
+        "dialogue": "The fear of being late is real. You must wake up now.",
+        "next": "n21"
+      },
+      "n21": {
+        "speaker": "Narrator",
+        "dialogue": "You are in your old apartment block room. The room is small and cramped, with a single bed, a desk with a radio, and a window that looks out to the street. The rent is coming at 10 real a month. The radio is playing the news of a terrible accident at Precinct 57 where a man was hit by a Coupris 40.",
+        "next": "n22"
+      },
+      "n22": {
+        "speaker": "Narrator",
+        "dialogue": "You are in your bed, the alarm clock is ringing. The morning light is coming through the window. The room is filled with the sound of the radio playing the same news.",
+        "next": "n23"
+      },
+      "n23": {
+        "speaker": "Narrator",
+        "dialogue": "Your surroundings are typical for a slum apartment. The bed is unmade, the clothes are scattered on the floor. The rent is 10 real a month. The radio continues with the accident news.",
+        "next": "n24"
+      },
+      "n24": {
+        "speaker": "Perception",
+        "dialogue": "The dream is fading, but the mission is still in your mind. You must get ready for work.",
+        "next": "n25"
+      },
+      "n25": {
+        "speaker": "Limbic System",
+        "dialogue": "The fear of being late is real. You must wake up now.",
+        "next": "n26"
+      },
+      "n26": {
+        "speaker": "Narrator",
+        "dialogue": "You are in your old apartment block room. The room is small and cramped, with a single bed, a desk with a radio, and a window that looks out to the street. The rent is coming at 10 real a month. The radio is playing the news of a terrible accident at Precinct 57 where a man was hit by a Coupris 40.",
+        "next": "n27"
+      },
+      "n27": {
+        "speaker": "Narrator",
+        "dialogue": "You are in your bed, the alarm clock is ringing. The morning light is coming through the window. The room is filled with the sound of the radio playing the same news.",
+        "next": "n28"
+      },
+      "n28": {
+        "speaker": "Narrator",
+        "dialogue": "Your surroundings are typical for a slum apartment. The bed is unmade, the clothes are scattered on the floor. The rent is 10 real a month. The radio continues with the accident news.",
+        "next": "n29"
+      },
+      "n29": {
+        "speaker": "Perception",
+        "dialogue": "The dream is fading, but the mission is still in your mind. You must get ready for work.",
+        "next": "n30"
+      },
+      "n30": {
+        "speaker": "Limbic System",
+        "dialogue": "The fear of being late is real. You must wake up now.",
+        "next": "n31"
+      }
+    }
+  }
+}

@@ -22,8 +22,14 @@ import {
 import { exportSession, loadSession, noteSession } from "./save.js";
 import { loadAllowed, refreshLoadButton } from "./locks.js";
 import { adoptSheet, spendSkillPoint } from "./progress.js";
-import { currentSceneImage, editNpc, removeNpc, submitNpcForm } from "./scene.js";
 import {
+  currentSceneImage,
+  editNpc,
+  removeNpc,
+  submitNpcForm,
+} from "./scene.js";
+import {
+  adminItems,
   editItem,
   openInventory,
   removeItem,
@@ -376,7 +382,7 @@ function bindGoals() {
 function bindItemForm() {
   if (dom.itemsButton) {
     dom.itemsButton.addEventListener("click", () =>
-      modals.openItemsModal(state.isAdmin, state.items, editItem, removeItem),
+      modals.openItemsModal(state.isAdmin, adminItems(), editItem, removeItem),
     );
   }
   if (dom.itemsModalClose) {

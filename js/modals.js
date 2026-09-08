@@ -808,7 +808,23 @@ export function setStagedItemImage(url) {
   stagedItemImage = url;
 }
 
+/* A press anywhere else puts it away; the info buttons stop their own click
+   from reaching the document, so opening and toggling still work. */
+document.addEventListener("click", (event) => {
+  if (!dom.inventoryTooltip?.classList.contains("is-open")) return;
+  if (event.target?.closest?.(".inv-info")) return;
+  hideItemTooltip();
+});
+
 window.addEventListener("resize", hideItemTooltip);
 window.addEventListener("scroll", hideItemTooltip, true);
+
+/* Any press that is not the ⓘ button itself counts as "somewhere else". */
+document.addEventListener("click", (event) => {
+  const tip = dom.inventoryTooltip;
+  if (!tip || !tip.classList.contains("is-open")) return;
+  if (event.target.closest(".inv-info")) return;
+  hideItemTooltip();
+});
 
 export { cleanName };

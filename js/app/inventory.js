@@ -123,9 +123,31 @@ function totalHeld(name) {
   return total;
 }
 
+/* The catalogue as the administrateur sees it: everything minted, plus
+   anything a bag holds that was never minted — orders can hand those out. */
+export function adminItems() {
+  const known = new Set(state.items.map((item) => itemKey(item.name)));
+  const extras = [];
+  Object.keys(state.inventories).forEach((holder) => {
+    const bag = state.inventories[holder] || {};
+    Object.keys(bag).forEach((held) => {
+      if (!bag[held] || isCurrency(held) || known.has(itemKey(held))) return;
+      known.add(itemKey(held));
+      const made = cleanItem({
+        name: itemName(held),
+        image: null,
+        description: "",
+        modifiers: [],
+      });
+      if (made) extras.push(made);
+    });
+  });
+  return state.items.concat(extras);
+}
+
 export function refreshViews() {
   if (state.isAdmin) {
-    modals.renderItemList(state.items, editItem, removeItem);
+    modals.renderItemList(adminItems(), editItem, removeItem);
     return;
   }
   modals.renderInventoryGrid(selfItems(), pickItem);
@@ -227,9 +249,7 @@ export function pickItem(item) {
   }
 
   if (!planningUnlocked()) {
-    modals.noteInventory(
-      "Complete your current scene before using items.",
-    );
+    modals.noteInventory("Complete your current scene before using items.");
     return;
   }
 
@@ -246,8 +266,13 @@ export function pickItem(item) {
 /* ---------------- The administrateur's manager ---------------- */
 
 export function editItem(name) {
-  const item = findItem(state.items, name);
-  if (!item) return;
+  /* A bag-only item can be edited too; saving it is what mints it. */
+  const item = findItem(state.items, name) || {
+    name: itemName(name),
+    image: null,
+    description: "",
+    modifiers: [],
+  };
   dom.itemKeyInput.value = item.name;
   dom.itemNameInput.value = item.name;
   dom.itemDescInput.value = item.description || "";

@@ -57,7 +57,6 @@
   position: relative;
   display: grid;
   justify-items: center;
-  gap: 0.6rem;
   margin-top: auto;
   margin-bottom: 96px;
   text-align: center;
@@ -68,6 +67,7 @@
   height: auto;
   filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.75));
   pointer-events: none;
+  margin-bottom: 16px;
 }
 
 .notice-art[hidden] {
