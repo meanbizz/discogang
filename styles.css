@@ -26,3 +26,14 @@
 @import url("./css/xp.css");
 @import url("./css/notice.css");
 @import url("./css/animations.css");
+
+@import url(https://db.onlinewebfonts.com/c/4be0b0cf61f9fd467f635e6cdc1daed6?family=Core+Sans+ES+W15+35+Light);
+@font-face {
+    font-family: "Core Sans ES W15 35 Light";
+    src: url("https://db.onlinewebfonts.com/t/4be0b0cf61f9fd467f635e6cdc1daed6.eot");
+    src: url("https://db.onlinewebfonts.com/t/4be0b0cf61f9fd467f635e6cdc1daed6.eot?#iefix")format("embedded-opentype"),
+    url("https://db.onlinewebfonts.com/t/4be0b0cf61f9fd467f635e6cdc1daed6.woff2")format("woff2"),
+    url("https://db.onlinewebfonts.com/t/4be0b0cf61f9fd467f635e6cdc1daed6.woff")format("woff"),
+    url("https://db.onlinewebfonts.com/t/4be0b0cf61f9fd467f635e6cdc1daed6.ttf")format("truetype"),
+    url("https://db.onlinewebfonts.com/t/4be0b0cf61f9fd467f635e6cdc1daed6.svg#Core Sans ES W15 35 Light")format("svg");
+}

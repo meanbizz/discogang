@@ -95,6 +95,9 @@ export const dom = {
   noticeTitle: document.getElementById("notice-title"),
   noticeAmount: document.getElementById("notice-amount"),
 
+  // Odds — the tooltip hung off the button beneath Continue
+  oddsTooltip: document.getElementById("odds-tooltip"),
+
   modal: document.getElementById("portrait-modal"),
   modalClose: document.getElementById("portrait-modal-close"),
   modalImage: document.getElementById("portrait-modal-image"),

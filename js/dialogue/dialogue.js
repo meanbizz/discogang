@@ -16,6 +16,8 @@ import * as cues from "./cues.js";
 import * as narration from "../audio/narration.js";
 import { grantXp } from "../xp.js";
 import { appendToLog, buildEntry, vitalsNote, voiceOf } from "./entry.js";
+import * as modals from "../modals.js";
+import { oddsFor } from "./odds.js";
 
 export { cleanPayload, parsePayload, pickTree } from "./sanitize.js";
 export { hasTreeFor, renderRound } from "./transcript.js";
@@ -84,6 +86,7 @@ export function reset() {
   spentNodes.clear();
   cues.reset();
   narration.stop();
+  modals.closeOddsTooltip();
   emitArt(null);
 }
 
@@ -101,9 +104,16 @@ export function start(nextTree) {
    count alike. */
 function renderOptions(host, node) {
   node.options.forEach((option, index) => {
+    /* Option and its odds toggle share one flex row. */
+    const row = document.createElement("div");
+    row.className = "choice-row";
+    row.style.display = "flex";
+    row.style.alignItems = "stretch";
+    row.style.gap = "8px";
     const button = document.createElement("button");
     button.type = "button";
     button.className = "choice";
+    button.style.flex = "1";
     button.textContent = index + 1 + ". " + option.label;
     button.addEventListener("click", () => {
       if (host.dataset.spent === "true") return;
@@ -122,17 +132,21 @@ function renderOptions(host, node) {
       /* Nothing follows — let the row fade before the scene closes. */
       cues.fadeOutAndRemove(host, () => finish());
     });
-    host.appendChild(button);
+    row.appendChild(button);
+    /* An option leading to a checked node carries the odds toggle too. */
+    renderOdds(row, tree ? pick(tree.nodes, option.next) : null);
+    host.appendChild(row);
   });
 }
 
 function renderContinue(host, nextId) {
   const face = document.createElement("span");
   face.style.display = "inline-block";
-  face.style.transform = "scale(1, 1.5)";
+  face.style.transform = "scale(1, 1.4)";
   face.style.letterSpacing = "0px";
   face.style.transformOrigin = "0 0";
-  face.style.lineHeight = "1";
+  face.style.lineHeight = "0.2";
+
   face.textContent = "Continue ➤";
 
   const button = document.createElement("button");
@@ -168,6 +182,23 @@ function renderContinue(host, nextId) {
     renderNode(nextId);
   });
   host.appendChild(button);
+
+  renderOdds(host, ahead);
+}
+
+/* The toggle lives wherever a checked node waits on the far side: no check,
+   a passive, or an unknown difficulty and there is nothing to show. */
+function renderOdds(host, node) {
+  const odds = oddsFor(node ? node.skillCheck : null);
+  if (!odds) return;
+  const oddsButton = document.createElement("button");
+  oddsButton.type = "button";
+  oddsButton.className = "choice odds";
+  oddsButton.textContent = "ODDS";
+  oddsButton.addEventListener("click", () => {
+    modals.openOddsTooltip(oddsButton, odds);
+  });
+  host.appendChild(oddsButton);
 }
 
 /* Experience the node hands over. The overlay takes its turn on the one

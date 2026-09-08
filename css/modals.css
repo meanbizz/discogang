@@ -76,6 +76,7 @@
 
 .modal-name {
   margin: 0;
+  padding-top: 1.5rem;
   color: var(--text-now);
   font-size: 0.95rem;
   letter-spacing: 0.12em;

@@ -50,6 +50,7 @@
   text-transform: uppercase;
   white-space: nowrap;
   opacity: 0.85;
+  color: var(--money-gain);
 }
 
 .goal-text {

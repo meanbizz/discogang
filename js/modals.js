@@ -368,17 +368,13 @@ function hideItemTooltip() {
   delete tip.dataset.item;
 }
 
-function positionItemTooltip(anchor) {
-  const tip = dom.inventoryTooltip;
+/* Centered under whatever was pressed, flipped above it when there is no
+   room below — shared by the item and odds tooltips. */
+function placeTooltip(tip, anchor) {
   const from = anchor.getBoundingClientRect();
   const box = tip.getBoundingClientRect();
 
-  const maxLeft = Math.max(
-    TOOLTIP_GAP,
-    window.innerWidth - box.width - TOOLTIP_GAP,
-  );
-  let left = from.left + from.width / 2 - box.width / 2;
-  left = Math.min(Math.max(left, TOOLTIP_GAP), maxLeft);
+  let left = from.left - box.width;
 
   let top = from.bottom + TOOLTIP_GAP;
   if (top + box.height > window.innerHeight - TOOLTIP_GAP) {
@@ -388,6 +384,10 @@ function positionItemTooltip(anchor) {
 
   tip.style.left = Math.round(left) + "px";
   tip.style.top = Math.round(top) + "px";
+}
+
+function positionItemTooltip(anchor) {
+  if (dom.inventoryTooltip) placeTooltip(dom.inventoryTooltip, anchor);
 }
 
 function toggleItemTooltip(anchor, item) {
@@ -569,6 +569,75 @@ export function closeItemView() {
     itemViewReturnFocus.focus();
   }
   itemViewReturnFocus = null;
+}
+
+/* ---------------- Odds ---------------- */
+
+/* The chance of the check waiting past Continue, hung off the button that
+   asks for it: skill and score, the words, and the number itself. */
+export function openOddsTooltip(anchor, reading) {
+  const tip = dom.oddsTooltip;
+  if (!tip || !anchor || !reading) return;
+  if (tip.classList.contains("is-open")) {
+    closeOddsTooltip();
+    return;
+  }
+
+  tip.textContent = "";
+
+  const title = document.createElement("p");
+  title.className = "odds-tooltip-title";
+  title.textContent = reading.skill + ": " + reading.score;
+  let foundAttribute;
+  for (const attribute of DiscoSkillSheet.ATTRIBUTES) {
+    if (
+      attribute.skills
+        .map((s) => s.id.replaceAll("-", " "))
+        .includes(reading.skill.toLowerCase())
+    ) {
+      foundAttribute = attribute.id;
+      break;
+    }
+  }
+  title.dataset["attribute"] = foundAttribute;
+  tip.appendChild(title);
+
+  const label = document.createElement("p");
+  label.className = "odds-tooltip-label";
+  label.textContent = reading.label;
+  const labelValue = reading.label.toLowerCase();
+  if (labelValue.includes("high") || labelValue.includes("certain")) {
+    label.dataset["attribute"] = "high";
+  } else if (labelValue.includes("low") || labelValue.includes("impossible")) {
+    label.dataset["attribute"] = "low";
+  } else {
+    label.dataset["attribute"] = "even";
+  }
+  tip.appendChild(label);
+
+  const amount = document.createElement("p");
+  amount.className = "odds-tooltip-amount";
+  amount.textContent = reading.odds + "%";
+  tip.appendChild(amount);
+
+  if (labelValue !== "impossible") {
+    const minRoll = document.createElement("p");
+    minRoll.style.margin = "0";
+    minRoll.textContent = `Dice total must pass: ${reading.minRoll - 1}`;
+    tip.appendChild(minRoll);
+  }
+
+  tip.setAttribute("aria-hidden", "false");
+  tip.classList.add("is-open");
+  placeTooltip(tip, anchor);
+}
+
+export function closeOddsTooltip() {
+  const tip = dom.oddsTooltip;
+  if (!tip) return;
+  tip.classList.remove("is-open");
+  tip.setAttribute("aria-hidden", "true");
+  tip.textContent = "";
 }
 
 export function openInventory(list, onPick) {
@@ -826,5 +895,17 @@ document.addEventListener("click", (event) => {
   if (event.target.closest(".inv-info")) return;
   hideItemTooltip();
 });
+
+/* The odds tooltip answers the same rules: a press anywhere else puts it
+   away, and the button that opened it is left to toggle it. */
+document.addEventListener("click", (event) => {
+  const tip = dom.oddsTooltip;
+  if (!tip || !tip.classList.contains("is-open")) return;
+  if (event.target?.closest?.(".choice.odds")) return;
+  closeOddsTooltip();
+});
+
+window.addEventListener("resize", closeOddsTooltip);
+window.addEventListener("scroll", closeOddsTooltip, true);
 
 export { cleanName };

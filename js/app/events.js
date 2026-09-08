@@ -245,6 +245,7 @@ function bindModals() {
     modals.closeInventory();
     modals.closeItemsModal();
     modals.closeGoals();
+    modals.closeOddsTooltip();
   });
 }
 

@@ -167,7 +167,8 @@ button.choice.continue {
   padding: 0.5rem 1rem;
   background: var(--option);
   color: white;
-  font-size: 23px;
+  font-size: 32px;
+  font-family: "Core Sans ES W15 35 Light", "Libre Baskerville", serif;
   text-align: left;
   text-transform: uppercase;
 }
@@ -175,6 +176,105 @@ button.choice.continue {
 button.choice.continue:hover:not(:disabled) {
   background: var(--option);
   color: white;
+}
+
+/* The odds sit flush beneath Continue: the row gap the choices grid lays
+   between its children is cancelled, so the two slabs read as one column. */
+button.choice.odds {
+  height: fit-content;
+  border-width: 0 0 2px 0;
+  border-style: solid;
+  border-color: var(--option);
+  padding: 0.25rem;
+  color: white;
+  font-size: 12px;
+  letter-spacing: -1px;
+  text-transform: uppercase;
+  margin-left: auto;
+}
+
+button.choice.odds:hover:not(:disabled) {
+  background: var(--option);
+  color: white;
+}
+.entry-choices[data-spent="true"] .choice.odds {
+  display: none;
+}
+
+/* The odds of the check waiting past Continue, hung off the button that
+   asks for it. Same shape as the item tooltip; only the words differ. */
+.odds-tooltip {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 70;
+  display: none;
+  width: fit-content;
+  height: fit-content;
+  background: rgba(5, 7, 10, 0.97);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+  text-align: center;
+  background: url("../images/panel-bg.png");
+  background-repeat: no-repeat;
+  background-size: cover;
+  padding: 14px 12px;
+}
+
+.odds-tooltip.is-open {
+  display: block;
+}
+
+/* The skill the check is written against, and this reader's score in it. */
+.odds-tooltip-title {
+  margin: 0;
+  padding: 0 18px;
+  color: var(--option-hi);
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-wrap: nowrap;
+  font-family: "Core Sans ES W15 35 Light", "Libre Baskerville", serif;
+}
+
+.odds-tooltip-title[data-attribute="intellect"] {
+  background-color: var(--attr-intellect);
+}
+.odds-tooltip-title[data-attribute="psyche"] {
+  background-color: var(--attr-psyche);
+}
+.odds-tooltip-title[data-attribute="physique"] {
+  background-color: var(--attr-physique);
+}
+.odds-tooltip-title[data-attribute="motorics"] {
+  background-color: var(--attr-motorics);
+}
+
+/* What the chance reads as, in words. */
+.odds-tooltip-label {
+  margin: 0.3rem 0 0;
+  color: var(--text-now);
+  font-size: 2.5rem;
+  text-transform: uppercase;
+  text-wrap: nowrap;
+  padding: 0 16px;
+}
+.odds-tooltip-label[data-attribute="high"] {
+  color: #add926;
+}
+.odds-tooltip-label[data-attribute="even"] {
+  color: #ddcf55;
+}
+.odds-tooltip-label[data-attribute="low"] {
+  color: #f24c22;
+}
+
+/* The number the words were taken from. */
+.odds-tooltip-amount {
+  color: white;
+  font-size: 3rem;
+  margin: 0;
 }
 
 /* ---------------- Check verdict overlay ---------------- */
