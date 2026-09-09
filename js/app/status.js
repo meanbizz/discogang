@@ -9,7 +9,6 @@
    themselves is their own bars running out, which the host writes down and
    then tells the table. */
 
-import { dom } from "../dom.js";
 import * as vitals from "../vitals.js";
 import { applyStatusOrders, cleanStatus, holds } from "../status/status.js";
 import { state, isSelfDown } from "./state.js";
@@ -18,12 +17,6 @@ import { paintReadyButton, renderRoster, systemNote } from "./views.js";
 
 export function statusPayload() {
   return { type: "status", down: state.down, kia: state.kia };
-}
-
-/* A seat on the floor reads none of the table's plans and writes none of its
-   own: the plan log blurs and stops answering the mouse. */
-export function paintDowned() {
-  if (dom.turnLog) dom.turnLog.classList.toggle("is-downed", isSelfDown());
 }
 
 function added(before, after) {
@@ -63,7 +56,6 @@ export function setStatusRolls(rolls, news) {
   /* The roster carries the plates, and repaints both locks on its way. */
   renderRoster();
   paintReadyButton();
-  paintDowned();
 }
 
 /* Host only: the rolls move here, then the table is told. */

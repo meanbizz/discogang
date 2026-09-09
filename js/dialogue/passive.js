@@ -15,7 +15,7 @@
    The sheet is handed in from outside, so nothing here reaches for the app. */
 
 import { own } from "./text.js";
-import { DIFFICULTY_TARGET } from "./sanitize.js";
+import { DIFFICULTY_TARGET, checkModifierTotal } from "./sanitize.js";
 import { findSkill } from "./skills.js";
 import { skillScore } from "../vitals.js";
 
@@ -62,11 +62,11 @@ export function modifierValue(check) {
 }
 
 /* What the reader brings to a passive check: the sheet, plus the standing
-   bonus that stands in for two dice. */
+   bonus that stands in for two dice, plus the check's own weights. */
 export function passiveScore(check) {
   const value = skillValue(check);
   if (value == null) return null;
-  return value + PASSIVE_BONUS + (Number(check.modifier) || 0);
+  return value + PASSIVE_BONUS + checkModifierTotal(check);
 }
 
 /* Whether a passive is noticed. Anything unreckonable is shown rather than

@@ -119,6 +119,58 @@ function cleanDice(raw) {
   return { dice1: 0, dice2: 0 };
 }
 
+const CHECK_MODIFIER_MAX = 20;
+const MAX_CHECK_MODIFIERS = 12;
+const CHECK_REASON_MAX = 120;
+
+/* A check's weighted entries: [{ value, reason }], sorted lowest value
+   first. A bare number in the list reads as a value with no reason written. */
+function cleanCheckModifiers(raw, fallback) {
+  const source = Array.isArray(raw)
+    ? raw
+    : Array.isArray(fallback)
+      ? fallback
+      : [];
+  const out = [];
+  for (
+    let i = 0;
+    i < source.length && out.length < MAX_CHECK_MODIFIERS;
+    i += 1
+  ) {
+    const entry = source[i];
+    const held = entry && typeof entry === "object" ? entry : {};
+    const value = Math.round(Number(held.value != null ? held.value : entry));
+    if (!isFinite(value) || !value) continue;
+    out.push({
+      value: Math.max(-CHECK_MODIFIER_MAX, Math.min(CHECK_MODIFIER_MAX, value)),
+      reason: line(held.reason, CHECK_REASON_MAX),
+    });
+  }
+  /* A payload written before entries existed carried one bare modifier. */
+  if (!out.length && !Array.isArray(fallback)) {
+    const single = Math.round(Number(fallback));
+    if (isFinite(single) && single) {
+      out.push({
+        value: Math.max(
+          -CHECK_MODIFIER_MAX,
+          Math.min(CHECK_MODIFIER_MAX, single),
+        ),
+        reason: "",
+      });
+    }
+  }
+  out.sort((a, b) => a.value - b.value);
+  return out;
+}
+
+/* The whole of what a check's entries move a roll by. */
+export function checkModifierTotal(check) {
+  const list = check && Array.isArray(check.modifiers) ? check.modifiers : [];
+  let total = 0;
+  for (let i = 0; i < list.length; i += 1) total += Number(list[i].value) || 0;
+  return total;
+}
+
 function cleanCheck(raw) {
   if (!raw || typeof raw !== "object") return null;
 
@@ -130,7 +182,6 @@ function cleanCheck(raw) {
   const passive = resolvePassive(raw);
   const difficulty = normalizeKey(raw.difficulty);
   const dice = cleanDice(raw);
-  const modifier = Math.round(Number(raw.modifier));
 
   return {
     skill,
@@ -142,7 +193,7 @@ function cleanCheck(raw) {
     /* No dice were thrown for a passive, so it shows none. */
     dice1: passive ? 0 : dice.dice1,
     dice2: passive ? 0 : dice.dice2,
-    modifier: isFinite(modifier) ? Math.max(-20, Math.min(20, modifier)) : 0,
+    modifiers: cleanCheckModifiers(raw.modifiers, raw.modifier),
   };
 }
 

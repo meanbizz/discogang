@@ -12,7 +12,7 @@ import { DIALOGUE_ROUND_LIMIT } from "../config.js";
 import { cleanName, uid } from "../utils.js";
 import * as dialogue from "../dialogue/dialogue.js";
 import { cleanRounds } from "../export/rounds.js";
-import { state, isSelfDown, rosterPayload } from "./state.js";
+import { state, rosterPayload } from "./state.js";
 import { network, broadcast, sendUpstream } from "./net.js";
 import {
   paintReadyButton,
@@ -195,15 +195,7 @@ export function applyDialogue(payload) {
     refreshPlanningLock();
     return;
   }
-
-  /* A seat on the floor reads nothing: no node spends what it has left, and
-     the round is not held waiting on it. */
-  if (isSelfDown()) {
-    dialogue.reset();
-    reportDialogueDone();
-    refreshPlanningLock();
-    return;
-  }
+  
 
   const mine = dialogue.pickTree(
     state.dialoguePayload,

@@ -275,6 +275,24 @@ button.choice.odds:hover:not(:disabled) {
   color: white;
   font-size: 3rem;
   margin: 0;
+  line-height: 1.3;
+}
+
+.odds-tooltip-mod {
+  margin: 0px;
+  font-size: 14px;
+  text-align: left;
+  padding-left: 12px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  max-width: 220px;
+  word-break: break-word;
+}
+.odds-tooltip-mod[data-mod="good"] {
+  color: #add926;
+}
+.odds-tooltip-mod[data-mod="bad"] {
+  color: #f24c22;
 }
 
 /* ---------------- Check verdict overlay ---------------- */

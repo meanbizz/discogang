@@ -15,7 +15,7 @@
           "difficulty": "easy",
           "result": "success",
           "diceRoll": { "dice1": 4, "dice2": 3 },
-          "modifier": 1
+          "modifiers": [{ "value": 0, "reason": "Lame, possibly gay" }, { "value": 1, "reason": "Awesome sauce" }]
         },
         "next": "voice"
       },
@@ -32,7 +32,7 @@
           "difficulty": "medium",
           "result": "failure",
           "diceRoll": { "dice1": 2, "dice2": 2 },
-          "modifier": 0
+          "modifiers": [{ "value": -1, "reason": "Lame, possibly gay" }, { "value": 1, "reason": "Awesome sauce" }]
         },
         "vitals": { "morale": "loss" },
         "next": "close"

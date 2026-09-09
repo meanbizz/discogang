@@ -593,7 +593,7 @@ export function openOddsTooltip(anchor, reading) {
     if (
       attribute.skills
         .map((s) => s.id.replaceAll("-", " "))
-        .includes(reading.skill.toLowerCase())
+        .includes(reading.skill.replaceAll(" /", "").toLowerCase())
     ) {
       foundAttribute = attribute.id;
       break;
@@ -620,10 +620,27 @@ export function openOddsTooltip(anchor, reading) {
   amount.textContent = reading.odds + "%";
   tip.appendChild(amount);
 
+  /* What the check itself carries, lowest value first. */
+  (Array.isArray(reading.modifiers) ? reading.modifiers : []).forEach(
+    (entry) => {
+      const value = Number(entry.value) || 0;
+      if (!value) return;
+      const row = document.createElement("p");
+      row.className = "odds-tooltip-mod";
+      row.dataset['mod'] = value > 0 ? "good" : "bad"
+      row.textContent =
+        (value > 0 ? "+" : "−") +
+        Math.abs(value) +
+        (entry.reason ? " " + entry.reason : "");
+      tip.appendChild(row);
+    },
+  );
+
   if (labelValue !== "impossible") {
     const minRoll = document.createElement("p");
     minRoll.style.margin = "0";
-    minRoll.textContent = `Dice total must pass: ${reading.minRoll - 1}`;
+    minRoll.style.fontSize = "16px";
+    minRoll.textContent = `Dice total needed: ${reading.minRoll}+`;
     tip.appendChild(minRoll);
   }
 

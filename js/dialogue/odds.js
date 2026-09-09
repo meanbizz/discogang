@@ -5,7 +5,7 @@
 
 import { skillValue } from "./passive.js";
 import { skillLabel } from "./skills.js";
-import { DIFFICULTY_TARGET } from "./sanitize.js";
+import { DIFFICULTY_TARGET, checkModifierTotal } from "./sanitize.js";
 
 /* How many of the 36 throws land on each sum of two dice, index 0–12. */
 const SUMS = [0, 0, 1, 2, 3, 4, 5, 6, 5, 4, 3, 2, 1];
@@ -30,7 +30,7 @@ export function oddsFor(check) {
   if (typeof target !== "number") return null;
 
   const score = skillValue(check) || 0;
-  const need = target - score - (Number(check.modifier) || 0);
+  const need = target - score - checkModifierTotal(check);
   let odds;
 
   if (need <= 2) odds = 100;
@@ -48,5 +48,7 @@ export function oddsFor(check) {
     /* Lowest 2d6 sum that still passes; floored at 2, the smallest throw. */
     minRoll: Math.max(2, need),
     label: oddsLabel(odds),
+    /* Already sorted lowest first by the sieve that cleaned them. */
+    modifiers: Array.isArray(check.modifiers) ? check.modifiers : [],
   };
 }

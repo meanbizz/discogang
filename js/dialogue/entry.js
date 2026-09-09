@@ -8,7 +8,7 @@ import { dom } from "../dom.js";
 import { paintMarkup } from "../utils.js";
 import * as vitals from "../vitals.js";
 import * as narration from "../audio/narration.js";
-import { DIFFICULTY_TARGET } from "./sanitize.js";
+import { DIFFICULTY_TARGET, checkModifierTotal } from "./sanitize.js";
 import {
   PASSIVE_BONUS,
   modifierValue,
@@ -41,14 +41,20 @@ function signed(value) {
   return (number > 0 ? "+" : "−") + Math.abs(number);
 }
 
-/* What the tag says when it is hovered. Every number is named: which die was
-   which, what the modifier did, what the target was, and what the three came
-   to together. A bare "3 + 4 + 2 = 9" leaves the reader to guess which of
-   those was the roll and which the sheet.
+/* The check's own weights, lowest first, each with the reason written on it. */
+function describeCheckModifiers(check) {
+  const list = Array.isArray(check.modifiers) ? check.modifiers : [];
+  if (!list.length) return "none";
+  return list
+    .map((entry) => {
+      const value = Number(entry.value) || 0;
+      return signed(value) + (entry.reason ? " (" + entry.reason + ")" : "");
+    })
+    .join(", ");
+}
 
-   A pair against its target is the whole of a verdict: there are no critical
-   faces here, so nothing is read into two sixes beyond the twelve they add
-   up to. */
+/* The tag's hover breakdown: every number is named — dice, sheet, modifiers,
+   target and their total — so a bare sum never leaves the reader guessing. */
 function checkTitle(check) {
   const lines = [];
 
@@ -73,14 +79,14 @@ function checkTitle(check) {
       if (moved) lines.push("Of that, " + signed(moved) + " from modifiers");
     }
     lines.push("Passive bonus: +" + PASSIVE_BONUS + " in place of two dice");
-    lines.push("Modifier: " + signed(check.modifier));
+    lines.push("Modifier: " + describeCheckModifiers(check));
     if (total != null) lines.push("Total: " + total);
     return lines.join("\n");
   }
 
   if (check.dice1 && check.dice2) {
-    /* The pair, the sheet and the modifier together. A reader who loaded no
-       sheet rolls on the dice and the modifier alone. */
+    /* The pair, the sheet and the check's weights together. A reader who
+       loaded no sheet rolls on the dice and the weights alone. */
     const score = skillValue(check);
     lines.push("Rolled: " + check.dice1 + " and " + check.dice2);
     if (score != null) {
@@ -88,14 +94,17 @@ function checkTitle(check) {
       const moved = modifierValue(check);
       if (moved) lines.push("Of that, " + signed(moved) + " from modifiers");
     }
-    lines.push("Modifier: " + signed(check.modifier));
+    lines.push("Modifier: " + describeCheckModifiers(check));
     lines.push(
-      "Total: " + (check.dice1 + check.dice2 + (score || 0) + check.modifier),
+      "Total: " +
+        (check.dice1 + check.dice2 + (score || 0) + checkModifierTotal(check)),
     );
     return lines.join("\n");
   }
 
-  if (check.modifier) lines.push("Modifier: " + signed(check.modifier));
+  if (checkModifierTotal(check)) {
+    lines.push("Modifier: " + describeCheckModifiers(check));
+  }
   return lines.join("\n");
 }
 
