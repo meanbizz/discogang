@@ -4,6 +4,8 @@
 import { HISTORY_LIMIT, TURN_LIMIT } from "../config.js";
 import { dom } from "../dom.js";
 import { copyText, paintMarkup, paintThumb } from "../utils.js";
+import * as sfx from "../audio/sfx.js";
+import { setNarrationExclusions } from "../audio/narration.js";
 import { paintVitalBar } from "../vitals.js";
 import {
   state,
@@ -12,6 +14,7 @@ import {
   isKia,
   isSelfDown,
   isSelfKia,
+  narrationExclusions,
   slotOf,
 } from "./state.js";
 import { refreshPlanningLock, refreshSpeakLock } from "./locks.js";
@@ -69,6 +72,8 @@ function paintedVitals(reading) {
 }
 
 export function renderRoster() {
+  /* A roster change is also a change in who may be read aloud. */
+  setNarrationExclusions(narrationExclusions());
   dom.roster.textContent = "";
   renderReadyBanner();
   refreshPlanningLock();
@@ -164,7 +169,12 @@ export function renderRoster() {
 }
 
 export function renderReadyBanner() {
-  dom.readyBanner.hidden = !(state.isAdmin && everyoneReady());
+  const was = !dom.readyBanner.hidden;
+  const now = state.isAdmin && everyoneReady();
+  dom.readyBanner.hidden = !now;
+  /* Heard on the frame the last seat readies up, and only on that frame — a
+     roster repainted while the table stands ready stays silent. */
+  if (now && !was) sfx.playTableReady();
   refreshSpeakLock();
 }
 

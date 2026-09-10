@@ -4,7 +4,7 @@
    The caller gets its state back through a report callback — "loading",
    "playing", "idle", "error" — so a button can paint itself without this
    module knowing any DOM. Clips are held as blob URLs keyed by their text.
-   isNarrator answers which speakers are offered aloud, from config.js.
+   canNarrate answers who is offered aloud; config and the app name who is not.
 
    What is spoken is not quite what is written: *styled* passages are stage
    directions rather than speech, so they are cut out before anything is
@@ -32,10 +32,33 @@ function normalize(value) {
     .toLowerCase();
 }
 
-export function isNarrator(speaker) {
+/* Never read aloud: the two inner voices from config, plus whoever the app
+   adds — minted NPCs and every player at the table. */
+let excluded = new Set((NARRATION.excludedNames || []).map(normalize));
+
+export function setNarrationExclusions(names) {
+  excluded = new Set((NARRATION.excludedNames || []).map(normalize));
+  (Array.isArray(names) ? names : []).forEach((name) => {
+    const key = normalize(name);
+    if (key) excluded.add(key);
+  });
+}
+
+export function canNarrate(speaker) {
   const name = normalize(speaker);
-  if (!name) return false;
-  return NARRATION.narratorNames.indexOf(name) !== -1;
+  return Boolean(name) && !excluded.has(name);
+}
+
+/* Auto mode: new scenes ask for their own readings as each line is reached. */
+let auto = false;
+
+export function autoNarrate() {
+  return auto;
+}
+
+export function setAutoNarrate(next) {
+  auto = Boolean(next);
+  if (!auto) stop();
 }
 
 export function isSpeaking(id) {
@@ -130,6 +153,16 @@ function fetchClip(text, signal) {
       remember(text, url);
       return url;
     });
+}
+
+/* Ask for a clip without playing it, so a line being walked towards is
+   already in memory when the player arrives. */
+export function prefetch(text) {
+  const body = speakable(text).slice(0, NARRATION.maxChars);
+  if (!body || clips.has(body)) return;
+  const controller =
+    typeof AbortController === "function" ? new AbortController() : null;
+  fetchClip(body, controller ? controller.signal : undefined).catch(() => {});
 }
 
 /* A dial moved mid-line: the clip in hand follows it rather than waiting for

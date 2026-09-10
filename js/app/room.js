@@ -47,6 +47,19 @@ function seat(isAdmin) {
   setPresent(anchors.turnComposer, dom.turnComposer, !isAdmin);
   setPresent(anchors.panelFoot, dom.panelFoot, !isAdmin);
   setPresent(anchors.readyBanner, dom.readyBanner, isAdmin);
+  seatSoundButton(isAdmin);
+}
+
+/* One button, two homes: beside Save on the administrateur's desk, in the
+   foot's action row on a player's — every seat can reach its own dials. */
+function seatSoundButton(isAdmin) {
+  if (!dom.soundButton) return;
+  const home = isAdmin
+    ? dom.adminTools
+    : dom.panelFoot && dom.panelFoot.querySelector(".panel-foot-actions");
+  if (home && dom.soundButton.parentNode !== home) {
+    home.appendChild(dom.soundButton);
+  }
 }
 
 function clearSeat() {
@@ -142,6 +155,7 @@ export function leave() {
   modals.closeInventory();
   modals.closeItemsModal();
   modals.closeGoals();
+  modals.closeSound();
 
   dialogue.reset();
   overlays.reset();

@@ -75,6 +75,14 @@ export const dom = {
   sessionFile: document.getElementById("session-file"),
   sessionNote: document.getElementById("session-note"),
 
+  // Sound — this seat's own dials, and the button that opens them
+  soundButton: document.getElementById("sound-button"),
+  soundModal: document.getElementById("sound-modal"),
+  soundModalClose: document.getElementById("sound-modal-close"),
+  volumeMaster: document.getElementById("volume-master"),
+  volumeSfx: document.getElementById("volume-sfx"),
+  volumeNarration: document.getElementById("volume-narration"),
+
   // Skill-check verdict overlay
   checkOverlay: document.getElementById("check-overlay"),
   checkOverlayScene: document.getElementById("check-overlay-scene"),

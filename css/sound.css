@@ -1,0 +1,50 @@
+/* css/sound.css */
+
+/* The sound dialog: three dials and the note that they are this seat's own.
+   Scaffolding comes from modal.css; only the sliders are dressed here. */
+
+.sound-controls {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.25rem;
+  text-align: left;
+}
+
+.sound-controls .field {
+  width: 100%;
+}
+
+.sound-controls input[type="range"] {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  accent-color: var(--option);
+  cursor: pointer;
+}
+
+.sound-note {
+  margin: 1.25rem 0 0;
+  color: var(--text-old);
+  font-size: 0.8rem;
+  font-style: italic;
+  text-align: center;
+}
+
+/* The auto-narration switch reads as a sentence, not a field label. */
+.sound-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  cursor: pointer;
+}
+
+.sound-toggle input {
+  accent-color: var(--option);
+  cursor: pointer;
+}

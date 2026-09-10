@@ -187,6 +187,20 @@ export function isSelfKia() {
   return !state.isAdmin && isKia(state.profile.name);
 }
 
+/* Speakers narration must skip: every minted NPC and every player seated,
+   this seat included. The caller hands the list to the audio module. */
+export function narrationExclusions() {
+  const names = [];
+  state.npcs.forEach((npc) => {
+    if (npc && npc.name) names.push(npc.name);
+  });
+  state.roster.forEach((person) => {
+    if (!person.admin && person.name) names.push(person.name);
+  });
+  if (state.profile.name) names.push(state.profile.name);
+  return names;
+}
+
 /* ---------------- Tallies ---------------- */
 
 export function countReady() {

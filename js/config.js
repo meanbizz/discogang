@@ -87,10 +87,8 @@ export const RESUME_MAX_DELAY_MS = 15000;
 export const MAX_RECLAIM_ATTEMPTS = 8;
 export const RECLAIM_DELAY_MS = 2500;
 
-/* endpoint is the Worker that holds the speech key and sends the CORS
-   headers; token and backend stay empty so the preflight is content-type
-   alone. modelId travels in the body as reference_id. narratorNames are the
-   speaker names, lowercased, that earn a line its play button. */
+/* endpoint is the Worker holding the speech key; modelId travels as
+   reference_id. excludedNames (lowercased) never earn a play button. */
 export const NARRATION = {
   endpoint: NARRATION_ENDPOINT,
   token: "",
@@ -100,5 +98,5 @@ export const NARRATION = {
   volume: 0.9,
   maxChars: 2000,
   cacheLimit: 24,
-  narratorNames: ["narrator", "narrateur", "the narrator", "le narrateur"],
+  excludedNames: ["ancient reptilian brain", "limbic system"],
 };

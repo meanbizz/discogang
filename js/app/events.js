@@ -8,6 +8,8 @@ import { appendPair, cleanImageUrl, cleanName, paintThumb } from "../utils.js";
 import { probeImage, rejectImageFile, uploadImage } from "../upload.js";
 import * as modals from "../modals.js";
 import * as music from "../audio/music.js";
+import * as volume from "../audio/volume.js";
+import * as narration from "../audio/narration.js";
 import { readFile } from "../export/file.js";
 import { ledger } from "../xp.js";
 import { state } from "./state.js";
@@ -182,6 +184,35 @@ function bindDeck() {
   });
 }
 
+/* The sound dialog: the dials are the seat's own, so they write straight to
+   the volume module and nothing crosses the wire. */
+function bindSound() {
+  if (dom.soundButton) {
+    dom.soundButton.addEventListener("click", modals.openSound);
+  }
+  if (dom.soundModalClose) {
+    dom.soundModalClose.addEventListener("click", modals.closeSound);
+  }
+  if (dom.soundModal) {
+    dom.soundModal.addEventListener("click", (event) => {
+      if (event.target.dataset.close === "true") modals.closeSound();
+    });
+  }
+
+  [
+    [dom.volumeMaster, "master"],
+    [dom.volumeSfx, "sfx"],
+    [dom.volumeNarration, "narration"],
+  ].forEach((pair) => {
+    if (!pair[0]) return;
+    pair[0].addEventListener("input", () => {
+      const level = Number(pair[0].value) / 100;
+      if (pair[1] === "master") volume.setMaster(level);
+      else volume.setLevel(pair[1], level);
+    });
+  });
+}
+
 function bindModals() {
   if (dom.sceneThumb) {
     dom.sceneThumb.addEventListener("click", () =>
@@ -245,6 +276,7 @@ function bindModals() {
     modals.closeInventory();
     modals.closeItemsModal();
     modals.closeGoals();
+    modals.closeSound();
     modals.closeOddsTooltip();
   });
 }
@@ -497,6 +529,7 @@ export function bindSession() {
   bindComposers();
   bindSaveFiles();
   bindDeck();
+  bindSound();
   bindModals();
   bindNpcForm();
   bindInventory();

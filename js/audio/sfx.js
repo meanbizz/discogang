@@ -293,6 +293,12 @@ export function playMoney(gained, onEnd) {
   });
 }
 
+/* The whole table ready — the administrateur's cue alone. It rides the money
+   channel: an administrateur keeps no purse, so nothing else ever plays there. */
+export function playTableReady() {
+  run(channels.money, MONEY_SRC.gained, { onEnd: null });
+}
+
 /* One step of health or morale, fired the same way and for the same reason:
    the plate is what the sound belongs to, not the arithmetic. */
 export function playVital(kind, gained, onEnd) {

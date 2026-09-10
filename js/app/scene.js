@@ -4,7 +4,8 @@ import { dom } from "../dom.js";
 import { cleanName, cleanNpc, cleanScene, paintThumb, uid } from "../utils.js";
 import { normalizeKey } from "../dialogue/text.js";
 import * as modals from "../modals.js";
-import { state } from "./state.js";
+import { setNarrationExclusions } from "../audio/narration.js";
+import { narrationExclusions, state } from "./state.js";
 import { network, broadcast, sendUpstream } from "./net.js";
 
 export function renderScene() {
@@ -44,6 +45,7 @@ export function currentSceneImage() {
 
 export function setNpcs(list) {
   state.npcs = (Array.isArray(list) ? list : []).map(cleanNpc).filter(Boolean);
+  setNarrationExclusions(narrationExclusions());
   modals.renderNpcList(state.npcs, editNpc, removeNpc);
 }
 
@@ -76,6 +78,7 @@ export function editNpc(id) {
 
 export function removeNpc(id) {
   state.npcs = state.npcs.filter((npc) => npc.id !== id);
+  setNarrationExclusions(narrationExclusions());
   if (dom.npcId.value === id) modals.resetNpcForm();
   modals.renderNpcList(state.npcs, editNpc, removeNpc);
   broadcastNpcs();
@@ -104,6 +107,7 @@ export function submitNpcForm() {
     });
   }
   modals.resetNpcForm();
+  setNarrationExclusions(narrationExclusions());
   modals.renderNpcList(state.npcs, editNpc, removeNpc);
   broadcastNpcs();
 }

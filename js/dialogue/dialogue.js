@@ -16,6 +16,7 @@ import * as cues from "./cues.js";
 import * as narration from "../audio/narration.js";
 import { grantXp } from "../xp.js";
 import { appendToLog, buildEntry, vitalsNote, voiceOf } from "./entry.js";
+import { walk as walkTree } from "./transcript.js";
 import * as modals from "../modals.js";
 import { oddsFor } from "./odds.js";
 
@@ -95,6 +96,15 @@ export function start(nextTree) {
   if (!nextTree || !nextTree.nodes) return false;
   tree = nextTree;
   finished = false;
+  /* Auto mode asks for every reading ahead, so each clip is in memory
+     before its line is reached. */
+  if (narration.autoNarrate()) {
+    walkTree(tree, {}).forEach((node) => {
+      if (node.dialogue && narration.canNarrate(node.speaker)) {
+        narration.prefetch(node.dialogue);
+      }
+    });
+  }
   renderNode(tree.root);
   return true;
 }

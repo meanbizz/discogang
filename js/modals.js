@@ -35,6 +35,8 @@ import {
 } from "./modifiers/modifiers.js";
 import { refreshVitals } from "./vitals.js";
 import * as sfx from "./audio/sfx.js";
+import * as volume from "./audio/volume.js";
+import * as narration from "./audio/narration.js";
 
 let modalReturnFocus = null;
 let psycheReturnFocus = null;
@@ -42,6 +44,7 @@ let npcReturnFocus = null;
 let inventoryReturnFocus = null;
 let itemsReturnFocus = null;
 let goalsReturnFocus = null;
+let soundReturnFocus = null;
 let sheetInstance = null;
 let stagedNpcPortrait = null;
 let stagedItemImage = null;
@@ -748,6 +751,43 @@ export function closeGoals() {
 export function refreshGoals(list) {
   if (!dom.goalsModal || dom.goalsModal.hidden) return;
   renderGoalsList(list);
+}
+
+/* ---------------- Sound ---------------- */
+
+/* The dials are this seat's own: nothing here is sent on the wire, since
+   what one player hears is nobody else's business. */
+export function openSound() {
+  if (!dom.soundModal) return;
+  paintSoundSliders();
+  soundReturnFocus = activeFocus();
+  dom.soundModal.hidden = false;
+  sfx.playModal();
+  dom.soundModalClose.focus();
+}
+
+export function closeSound() {
+  if (!dom.soundModal || dom.soundModal.hidden) return;
+  dom.soundModal.hidden = true;
+  sfx.playCancel();
+  if (soundReturnFocus && document.contains(soundReturnFocus)) {
+    soundReturnFocus.focus();
+  }
+  soundReturnFocus = null;
+}
+
+/* Sliders painted from the live dials, so a return visit shows what is set. */
+function paintSoundSliders() {
+  const levels = volume.all();
+  if (dom.volumeMaster) {
+    dom.volumeMaster.value = String(Math.round(levels.master * 100));
+  }
+  if (dom.volumeSfx) {
+    dom.volumeSfx.value = String(Math.round(levels.sfx * 100));
+  }
+  if (dom.volumeNarration) {
+    dom.volumeNarration.value = String(Math.round(levels.narration * 100));
+  }
 }
 
 /* ---------------- Items (administrateur) ---------------- */

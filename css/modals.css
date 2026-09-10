@@ -25,6 +25,7 @@
 
 .modal-card {
   position: relative;
+  min-width: 300px;
   width: auto;
   max-width: 100%;
   padding: 2rem 1.25rem 1.25rem;

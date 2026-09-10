@@ -25,7 +25,7 @@ const HISTORY_OPACITY = "0.78";
    Passives the reader was not sharp enough for are stepped over exactly as
    the live reader steps over them, so a transcript holds what the player saw
    and nothing they did not. */
-function walk(tree, taken) {
+export function walk(tree, taken) {
   if (!tree || !tree.nodes) return [];
 
   const out = [];

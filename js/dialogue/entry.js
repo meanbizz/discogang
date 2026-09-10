@@ -8,6 +8,7 @@ import { dom } from "../dom.js";
 import { paintMarkup } from "../utils.js";
 import * as vitals from "../vitals.js";
 import * as narration from "../audio/narration.js";
+import { whenIdle } from "../sequencer.js";
 import { DIFFICULTY_TARGET, checkModifierTotal } from "./sanitize.js";
 import {
   PASSIVE_BONUS,
@@ -157,12 +158,21 @@ function speakButton(speakKey, text) {
   button.className = "entry-speak";
   paintSpeakButton(button, "idle");
 
+  const report = (state) => paintSpeakButton(button, state);
+
   button.addEventListener("click", (event) => {
     event.stopPropagation();
-    narration.toggle(speakKey, text, (state) => {
-      paintSpeakButton(button, state);
-    });
+    narration.toggle(speakKey, text, report);
   });
+
+  /* Auto mode reads for itself once the screen is free — that is the moment
+     the player has actually reached the line. Transcripts never do. */
+  if (narration.autoNarrate() && speakKey.indexOf("past:") !== 0) {
+    whenIdle(() => {
+      if (!narration.autoNarrate() || !button.isConnected) return;
+      narration.toggle(speakKey, text, report);
+    });
+  }
 
   return button;
 }
@@ -254,7 +264,7 @@ export function buildEntry(node, voice, speakKey) {
      offered a button it could only fail with. */
   if (
     node.dialogue &&
-    narration.isNarrator(node.speaker) &&
+    narration.canNarrate(node.speaker) &&
     narration.speakable(node.dialogue)
   ) {
     article.dataset.narrated = "true";
