@@ -16,6 +16,7 @@ import {
   goalsFor,
 } from "../goals/goals.js";
 import { grantGoalXp } from "../xp.js";
+import { cleanName } from "../utils.js";
 import { state } from "./state.js";
 import { network, broadcast, sendUpstream } from "./net.js";
 import { systemNote } from "./views.js";
@@ -106,22 +107,145 @@ export function setGoals(books, news) {
   refreshGoals();
 }
 
-/* Host only: the books move here, then the table is told. */
-export function commitGoalOps(ops) {
-  /* Through setGoals, so a host who is also a player collects their own. */
-  setGoals(applyGoalOps(state.goals, ops, everyone()), true);
-  broadcast(goalsPayload());
+function stripCondition(item) {
+  const copy = Object.assign({}, item);
+  delete copy.at;
+  delete copy.node;
+  delete copy.nodeId;
+  return copy;
 }
 
-/* Administrateur: applied here when this seat is the host, asked of the host
-   otherwise. */
-export function publishGoalOps(ops) {
+function conditionOf(item) {
+  return item && (item.at || item.node || item.nodeId);
+}
+
+export function partitionGoalOps(ops, roundId) {
+  if (!ops) return { immediate: null, pending: [] };
+  const pending = [];
+
+  if (Array.isArray(ops)) {
+    const imm = [];
+    ops.forEach((item) => {
+      const cond = conditionOf(item);
+      if (cond) {
+        const target = item.holder || item.to || item.target || "*";
+        const cleanOp = stripCondition(item);
+        const targets = target === "*" ? everyone() : [target];
+        targets.forEach((t) => {
+          pending.push({
+            holder: cleanName(t).toLowerCase(),
+            node: String(cond).trim(),
+            op: [Object.assign({}, cleanOp, { to: t, holder: t })],
+            roundId: roundId || null,
+          });
+        });
+      } else {
+        imm.push(item);
+      }
+    });
+    return { immediate: imm.length ? imm : null, pending };
+  }
+
+  if (typeof ops === "object") {
+    const immObj = {};
+    let hasImm = false;
+
+    Object.keys(ops).forEach((key) => {
+      const val = ops[key];
+      if (Array.isArray(val)) {
+        const immList = [];
+        val.forEach((item) => {
+          const cond = conditionOf(item);
+          if (cond) {
+            const target = item.holder || item.to || item.target || key;
+            const cleanOp = stripCondition(item);
+            const targets = target === "*" ? everyone() : [target];
+            targets.forEach((t) => {
+              const singleOp = {};
+              singleOp[key === "*" ? t : key] = [
+                Object.assign({}, cleanOp, key !== t ? { to: t, holder: t } : {}),
+              ];
+              pending.push({
+                holder: cleanName(t).toLowerCase(),
+                node: String(cond).trim(),
+                op: singleOp,
+                roundId: roundId || null,
+              });
+            });
+          } else {
+            immList.push(item);
+          }
+        });
+        if (immList.length) {
+          immObj[key] = immList;
+          hasImm = true;
+        }
+      } else {
+        immObj[key] = val;
+        hasImm = true;
+      }
+    });
+
+    return { immediate: hasImm ? immObj : null, pending };
+  }
+
+  return { immediate: ops, pending: [] };
+}
+
+/* Host only: immediate goals move now, conditional ones are held. */
+export function commitGoalOps(ops, roundId) {
+  const { immediate, pending } = partitionGoalOps(ops, roundId);
+  if (pending.length) {
+    state.pendingGoals = state.pendingGoals.concat(pending);
+  }
+  if (immediate) {
+    setGoals(applyGoalOps(state.goals, immediate, everyone()), true);
+    broadcast(goalsPayload());
+  }
+}
+
+/* Administrateur: applied here when this seat is the host, asked of the host otherwise. */
+export function publishGoalOps(ops, roundId) {
   if (!state.isAdmin || !ops) return;
   if (network.isHost) {
-    commitGoalOps(ops);
+    commitGoalOps(ops, roundId);
     return;
   }
-  sendUpstream({ type: "goal-ops", ops });
+  sendUpstream({ type: "goal-ops", ops, roundId });
+}
+
+export function checkPendingGoals(name, roundId, nodeId) {
+  if (!network.isHost || !name || !nodeId) return;
+  const wantedName = cleanName(name).toLowerCase();
+  const wantedNode = String(nodeId).trim();
+  const remaining = [];
+  const triggered = [];
+
+  state.pendingGoals.forEach((pending) => {
+    const matchName = pending.holder === wantedName;
+    const matchNode = pending.node === wantedNode;
+    const matchRound = !pending.roundId || !roundId || pending.roundId === roundId;
+    if (matchName && matchNode && matchRound) {
+      triggered.push(pending);
+    } else {
+      remaining.push(pending);
+    }
+  });
+
+  if (!triggered.length) return;
+  state.pendingGoals = remaining;
+  triggered.forEach((pending) => commitGoalOps(pending.op));
+}
+
+export function clearStalePendingGoals(currentRoundId) {
+  if (!state.pendingGoals || !state.pendingGoals.length) return;
+  if (!currentRoundId) {
+    state.pendingGoals = [];
+    return;
+  }
+  state.pendingGoals = state.pendingGoals.filter(
+    (pending) => !pending.roundId || pending.roundId === currentRoundId,
+  );
 }
 
 export function openGoals() {
@@ -130,6 +254,12 @@ export function openGoals() {
 
 /* For the administrateur's import: the only window they have on what the table
    is chasing, since no modal of theirs lists it. */
+function goalSummary(op) {
+  if (!op) return null;
+  const first = Array.isArray(op) ? op[0] : typeof op === "object" ? Object.values(op)[0]?.[0] : null;
+  return first && typeof first === "object" ? first : null;
+}
+
 export function goalLines() {
   const lines = [];
   Object.keys(state.goals).forEach((holder) => {
@@ -138,6 +268,12 @@ export function goalLines() {
       const mark = goal.done ? " — completed" : "";
       lines.push(holder + " — " + goal.name + paid + mark);
     });
+  });
+  (state.pendingGoals || []).forEach((pending) => {
+    const g = goalSummary(pending.op);
+    const label = g?.name || "unnamed goal";
+    const paid = g?.xp ? " (+" + g.xp + " XP)" : "";
+    lines.push(pending.holder + " — " + label + paid + " (pending at node " + pending.node + ")");
   });
   return lines;
 }

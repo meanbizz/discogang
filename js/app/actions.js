@@ -72,9 +72,10 @@ export function shareText(text) {
     if (attempt.status) publishStatusOps(attempt.status);
     if (attempt.inventory) publishOps(attempt.inventory);
     /* What was consumed, before any tree is read against the scores it moves. */
+    const roundId = attempt.payload ? uid() : null;
     if (attempt.modifiers) publishModifierOps(attempt.modifiers);
-    if (attempt.goals) publishGoalOps(attempt.goals);
-    if (attempt.payload) publishDialogue(attempt.payload, attempt.raw);
+    if (attempt.goals) publishGoalOps(attempt.goals, roundId);
+    if (attempt.payload) publishDialogue(attempt.payload, attempt.raw, roundId);
     else renderEntry({ text: attempt.raw, at: Date.now(), raw: true });
     return;
   }

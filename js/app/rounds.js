@@ -24,6 +24,7 @@ import {
 import { refreshLoadButton, refreshPlanningLock } from "./locks.js";
 import { setSceneOverride } from "./scene.js";
 import { publishProgress, refreshLedger } from "./progress.js";
+import { checkPendingGoals, clearStalePendingGoals } from "./goals.js";
 
 dialogue.setHooks({
   onFinish: () => {
@@ -32,6 +33,7 @@ dialogue.setHooks({
   },
   onSkillArt: setSceneOverride,
   onChoice: reportChoice,
+  onNode: (nodeId) => reportNodeReached(nodeId),
   /* The reader has already moved the ledger and put the overlay on screen.
      What is left is telling the table, and the sheet's header if it happens to
      be open behind the scene. */
@@ -116,6 +118,17 @@ export function acceptChoice(author, roundId, raw) {
   dialogue.keepChoice(listFor(round, name), choice);
   echoChoice(name, choice);
   return { round, author: name, choice };
+}
+
+export function reportNodeReached(nodeId) {
+  if (state.isAdmin) return;
+  const round = currentRound();
+  const roundId = round ? round.id : null;
+  if (network.isHost) {
+    checkPendingGoals(state.profile.name, roundId, nodeId);
+    return;
+  }
+  sendUpstream({ type: "node-reached", roundId, nodeId });
 }
 
 /* This seat's own reader picked something. The administrateur reads no trees,
@@ -247,6 +260,7 @@ function ageTurnLog() {
    rounds they were made in. */
 export function openDialogueRound(payload, roundId, at) {
   const round = rememberRound(payload, roundId, at);
+  clearStalePendingGoals(round ? round.id : null);
 
   state.roster.forEach((person) => {
     if (person.admin) return;
@@ -276,19 +290,19 @@ export function openDialogueRound(payload, roundId, at) {
 
 /* Administrateur only: echo the raw payload locally, then push it out. The
    round is named here and keeps that name through the host and back. */
-export function publishDialogue(payload, raw) {
+export function publishDialogue(payload, raw, roundId) {
   renderEntry({ text: raw, at: Date.now(), raw: true });
 
-  const roundId = uid();
+  const id = roundId || uid();
   const at = Date.now();
 
   if (network.isHost) {
-    openDialogueRound(payload, roundId, at);
+    openDialogueRound(payload, id, at);
     return;
   }
 
-  if (sendUpstream({ type: "dialogue", payload, roundId, at })) {
-    rememberRound(payload, roundId, at);
+  if (sendUpstream({ type: "dialogue", payload, roundId: id, at })) {
+    rememberRound(payload, id, at);
     state.dialoguePayload = payload;
     state.dialogueLive = true;
     refreshPlanningLock();

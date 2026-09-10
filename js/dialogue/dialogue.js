@@ -40,7 +40,7 @@ let steps = 0;
 /* Nodes whose one-time effects have already landed: vitals spent, experience
    earned. A tree that loops back must not pay twice. */
 const spentNodes = new Set();
-let hooks = { onFinish: null, onSkillArt: null, onChoice: null, onXp: null };
+let hooks = { onFinish: null, onSkillArt: null, onChoice: null, onXp: null, onNode: null };
 
 export function setHooks(next) {
   hooks = {
@@ -48,6 +48,7 @@ export function setHooks(next) {
     onSkillArt: (next && next.onSkillArt) || null,
     onChoice: (next && next.onChoice) || null,
     onXp: (next && next.onXp) || null,
+    onNode: (next && next.onNode) || null,
   };
 }
 
@@ -254,6 +255,8 @@ function renderNode(id) {
     finish();
     return;
   }
+
+  if (hooks.onNode) hooks.onNode(node.id);
 
   const voice = voiceOf(node);
   const rolled = Boolean(

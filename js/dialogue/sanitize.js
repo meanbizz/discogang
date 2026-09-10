@@ -340,11 +340,33 @@ export function cleanModifierOrders(raw) {
 }
 
 /* The goal orders riding along with the trees, or null when there are none. */
+function restoreGoalConditions(cleaned, raw) {
+  if (!cleaned || !raw) return cleaned;
+  if (Array.isArray(cleaned) && Array.isArray(raw)) {
+    cleaned.forEach((item, i) => {
+      const src = raw[i];
+      if (src && typeof src === "object" && typeof item === "object") {
+        const at = src.at || src.node || src.nodeId;
+        if (at) item.at = String(at).trim().slice(0, 120);
+      }
+    });
+    return cleaned;
+  }
+  if (typeof cleaned === "object" && typeof raw === "object") {
+    Object.keys(cleaned).forEach((k) => {
+      if (raw[k]) restoreGoalConditions(cleaned[k], raw[k]);
+    });
+  }
+  return cleaned;
+}
+
 export function cleanGoalOrders(raw) {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
   const keys = Object.keys(raw);
   for (let i = 0; i < keys.length; i += 1) {
-    if (normalizeKey(keys[i]) === GOALS_KEY) return cleanGoalOps(raw[keys[i]]);
+    if (normalizeKey(keys[i]) === GOALS_KEY) {
+      return restoreGoalConditions(cleanGoalOps(raw[keys[i]]), raw[keys[i]]);
+    }
   }
   return null;
 }

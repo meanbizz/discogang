@@ -295,6 +295,25 @@ button.choice.odds:hover:not(:disabled) {
   color: #f24c22;
 }
 
+/* On a phone it becomes a plate across the top of the screen: full width,
+   wrapping, and clear of the ODDS button waiting at the foot of the log. */
+@media (max-width: 40rem) {
+  .odds-tooltip {
+    /* !important defeats the inline left/top placeTooltip writes. */
+    left: 0 !important;
+    top: 0.5rem !important;
+    right: 0;
+    width: auto;
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+
+  .odds-tooltip-title,
+  .odds-tooltip-label {
+    text-wrap: wrap;
+  }
+}
+
 /* ---------------- Check verdict overlay ---------------- */
 
 /* Over the whole viewport, transparent until cues.js fades it in. The mask is

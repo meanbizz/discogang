@@ -61,7 +61,7 @@ import { refreshPlanningLock } from "./locks.js";
 import { applyScene, setNpcs } from "./scene.js";
 import { applySession } from "./save.js";
 import { commitOps, inventoryPayload, setInventory } from "./inventory.js";
-import { commitGoalOps, setGoals } from "./goals.js";
+import { checkPendingGoals, commitGoalOps, setGoals } from "./goals.js";
 import {
   commitDown,
   commitStand,
@@ -311,7 +311,13 @@ function onHostReceiveData(connection, data) {
     if (!person?.admin) return;
     const asked = cleanGoalOps(data.ops);
     if (!asked) return;
-    commitGoalOps(asked);
+    commitGoalOps(asked, data.roundId);
+    return;
+  }
+
+  if (data.type === "node-reached") {
+    if (!person || person.admin) return;
+    checkPendingGoals(person.name, data.roundId, data.nodeId);
     return;
   }
 

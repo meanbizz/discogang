@@ -97,6 +97,7 @@ export function connect(room, name, portrait) {
      character has a purse from the first frame, holding nothing. */
   setInventory([], {});
   /* No goals until a payload or a save hands this seat some. */
+  state.pendingGoals = [];
   setGoals({});
   /* Nobody is on the floor in a room that has not started. */
   setStatusRolls({});
@@ -183,6 +184,7 @@ export function leave() {
   state.turnEntries = [];
   state.isAdmin = false;
   state.selfId = null;
+  state.pendingGoals = [];
   setInventory([], {});
   setGoals({});
   setStatusRolls({});

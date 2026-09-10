@@ -26,6 +26,8 @@ export const state = {
   inventories: {},
   /* What each character is after: character name -> [ goal ]. */
   goals: {},
+  /* Goals waiting for a specific node to be reached: [ { holder, node, op, roundId } ]. */
+  pendingGoals: [],
   /* What a consumed item is doing to somebody: name -> [ modifier ]. */
   temporaryModifiers: {},
   /* This seat's own standing, recomputed whenever a bag or an order moves. */
