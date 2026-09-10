@@ -4,12 +4,14 @@
 import { HISTORY_LIMIT, TURN_LIMIT } from "../config.js";
 import { dom } from "../dom.js";
 import { copyText, paintMarkup, paintThumb } from "../utils.js";
+import { paintVitalBar } from "../vitals.js";
 import {
   state,
   everyoneReady,
   isDown,
   isKia,
   isSelfDown,
+  isSelfKia,
   slotOf,
 } from "./state.js";
 import { refreshPlanningLock, refreshSpeakLock } from "./locks.js";
@@ -43,6 +45,27 @@ function parkVitals() {
   vitalBars().forEach((bar) => {
     if (bar.parentNode !== home) home.appendChild(bar);
   });
+}
+
+/* Another seat's bars, painted as a reading: the administrateur sees the whole
+   table's standing without being any of it. */
+function paintedVitals(reading) {
+  const span = document.createElement("span");
+  span.className = "roster-vitals";
+  (["health", "morale"]).forEach((kind) => {
+    const held = reading[kind] || { value: 0, max: 0 };
+    const bar = document.createElement("div");
+    bar.className = "vital";
+    bar.dataset.vital = kind;
+    paintVitalBar(
+      bar,
+      kind === "health" ? "Health" : "Morale",
+      held.value,
+      held.max,
+    );
+    span.appendChild(bar);
+  });
+  return span;
 }
 
 export function renderRoster() {
@@ -97,6 +120,9 @@ export function renderRoster() {
       vitalBars().forEach((bar) => bars.appendChild(bar));
       stack.appendChild(bars);
       mine = true;
+    } else if (state.isAdmin && person.vitals) {
+      /* Every seat's bars, as each seat last reported them. */
+      stack.appendChild(paintedVitals(person.vitals));
     }
 
     wrapper.appendChild(thumb);
@@ -177,6 +203,8 @@ function rawCopyButton(text) {
 }
 
 export function renderEntry(entry) {
+  /* Dead: the log shut the moment this seat died, and nothing reopens it. */
+  if (isSelfKia()) return;
   const placeholder = dom.log.querySelector(".log-empty");
   if (placeholder) placeholder.remove();
 
@@ -227,6 +255,8 @@ export function commit(entry) {
 
 export function replaceLog(entries) {
   state.logEntries = entries.slice(-HISTORY_LIMIT);
+  /* Dead: what is on the screen stays exactly as death left it. */
+  if (isSelfKia()) return;
   dom.log.textContent = "";
   state.logEntries.forEach(renderEntry);
   if (!state.logEntries.length) {
@@ -240,6 +270,8 @@ export function replaceLog(entries) {
 }
 
 export function renderTurn(entry) {
+  /* Dead: plans stopped being this seat's business at the moment it died. */
+  if (isSelfKia()) return;
   const placeholder = dom.turnLog.querySelector(".turn-empty");
   if (placeholder) placeholder.remove();
 
@@ -298,6 +330,7 @@ export function commitTurn(entry) {
 
 export function replaceTurnLog(entries) {
   state.turnEntries = entries.slice(-TURN_LIMIT);
+  if (isSelfKia()) return;
   dom.turnLog.textContent = "";
   state.turnEntries.forEach(renderTurn);
   if (!state.turnEntries.length) renderTurnEmptyState();

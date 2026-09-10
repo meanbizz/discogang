@@ -12,7 +12,7 @@ import { DIALOGUE_ROUND_LIMIT } from "../config.js";
 import { cleanName, uid } from "../utils.js";
 import * as dialogue from "../dialogue/dialogue.js";
 import { cleanRounds } from "../export/rounds.js";
-import { state, rosterPayload } from "./state.js";
+import { state, rosterPayload, isSelfKia } from "./state.js";
 import { network, broadcast, sendUpstream } from "./net.js";
 import {
   paintReadyButton,
@@ -146,7 +146,7 @@ export function reportChoice(raw) {
    back — the payloads stay in dialogueRounds. */
 export function showDialogueHistory(rounds) {
   if (!Array.isArray(rounds) || !rounds.length) return;
-  if (state.isAdmin) return;
+  if (state.isAdmin || isSelfKia()) return;
 
   let scenes = 0;
   let mine = 0;
@@ -190,7 +190,9 @@ export function applyDialogue(payload) {
   state.dialoguePayload = payload || null;
   state.dialogueLive = Boolean(state.dialoguePayload);
 
-  if (!state.dialogueLive || state.isAdmin) {
+  /* The administrateur reads no trees, and neither does a dead seat — the
+     scene goes unread and the lock says why. */
+  if (!state.dialogueLive || state.isAdmin || isSelfKia()) {
     dialogue.reset();
     refreshPlanningLock();
     return;

@@ -34,7 +34,7 @@
           "diceRoll": { "dice1": 2, "dice2": 2 },
           "modifiers": [{ "value": -1, "reason": "Lame, possibly gay" }, { "value": 1, "reason": "Awesome sauce" }]
         },
-        "vitals": { "morale": "loss" },
+        "vitals": { "morale": -2 },
         "next": "close"
       },
       "close": {

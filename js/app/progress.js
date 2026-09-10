@@ -18,7 +18,7 @@ import {
   skillScores,
 } from "../sheet.js";
 import * as dialogue from "../dialogue/dialogue.js";
-import { refreshVitals } from "../vitals.js";
+import { refreshVitals, vitalsReading } from "../vitals.js";
 import { state, rosterPayload } from "./state.js";
 import { network, broadcast, sendUpstream } from "./net.js";
 
@@ -32,6 +32,8 @@ export function progressPayload() {
        administrateur reads these to know what the table can do right now. */
     skills: skillScores(state.sheetState, state.activeModifiers),
     allocated: allocatedPoints(state.sheetState),
+    /* The two bars as they stand, so the roster can show every seat's. */
+    vitals: vitalsReading(),
   };
 }
 
@@ -45,6 +47,7 @@ export function publishProgress() {
       me.skills = reading.skills;
       me.allocated = reading.allocated;
       me.xp = reading.xp;
+      me.vitals = reading.vitals;
     }
     broadcast(rosterPayload());
     return;

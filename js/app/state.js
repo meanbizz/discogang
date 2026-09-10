@@ -69,14 +69,34 @@ export function rosterPayload() {
 
 /* One person's experience and skills, rebuilt. Everything is optional: a
    player with no sheet reports nothing, and that is not an error. */
+/* A seat's two bars as reported, each value clamped inside its own ceiling. */
+const VITAL_READ_MAX = 41;
+
+function cleanVitalBar(raw) {
+  const held = raw && typeof raw === "object" ? raw : {};
+  const max = Math.round(Number(held.max));
+  const ceiling = isFinite(max) && max > 0 ? Math.min(VITAL_READ_MAX, max) : 0;
+  const value = Math.round(Number(held.value));
+  const filled = isFinite(value) && value > 0 ? Math.min(ceiling, value) : 0;
+  return { value: filled, max: ceiling };
+}
+
+function cleanVitalsReading(raw) {
+  if (!raw || typeof raw !== "object") return null;
+  const health = cleanVitalBar(raw.health);
+  const morale = cleanVitalBar(raw.morale);
+  return health.max || morale.max ? { health, morale } : null;
+}
+
 export function cleanProgress(raw) {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
-    return { skills: {}, allocated: {}, xp: null };
+    return { skills: {}, allocated: {}, xp: null, vitals: null };
   }
   return {
     skills: cleanScores(raw.skills),
     allocated: cleanAllocated(raw.allocated),
     xp: cleanXpLedger(raw.xp),
+    vitals: cleanVitalsReading(raw.vitals),
   };
 }
 

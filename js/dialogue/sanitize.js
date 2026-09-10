@@ -197,12 +197,26 @@ function cleanCheck(raw) {
   };
 }
 
+const VITAL_STEP_MAX = 20;
+
+/* A signed count of steps; "gain"/"loss" still read, as ±1, for old payloads. */
+function vitalStep(value) {
+  const number = Math.round(Number(value));
+  if (isFinite(number) && number) {
+    return Math.max(-VITAL_STEP_MAX, Math.min(VITAL_STEP_MAX, number));
+  }
+  const word = normalizeKey(value);
+  if (word === "gain") return 1;
+  if (word === "loss") return -1;
+  return 0;
+}
+
 function cleanVitals(raw) {
   if (!raw || typeof raw !== "object") return null;
   const out = {};
   ["vitality", "morale"].forEach((field) => {
-    const direction = normalizeKey(raw[field]);
-    if (direction === "gain" || direction === "loss") out[field] = direction;
+    const step = vitalStep(raw[field]);
+    if (step) out[field] = step;
   });
   return Object.keys(out).length ? out : null;
 }

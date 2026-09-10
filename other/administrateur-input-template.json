@@ -1,0 +1,160 @@
+{
+  "Harry": {
+    "root": "harbour-arrival",
+    "nodes": {
+      "harbour-arrival": {
+        "speaker": "Narrator",
+        "dialogue": "Night over the harbour. Rust, salt, diesel. Behind the container stacks a radio is playing to no one at all.",
+        "skillCheck": {
+          "skill": "perception",
+          "difficulty": "medium",
+          "mode": "passive"
+        },
+        "xpGained": 10,
+        "next": "harbour-radio"
+      },
+      "harbour-radio": {
+        "speaker": "ENCYCLOPEDIA",
+        "dialogue": "A 1943 military-band frequency. They never stopped transmitting. <i>Nobody told the band.</i>",
+        "next": "harbour-hub"
+      },
+      "harbour-hub": {
+        "speaker": "You",
+        "dialogue": "The night is long and the wind is cold. What now?",
+        "options": [
+          {
+            "id": "listen",
+            "label": "Go closer and listen to the radio",
+            "next": "harbour-listen"
+          },
+          {
+            "id": "force",
+            "label": "Break the crate open",
+            "next": "harbour-crate"
+          },
+          {
+            "id": "ask",
+            "label": "\"Kim, you hearing this?\"",
+            "next": "harbour-end"
+          }
+        ]
+      },
+      "harbour-listen": {
+        "speaker": "PERCEPTION",
+        "dialogue": "You press your ear against the cold sheet metal.",
+        "skillCheck": {
+          "skill": "perception",
+          "difficulty": "challenging",
+          "result": "success",
+          "dice1": 5,
+          "dice2": 4,
+          "modifiers": [
+            { "value": 1, "reason": "Dead of night" },
+            { "value": -2, "reason": "Screaming gulls" }
+          ]
+        },
+        "vitals": { "morale": "gain" },
+        "next": "harbour-end"
+      },
+      "harbour-crate": {
+        "speaker": "PHYSICAL INSTRUMENT",
+        "dialogue": "One good hit. One *good* hit.",
+        "skillCheck": {
+          "skill": "physical-instrument",
+          "difficulty": "formidable",
+          "result": "failure",
+          "dice1": 2,
+          "dice2": 1,
+          "modifier": -1
+        },
+        "vitals": { "vitality": "loss" },
+        "next": "harbour-end"
+      },
+      "harbour-end": {
+        "speaker": "Narrator",
+        "dialogue": "The band plays on. Somewhere in Revachol, someone else is listening too.",
+        "xpGained": 5
+      }
+    }
+  },
+  "Kim Kitsurati": {
+    "root": "kim-arrival",
+    "nodes": {
+      "kim-arrival": {
+        "speaker": "Kim Kitsurati",
+        "dialogue": "I hear it. 1940s shortwave, most likely. Note it down and keep moving, officer.",
+        "options": [
+          { "id": "note", "label": "Note it down", "next": "kim-note" },
+          {
+            "id": "press",
+            "label": "Press him about the song",
+            "next": "kim-press"
+          }
+        ]
+      },
+      "kim-note": {
+        "dialogue": "You write: 'radio, still on.' Kim nods, once.",
+        "xpGained": 5
+      },
+      "kim-press": {
+        "speaker": "ESPRIT DE CORPS",
+        "dialogue": "He won't be pressed on it. Not tonight. Not with those eyes.",
+        "skillCheck": {
+          "skill": "esprit-de-corps",
+          "difficulty": "easy",
+          "mode": "passive"
+        }
+      }
+    }
+  },
+  "inventory": {
+    "Harry": { "Smokes": 2, "Reál": 25 },
+    "Kim Kitsurati": { "Reál": -10 },
+    "*": { "Amento": 1 }
+  },
+  "goals": {
+    "Harry": {
+      "set": [
+        {
+          "name": "Find out who owns the radio",
+          "description": "A 1943 frequency has no business still playing.",
+          "xp": 30
+        },
+        {
+          "name": "Recover your badge",
+          "description": "You *are* a police officer. Almost certainly.",
+          "xp": 15
+        }
+      ],
+      "add": [
+        {
+          "name": "Get Kim to hum along",
+          "description": "Impossible. Do it anyway.",
+          "xp": 50
+        }
+      ],
+      "remove": ["Recover your badge"]
+    },
+    "*": {
+      "add": [
+        {
+          "name": "Survive the harbour night",
+          "description": "All of you. Preferably with morale intact.",
+          "xp": 20
+        }
+      ]
+    }
+  },
+  "temporary_modifiers": {
+    "Harry": {
+      "add": [{ "attribute": "physique", "amount": 1, "from": "Speed" }],
+      "remove": [{ "from": "Droul" }]
+    },
+    "*": {
+      "add": [{ "attribute": "psyche", "amount": -1, "from": "Harbour dread" }]
+    },
+    "Kim Kitsurati": []
+  },
+  "down": ["Klaasje"],
+  "kia": []
+}

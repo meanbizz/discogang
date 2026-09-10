@@ -180,17 +180,16 @@ export function vitalsNote(effect, apply, xpGained) {
 
   if (effect) {
     Object.keys(VITAL_OF).forEach((field) => {
-      const direction = effect[field];
-      if (!direction) return;
+      const steps = Math.round(Number(effect[field])) || 0;
+      if (!steps) return;
       const kind = VITAL_OF[field];
-      if (apply) vitals.changeVital(kind, direction);
+      if (apply) vitals.changeVital(kind, steps);
 
       const item = document.createElement("span");
       item.className = "vitals-note-item";
       item.dataset.vital = kind;
       item.textContent =
-        (kind === "health" ? "Health" : "Morale") +
-        (direction === "gain" ? " +1" : " −1");
+        (kind === "health" ? "Health" : "Morale") + " " + signed(steps);
       note.appendChild(item);
       any = true;
     });

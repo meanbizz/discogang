@@ -150,6 +150,27 @@ function flashImport(face) {
    administrateur writes the next round against what the table means to do and
    what it is capable of, and the forks are already recorded on the round
    itself — repeating them here only buried the plans. */
+/* "# Players vitals": both bars as each seat last published them. */
+function vitalsLines() {
+  const out = [];
+  state.roster.forEach((person) => {
+    if (person.admin) return;
+    const held = person.vitals;
+    const written = held
+      ? "health " +
+        held.health.value +
+        "/" +
+        held.health.max +
+        ", morale " +
+        held.morale.value +
+        "/" +
+        held.morale.max
+      : "no bars reported";
+    out.push(person.name + " — " + written);
+  });
+  return out;
+}
+
 export function exportTurns() {
   if (!state.isAdmin) return;
 
@@ -158,6 +179,7 @@ export function exportTurns() {
   const skills = skillLines();
   const mods = modifierLines();
   const goals = goalLines();
+  const readings = vitalsLines();
   const down = state.down;
   const kia = state.kia;
 
@@ -183,6 +205,9 @@ export function exportTurns() {
      of what the table is chasing. */
   if (goals.length) {
     parts.push("# Players goals\n" + goals.join("\n"));
+  }
+  if (readings.length) {
+    parts.push("# Players vitals\n" + readings.join("\n"));
   }
   /* Written back the same way they are read: a name dropped from Down next
      round is a name back on its feet. */

@@ -10,10 +10,16 @@
    then tells the table. */
 
 import * as vitals from "../vitals.js";
-import { applyStatusOrders, cleanStatus, holds } from "../status/status.js";
-import { state, isSelfDown } from "./state.js";
+import {
+  applyStatusOrders,
+  cleanStatus,
+  holds,
+  statusName,
+} from "../status/status.js";
+import { state, isSelfDown, isSelfKia } from "./state.js";
 import { network, broadcast, sendUpstream } from "./net.js";
 import { paintReadyButton, renderRoster, systemNote } from "./views.js";
+import { publishProgress } from "./progress.js";
 
 export function statusPayload() {
   return { type: "status", down: state.down, kia: state.kia };
@@ -45,6 +51,10 @@ export function setStatusRolls(rolls, news) {
   const wasDown = isSelfDown();
   const after = cleanStatus(rolls);
 
+  /* Said before the rolls land: the seat being killed has to read its own
+     death, because its log closes for good the moment it is dead. */
+  if (news) announce(before, after);
+
   state.down = after.down;
   state.kia = after.kia;
 
@@ -52,7 +62,6 @@ export function setStatusRolls(rolls, news) {
      character is not one node from the floor again. */
   if (wasDown && !isSelfDown()) vitals.reviveVitals();
 
-  if (news) announce(before, after);
   /* The roster carries the plates, and repaints both locks on its way. */
   renderRoster();
   paintReadyButton();
@@ -81,6 +90,18 @@ export function commitDown(name) {
   commitStatusOps({ down: state.down.concat([name]), kia: null });
 }
 
+function sameSeat(a, b) {
+  return statusName(a).toLowerCase() === statusName(b).toLowerCase();
+}
+
+/* Host only: a name lifted off the down roll, whoever reported standing. */
+export function commitStand(name) {
+  commitStatusOps({
+    down: state.down.filter((held) => !sameSeat(held, name)),
+    kia: null,
+  });
+}
+
 /* This seat's own bars ran out. The plate and the lock are not worth a round
    trip, so they land here at once and the host is told after. */
 export function reportSelfDown() {
@@ -96,6 +117,35 @@ export function reportSelfDown() {
   sendUpstream({ type: "down" });
 }
 
-/* The reader spends the bars: an emptied one puts this seat down, and a seat
-   on the floor is topped up by nothing the reader does. */
-vitals.setVitalsHooks({ onEmpty: reportSelfDown, floored: isSelfDown });
+/* Both of this seat's bars are above water again — read back up, or topped up
+   by the administrateur's hand. Off the down roll, and the table told. The
+   dead have no feet to stand back on. */
+export function reportSelfStanding() {
+  if (state.isAdmin || isSelfKia() || !isSelfDown()) return;
+  const name = state.profile.name;
+  if (!name) return;
+  if (!state.down.some((held) => sameSeat(held, name))) return;
+
+  if (network.isHost) {
+    commitStand(name);
+    return;
+  }
+  setStatusRolls(
+    {
+      down: state.down.filter((held) => !sameSeat(held, name)),
+      kia: state.kia,
+    },
+    true,
+  );
+  sendUpstream({ type: "up" });
+}
+
+/* The reader spends the bars: an emptied one puts this seat down, both back
+   above water stand it up again, and nothing tops up the dead. */
+vitals.setVitalsHooks({
+  onEmpty: reportSelfDown,
+  onStand: reportSelfStanding,
+  onMove: publishProgress,
+  dead: isSelfKia,
+  floored: isSelfDown,
+});

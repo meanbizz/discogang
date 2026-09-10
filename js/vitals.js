@@ -28,16 +28,30 @@ export const vitals = {
 const FLASH_CLEAR_MS = TIMING.vitals.flashMs + TIMING.vitals.clearBufferMs;
 const flashTimers = {};
 
-/* Told when a bar is emptied, and asked whether this seat is on the floor:
-   nothing tops up a character who is down or dead. */
-let hooks = { onEmpty: null, floored: null };
+/* Told when a bar is emptied, when both are above water again, and whenever
+   the bars move at all; asked whether this seat is down or dead. */
+let hooks = {
+  onEmpty: null,
+  onStand: null,
+  onMove: null,
+  floored: null,
+  dead: null,
+};
 
 export function setVitalsHooks(next) {
-  hooks = Object.assign({ onEmpty: null, floored: null }, next || {});
+  hooks = Object.assign(
+    { onEmpty: null, onStand: null, onMove: null, floored: null, dead: null },
+    next || {},
+  );
 }
 
 function floored() {
   return Boolean(hooks.floored && hooks.floored());
+}
+
+/* Both bars carry at least one step: nothing about this seat is on the floor. */
+function standing() {
+  return vitals.health.value >= 1 && vitals.morale.value >= 1;
 }
 
 /* What is currently working on this seat. Held here because the two ceilings
@@ -63,7 +77,9 @@ export function vitalMax(sheetState, kind) {
   return skillScore(sheetState, VITAL_SKILL[kind]) + 1;
 }
 
-function renderBar(element, label, filled, total) {
+/* One bar, painted from a value and a ceiling — also how the administrateur
+   sees the rest of the table's bars in the roster. */
+export function paintVitalBar(element, label, filled, total) {
   if (!element) return;
   element.textContent = "";
   for (let i = 0; i < total; i += 1) {
@@ -76,8 +92,26 @@ function renderBar(element, label, filled, total) {
 }
 
 export function renderVitals() {
-  renderBar(dom.healthBar, "Health", vitals.health.value, vitals.health.max);
-  renderBar(dom.moraleBar, "Morale", vitals.morale.value, vitals.morale.max);
+  paintVitalBar(
+    dom.healthBar,
+    "Health",
+    vitals.health.value,
+    vitals.health.max,
+  );
+  paintVitalBar(
+    dom.moraleBar,
+    "Morale",
+    vitals.morale.value,
+    vitals.morale.max,
+  );
+}
+
+/* What this seat's bars read right now, for the table to be told. */
+export function vitalsReading() {
+  return {
+    health: { value: vitals.health.value, max: vitals.health.max },
+    morale: { value: vitals.morale.value, max: vitals.morale.max },
+  };
 }
 
 /* fill tops both bars up; otherwise a raised ceiling adds its own difference,
@@ -85,9 +119,11 @@ export function renderVitals() {
    spent on endurance or volition arrives through exactly this path — and
    raises no plate, because nothing was done to the character. */
 export function refreshVitals(sheetState, fill) {
+  let moved = false;
   Object.keys(vitals).forEach((kind) => {
     const state = vitals[kind];
     const next = vitalMax(sheetState, kind);
+    const was = state.value;
     if (fill) state.value = next;
     /* A raised ceiling lifts a bar with it, so an emptied one stays empty
        while this seat is down or dead. */
@@ -97,8 +133,10 @@ export function refreshVitals(sheetState, fill) {
     state.max = next;
     if (state.value > next) state.value = next;
     if (state.value < 0) state.value = 0;
+    if (state.value !== was) moved = true;
   });
   renderVitals();
+  if (moved && hooks.onMove) hooks.onMove();
 }
 
 /* Back on your feet: whichever bar was emptied is worth a single step again,
@@ -111,7 +149,10 @@ export function reviveVitals() {
     state.value = 1;
     moved = true;
   });
-  if (moved) renderVitals();
+  if (moved) {
+    renderVitals();
+    if (hooks.onMove) hooks.onMove();
+  }
 }
 
 /* The bar itself has already moved; this is only the movement being noticed.
@@ -132,8 +173,8 @@ function flash(kind) {
   });
 }
 
-/* One step of health or morale, clamped to the sheet's ceiling. direction is
-   "gain" or "loss"; returns the actual change.
+/* A signed number of steps of health or morale, clamped to the sheet's
+   ceiling. Returns the actual change.
 
    A step that actually landed is both flashed on the bar and announced on the
    notice plate — the bar says how much is left, the plate says what just
@@ -141,11 +182,14 @@ function flash(kind) {
 export function changeVital(kind, direction) {
   const state = vitals[kind];
   if (!state) return 0;
-  const delta = direction === "gain" ? 1 : direction === "loss" ? -1 : 0;
+  const step = Math.round(Number(direction));
+  const delta = isFinite(step)
+    ? Math.max(-state.max, Math.min(state.max, step))
+    : 0;
   if (!delta) return 0;
-  /* No node picks a downed character up and nothing at all brings a dead one
-     back: only the room's roll does that. */
-  if (delta > 0 && floored()) return 0;
+  /* Nothing brings a dead one back; a downed seat, though, is raised by what
+     it reads. */
+  if (delta > 0 && hooks.dead && hooks.dead()) return 0;
 
   const before = state.value;
   state.value = Math.max(0, Math.min(state.max, state.value + delta));
@@ -155,6 +199,13 @@ export function changeVital(kind, direction) {
     overlays.vital(kind, state.value > before);
     /* Emptied: the app puts this seat on the floor and tells the table. */
     if (state.value === 0 && hooks.onEmpty) hooks.onEmpty(kind);
+    /* A step back onto an empty bar, with the other above water too: the app
+       takes this seat off the floor. */
+    if (delta > 0 && before === 0 && standing() && hooks.onStand) {
+      hooks.onStand();
+    }
+    /* The table is told what the bars read, so every seat can see them. */
+    if (hooks.onMove) hooks.onMove();
   }
   return state.value - before;
 }

@@ -62,7 +62,12 @@ import { applyScene, setNpcs } from "./scene.js";
 import { applySession } from "./save.js";
 import { commitOps, inventoryPayload, setInventory } from "./inventory.js";
 import { commitGoalOps, setGoals } from "./goals.js";
-import { commitDown, commitStatusOps, setStatusRolls } from "./status.js";
+import {
+  commitDown,
+  commitStand,
+  commitStatusOps,
+  setStatusRolls,
+} from "./status.js";
 import { commitModifierOps, setTemporaryModifiers } from "./modifiers.js";
 import { adoptProgress, publishProgress } from "./progress.js";
 import {
@@ -256,6 +261,7 @@ function onHostReceiveData(connection, data) {
     person.skills = reading.skills;
     person.allocated = reading.allocated;
     person.xp = reading.xp;
+    person.vitals = reading.vitals;
     /* Remembered now rather than at the drop, so a wire that dies without
        warning still leaves the ledger behind. */
     rememberSeat(person);
@@ -314,6 +320,14 @@ function onHostReceiveData(connection, data) {
   if (data.type === "down") {
     if (!person || person.admin) return;
     commitDown(person.name);
+    return;
+  }
+
+  /* Both of a player's bars are above water again — raised by what they read,
+     never claimed on anybody else's behalf. */
+  if (data.type === "up") {
+    if (!person || person.admin) return;
+    commitStand(person.name);
     return;
   }
 
@@ -564,6 +578,7 @@ function onGuestReceiveData(data) {
         skills: reading.skills,
         allocated: reading.allocated,
         xp: reading.xp,
+        vitals: reading.vitals,
       });
     });
     renderRoster();

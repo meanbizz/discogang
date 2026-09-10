@@ -26,6 +26,8 @@ export function refreshPlanningLock() {
   if (dom.turnSend) dom.turnSend.disabled = locked;
   if (dom.turnReady) dom.turnReady.disabled = locked;
   if (dom.turnComposer) dom.turnComposer.classList.toggle("is-locked", locked);
+  /* On the floor: the plans are still written there, but no longer for this seat to read. */
+  if (dom.turnLog) dom.turnLog.classList.toggle("is-downed", isSelfDown());
   if (!dom.turnLock) return;
 
   if (!locked) {
