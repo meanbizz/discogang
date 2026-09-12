@@ -47,6 +47,11 @@
   mask-position: 100% 0;
 }
 
+/* specific real case needs no background on symbol thanks AI for being stupid as bricks */
+.notice-overlay[data-kind="money-gain"] .notice-overlay-body {
+  background: none;
+}
+
 .notice-overlay[hidden] {
   display: none;
 }
@@ -69,6 +74,11 @@
   filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.75));
   pointer-events: none;
   margin-bottom: 16px;
+}
+
+/* money art needs to be much smaller */
+.notice-art[alt^="Money"] {
+  max-width: 130px;
 }
 
 .notice-art[hidden] {

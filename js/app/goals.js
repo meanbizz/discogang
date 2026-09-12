@@ -157,66 +157,61 @@ export function partitionGoalOps(ops, roundId) {
   if (!ops) return { immediate: null, pending: [] };
   const pending = [];
 
-  if (Array.isArray(ops)) {
-    const imm = [];
-    ops.forEach((item) => {
+  function processList(targetKey, actionType, itemList) {
+    const immItems = [];
+    (itemList || []).forEach((item) => {
       const cond = conditionOf(item);
       if (cond) {
-        const target = item.holder || item.to || item.target || "*";
+        const target = item.holder || item.to || item.target || targetKey;
         const cleanOp = stripCondition(item);
         const targets = target === "*" ? everyone() : [target];
         targets.forEach((t) => {
+          const singleOp = {};
+          singleOp[t] = { add: [], update: [], remove: [] };
+          singleOp[t][actionType].push(cleanOp);
           pending.push({
             holder: cleanName(t).toLowerCase(),
             node: String(cond).trim(),
-            op: [Object.assign({}, cleanOp, { to: t, holder: t })],
+            op: singleOp,
             roundId: roundId || null,
           });
         });
       } else {
-        imm.push(item);
+        immItems.push(item);
       }
     });
-    return { immediate: imm.length ? imm : null, pending };
+    return immItems;
+  }
+
+  if (Array.isArray(ops)) {
+    const immediateList = processList("*", "add", ops);
+    return { immediate: immediateList.length ? immediateList : null, pending };
   }
 
   if (typeof ops === "object") {
     const immObj = {};
     let hasImm = false;
 
-    Object.keys(ops).forEach((key) => {
-      const val = ops[key];
+    Object.keys(ops).forEach((targetKey) => {
+      const val = ops[targetKey];
       if (Array.isArray(val)) {
-        const immList = [];
-        val.forEach((item) => {
-          const cond = conditionOf(item);
-          if (cond) {
-            const target = item.holder || item.to || item.target || key;
-            const cleanOp = stripCondition(item);
-            const targets = target === "*" ? everyone() : [target];
-            targets.forEach((t) => {
-              const singleOp = {};
-              singleOp[key === "*" ? t : key] = [
-                Object.assign({}, cleanOp, key !== t ? { to: t, holder: t } : {}),
-              ];
-              pending.push({
-                holder: cleanName(t).toLowerCase(),
-                node: String(cond).trim(),
-                op: singleOp,
-                roundId: roundId || null,
-              });
-            });
-          } else {
-            immList.push(item);
-          }
-        });
+        const immList = processList(targetKey, "add", val);
         if (immList.length) {
-          immObj[key] = immList;
+          immObj[targetKey] = immList;
           hasImm = true;
         }
-      } else {
-        immObj[key] = val;
-        hasImm = true;
+      } else if (val && typeof val === "object") {
+        const immAdd = processList(targetKey, "add", val.add);
+        const immUpdate = processList(targetKey, "update", val.update);
+        const immRemove = processList(targetKey, "remove", val.remove);
+        if (immAdd.length || immUpdate.length || immRemove.length) {
+          immObj[targetKey] = {
+            add: immAdd,
+            update: immUpdate,
+            remove: immRemove,
+          };
+          hasImm = true;
+        }
       }
     });
 

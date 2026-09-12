@@ -340,21 +340,31 @@ export function cleanModifierOrders(raw) {
 }
 
 /* The goal orders riding along with the trees, or null when there are none. */
+function attachCondition(item, src) {
+  if (src && typeof src === "object" && item && typeof item === "object") {
+    const at = src.at || src.node || src.nodeId;
+    if (at) item.at = String(at).trim().slice(0, 120);
+  }
+}
+
 function restoreGoalConditions(cleaned, raw) {
   if (!cleaned || !raw) return cleaned;
   if (Array.isArray(cleaned) && Array.isArray(raw)) {
-    cleaned.forEach((item, i) => {
-      const src = raw[i];
-      if (src && typeof src === "object" && typeof item === "object") {
-        const at = src.at || src.node || src.nodeId;
-        if (at) item.at = String(at).trim().slice(0, 120);
-      }
-    });
+    cleaned.forEach((item, i) => attachCondition(item, raw[i]));
     return cleaned;
   }
   if (typeof cleaned === "object" && typeof raw === "object") {
     Object.keys(cleaned).forEach((k) => {
-      if (raw[k]) restoreGoalConditions(cleaned[k], raw[k]);
+      const cleanVal = cleaned[k];
+      const rawVal = raw[k];
+      if (!cleanVal || !rawVal) return;
+      if (Array.isArray(rawVal) && typeof cleanVal === "object" && !Array.isArray(cleanVal)) {
+        if (cleanVal.add && Array.isArray(cleanVal.add)) {
+          cleanVal.add.forEach((item, i) => attachCondition(item, rawVal[i]));
+        }
+      } else {
+        restoreGoalConditions(cleanVal, rawVal);
+      }
     });
   }
   return cleaned;
