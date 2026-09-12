@@ -23,6 +23,8 @@ const IMAGES = [
   "images/new_skillpoint.png",
   /* And the one money uses, in either direction. */
   "images/money.png",
+  /* A goal arriving in this seat's book. */
+  "images/task_gained.png",
   /* Health and morale, spent and restored. */
   "images/damaged_health.png",
   "images/healed_health.png",

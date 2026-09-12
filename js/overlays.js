@@ -176,21 +176,20 @@ export function money(delta) {
   });
 }
 
-/* One step of health or morale, already spent: vitals.js moved the bar and
-   this is only the announcement. Queued like every other plate, so a step
-   taken by a rolled node is read after the dice rather than under them, and
-   its cue fires as the plate goes up.
-
-   No words are set under the picture — the picture is the sentence. */
-export function vital(kind, gained) {
+/* One step of health or morale: vitals.js moved the bar and this is the announcement.
+   Queued like every other plate, firing its cue as the plate goes up. */
+export function vital(kind, gained, amount) {
   if (!Object.prototype.hasOwnProperty.call(VITAL_ART, kind)) return;
   const way = gained ? "gain" : "loss";
+  const qty = Math.abs(Math.round(Number(amount))) || 1;
+  const name = kind === "health" ? "HEALTH" : "MORALE";
 
   notice({
     kind: kind + "-" + way,
     art: VITAL_ART[kind][way],
     alt: VITAL_ALT[kind][way],
     way,
+    amount: (gained ? "+" : "−") + qty + " " + name,
     sound: () => sfx.playVital(kind, gained),
   });
 }
@@ -215,10 +214,99 @@ export function goal(name, gained, granted) {
   });
 }
 
+/* ---------------- The goal-gained plate ---------------- */
+
+/* A goal arriving in this seat's book: the administrateur's payload has just
+   written something new for them. Its own plate, on the notice group, so a
+   round opening on the next frame cannot withdraw it. */
+const GOAL_ART = "images/task_gained.png";
+
+function goalParts() {
+  const host = dom.goalOverlay || document.getElementById("goal-overlay");
+  if (!host) return null;
+  return {
+    host,
+    art: dom.goalArt || host.querySelector(".goal-art"),
+    title: dom.goalTitle || host.querySelector(".goal-title"),
+    amount: dom.goalAmount || host.querySelector(".goal-amount"),
+  };
+}
+
+export function hideGoal() {
+  const face = goalParts();
+  if (!face) return;
+  face.host.classList.remove("is-in", "is-out");
+  face.host.hidden = true;
+}
+
+function runGoal(name, timers, done) {
+  const face = goalParts();
+  if (!face) {
+    done();
+    return;
+  }
+  const host = face.host;
+
+  if (face.art) {
+    face.art.src = href(GOAL_ART);
+    face.art.alt = "";
+    face.art.hidden = false;
+  }
+  if (face.title) {
+    face.title.textContent = "NEW GOAL";
+    face.title.hidden = false;
+  }
+  if (face.amount) {
+    face.amount.textContent = name;
+    face.amount.hidden = !name;
+  }
+
+  host.classList.remove("is-in", "is-out");
+  host.hidden = false;
+  /* The vignette's own animation restarts with the display flip. */
+  void host.offsetWidth;
+  host.classList.add("is-in");
+
+  /* Something gained rather than spent: the cue a new skill point answers
+     with, since a goal is the same kind of news. */
+  sfx.playPoint(null);
+
+  timers.after(TIMING.xp.inMs + TIMING.xp.holdMs, () => {
+    host.classList.remove("is-in");
+    host.classList.add("is-out");
+    timers.after(TIMING.xp.outMs, () => {
+      host.classList.remove("is-out");
+      host.hidden = true;
+      done();
+    });
+  });
+}
+
+/* goal is one entry of this seat's book, as cleanGoal built it. */
+export function goalAdded(goal) {
+  const name = String(goal && goal.name != null ? goal.name : "")
+    .trim()
+    .toUpperCase();
+  if (!name || !goalParts()) return;
+
+  const timers = sequencer.clock();
+  sequencer.enqueue({
+    name: "goal-added",
+    group: GROUP,
+    timeoutMs: totalMs(),
+    run: (done) => runGoal(name, timers, done),
+    cancel: () => {
+      timers.stop();
+      hideGoal();
+    },
+  });
+}
+
 /* Arriving in a room or leaving one: nothing still on its way belongs to it,
    and no voice still ringing for it either. */
 export function reset() {
   sequencer.clear(GROUP);
   sfx.stopNotices();
   hide();
+  hideGoal();
 }

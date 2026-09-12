@@ -103,6 +103,13 @@ export const dom = {
   noticeTitle: document.getElementById("notice-title"),
   noticeAmount: document.getElementById("notice-amount"),
 
+  // Goal plate — a goal the administrateur has just written into this book
+  goalOverlay: document.getElementById("goal-overlay"),
+  goalVignette: document.getElementById("goal-vignette"),
+  goalArt: document.getElementById("goal-art"),
+  goalTitle: document.getElementById("goal-title"),
+  goalAmount: document.getElementById("goal-amount"),
+
   // Odds — the tooltip hung off the button beneath Continue
   oddsTooltip: document.getElementById("odds-tooltip"),
 

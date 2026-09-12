@@ -249,6 +249,71 @@
   }
 }
 
+/* ---------------- Goal plate ---------------- */
+
+/* A new goal arriving in this seat's book: the same three beats as the
+   experience plate, on its durations, with its own art. The mask is set up in
+   goals.css. */
+.goal-overlay.is-in {
+  animation: goal-in var(--dur-xp-in) ease forwards;
+}
+
+.goal-overlay.is-out {
+  animation: goal-wipe var(--dur-xp-out) linear forwards;
+}
+
+@keyframes goal-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes goal-wipe {
+  from {
+    opacity: 1;
+    -webkit-mask-position: 100% 0;
+    mask-position: 100% 0;
+  }
+  to {
+    opacity: 1;
+    -webkit-mask-position: 0% 0;
+    mask-position: 0% 0;
+  }
+}
+
+.goal-overlay .goal-vignette {
+  animation: goal-vignette var(--dur-xp-vignette) ease-out forwards;
+}
+
+@keyframes goal-vignette {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 0.5;
+  }
+}
+
+/* The plate rises into place a little after the glow, so the two read as one
+   arrival rather than a pair of flickers. */
+.goal-overlay .goal-art:not([hidden]) {
+  animation: goal-art-rise var(--dur-xp-art) ease-out forwards;
+}
+
+@keyframes goal-art-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 /* ---------------- Vitals ---------------- */
 
 .vital.is-hit {
@@ -333,6 +398,27 @@
   }
 
   .notice-overlay .notice-art:not([hidden]) {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .goal-overlay.is-in {
+    animation: none;
+    opacity: 1;
+  }
+
+  .goal-overlay.is-out {
+    animation: none;
+    opacity: 0;
+  }
+
+  .goal-overlay .goal-vignette {
+    animation: none;
+    opacity: 0.5;
+  }
+
+  .goal-overlay .goal-art:not([hidden]) {
     animation: none;
     opacity: 1;
     transform: none;

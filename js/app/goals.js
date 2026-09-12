@@ -55,6 +55,33 @@ function held(key) {
   return Object.prototype.hasOwnProperty.call(paid, key);
 }
 
+/* What this seat has already been shown, so a book restated is not read as a
+   goal arriving over and over. */
+const greeted = Object.create(null);
+
+function forgetGreeted(list) {
+  Object.keys(greeted).forEach((key) => {
+    delete greeted[key];
+  });
+  list.forEach((goal) => {
+    greeted[goalKey(goal.name)] = true;
+  });
+}
+
+/* Whatever is in this book and unseen, announced now. The list is marked whole
+   afterwards, so a goal taken away and written again is announced again. */
+function greet(list) {
+  if (state.isAdmin) return;
+  const fresh = [];
+  list.forEach((goal) => {
+    const key = goalKey(goal.name);
+    if (greeted[key]) return;
+    fresh.push(goal);
+  });
+  forgetGreeted(list);
+  fresh.forEach((goal) => overlays.goalAdded(goal));
+}
+
 /* A book adopted as it stands: whatever is done was settled before this seat
    could see it happen. */
 function forget(list) {
@@ -102,8 +129,15 @@ function collect(list) {
 export function setGoals(books, news) {
   state.goals = cleanGoalBooks(books);
   const mine = selfGoals();
-  if (news) collect(mine);
-  else forget(mine);
+  if (news) {
+    /* What arrived comes first, then what it settled: a goal written and
+       finished in the same breath reads in that order. */
+    greet(mine);
+    collect(mine);
+  } else {
+    forget(mine);
+    forgetGreeted(mine);
+  }
   refreshGoals();
 }
 

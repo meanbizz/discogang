@@ -97,3 +97,108 @@
     gap: 0.25rem;
   }
 }
+
+/* ---------------- The goal-gained plate ---------------- */
+
+/* A goal the administrateur has just written into this seat's book. The same
+   shape as the experience plate: fixed over the viewport, transparent until
+   overlays.js fades it in, masked off to the right so the wipe has somewhere
+   to travel from. Only the travel is in animations.css. */
+.goal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 61;
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+  opacity: 0;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    transparent 50%,
+    #000 66.6%,
+    #000 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    transparent 50%,
+    #000 66.6%,
+    #000 100%
+  );
+  -webkit-mask-size: 300% 100%;
+  mask-size: 300% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: 100% 0;
+  mask-position: 100% 0;
+}
+
+.goal-overlay[hidden] {
+  display: none;
+}
+
+/* The green rim a new skill point wears, borrowed: something gained is
+   something gained. */
+.goal-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 38%,
+    var(--money-gain) 132%
+  );
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Low on the screen, like the plates either side of it: the session stays
+   readable above. */
+.goal-overlay-body {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  margin-top: auto;
+  margin-bottom: 96px;
+  text-align: center;
+}
+
+.goal-art {
+  width: clamp(7rem, 32vw, 22rem);
+  max-width: 130px;
+  height: auto;
+  filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.75));
+  pointer-events: none;
+  margin-bottom: 16px;
+}
+
+.goal-art[hidden] {
+  display: none;
+}
+
+.goal-title,
+.goal-amount {
+  margin: 0;
+  background: var(--notice-back);
+  color: var(--notice-ink);
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  line-height: 1.2;
+}
+
+.goal-title {
+  padding: 0.4rem 1.1rem;
+  font-size: clamp(1rem, 3vw, 2.5rem);
+}
+
+/* The goal's own name, in the colour a reward is paid in. */
+.goal-amount {
+  padding: 0.25rem 0.85rem;
+  font-size: clamp(0.9rem, 2.2vw, 1.35rem);
+  color: var(--money-gain);
+}
+
+.goal-amount[hidden] {
+  display: none;
+}

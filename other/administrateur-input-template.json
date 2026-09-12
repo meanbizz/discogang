@@ -130,7 +130,8 @@
         {
           "name": "Get Kim to hum along",
           "description": "Impossible. Do it anyway.",
-          "xp": 50
+          "xp": 50,
+          "at": "node-8a"
         }
       ],
       "remove": ["Recover your badge"]

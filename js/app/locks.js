@@ -39,8 +39,8 @@ export function refreshPlanningLock() {
   if (isSelfDown()) {
     dom.turnLock.hidden = false;
     dom.turnLock.textContent = isSelfKia()
-      ? "You are dead. This seat plans nothing more."
-      : "You are down. Somebody else will have to pick you up.";
+      ? "You have died and have found peace."
+      : "You are down and have fallen unconscious. You are unable to plan anything.";
     return;
   }
 
