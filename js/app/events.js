@@ -27,12 +27,14 @@ import { adoptSheet, spendSkillPoint } from "./progress.js";
 import {
   currentSceneImage,
   editNpc,
+  importNpcs,
   removeNpc,
   submitNpcForm,
 } from "./scene.js";
 import {
   adminItems,
   editItem,
+  importItems,
   openInventory,
   removeItem,
   submitItemForm,
@@ -378,6 +380,32 @@ function bindNpcForm() {
       submitNpcForm();
     });
   }
+
+  if (dom.npcImportButton && dom.npcImportFile) {
+    dom.npcImportButton.addEventListener("click", () => {
+      dom.npcImportFile.value = "";
+      dom.npcImportFile.click();
+    });
+
+    dom.npcImportFile.addEventListener("change", () => {
+      const file = dom.npcImportFile.files?.[0];
+      if (!file) return;
+      dom.npcFormError.textContent = "Reading save file…";
+      readFile(file, (snap, error) => {
+        dom.npcImportFile.value = "";
+        if (error) {
+          dom.npcFormError.textContent = error;
+          return;
+        }
+        if (!snap || !Array.isArray(snap.npcs) || !snap.npcs.length) {
+          dom.npcFormError.textContent = "No NPCs found in that save file.";
+          return;
+        }
+        const count = importNpcs(snap.npcs);
+        dom.npcFormError.textContent = `Imported ${count} NPC${count === 1 ? "" : "s"}.`;
+      });
+    });
+  }
 }
 
 /* The player's own pockets. */
@@ -503,6 +531,34 @@ function bindItemForm() {
     dom.itemForm.addEventListener("submit", (event) => {
       event.preventDefault();
       submitItemForm();
+    });
+  }
+
+  if (dom.itemImportButton && dom.itemImportFile) {
+    dom.itemImportButton.addEventListener("click", () => {
+      dom.itemImportFile.value = "";
+      dom.itemImportFile.click();
+    });
+
+    dom.itemImportFile.addEventListener("change", () => {
+      const file = dom.itemImportFile.files?.[0];
+      if (!file) return;
+      dom.itemFormError.textContent = "Reading save file…";
+      readFile(file, (snap, error) => {
+        dom.itemImportFile.value = "";
+        if (error) {
+          dom.itemFormError.textContent = error;
+          return;
+        }
+        if (!snap || !Array.isArray(snap.items) || !snap.items.length) {
+          dom.itemFormError.textContent = "No items found in that save file.";
+          return;
+        }
+        const count = importItems(snap.items);
+        dom.itemFormError.textContent = count
+          ? `Imported ${count} item${count === 1 ? "" : "s"}.`
+          : "No custom items found in that save file.";
+      });
     });
   }
 }

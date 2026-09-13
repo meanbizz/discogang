@@ -131,6 +131,8 @@ export const dom = {
   npcPortraitPreview: document.getElementById("npc-portrait-preview"),
   npcSubmitButton: document.getElementById("npc-submit-button"),
   npcCancelButton: document.getElementById("npc-cancel-button"),
+  npcImportButton: document.getElementById("npc-import-button"),
+  npcImportFile: document.getElementById("npc-import-file"),
   npcFormError: document.getElementById("npc-form-error"),
   npcList: document.getElementById("npc-list"),
 
@@ -164,6 +166,8 @@ export const dom = {
   itemImagePreview: document.getElementById("item-image-preview"),
   itemSubmitButton: document.getElementById("item-submit-button"),
   itemCancelButton: document.getElementById("item-cancel-button"),
+  itemImportButton: document.getElementById("item-import-button"),
+  itemImportFile: document.getElementById("item-import-file"),
   itemFormError: document.getElementById("item-form-error"),
   itemList: document.getElementById("item-list"),
 

@@ -4,6 +4,7 @@ import { dom } from "../dom.js";
 import { cleanName, cleanNpc, cleanScene, paintThumb, uid } from "../utils.js";
 import { normalizeKey } from "../dialogue/text.js";
 import * as modals from "../modals.js";
+import { holdImage } from "../assets.js";
 import { setNarrationExclusions } from "../audio/narration.js";
 import { narrationExclusions, state } from "./state.js";
 import { network, broadcast, sendUpstream } from "./net.js";
@@ -47,6 +48,29 @@ export function setNpcs(list) {
   state.npcs = (Array.isArray(list) ? list : []).map(cleanNpc).filter(Boolean);
   setNarrationExclusions(narrationExclusions());
   modals.renderNpcList(state.npcs, editNpc, removeNpc);
+}
+
+/* Merge imported NPCs by id or name, notify peers, and preload avatars. */
+export function importNpcs(list) {
+  if (!state.isAdmin || !Array.isArray(list)) return 0;
+  let count = 0;
+  list.map(cleanNpc).filter(Boolean).forEach((npc) => {
+    const existing = state.npcs.find(
+      (held) => held.id === npc.id || held.name.toLowerCase() === npc.name.toLowerCase(),
+    );
+    if (existing) {
+      existing.name = npc.name;
+      existing.thumbnail = npc.thumbnail;
+    } else {
+      state.npcs.push(npc);
+    }
+    holdImage(npc.thumbnail);
+    count += 1;
+  });
+  setNarrationExclusions(narrationExclusions());
+  modals.renderNpcList(state.npcs, editNpc, removeNpc);
+  broadcastNpcs();
+  return count;
 }
 
 export function broadcastNpcs() {

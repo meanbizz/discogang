@@ -6,6 +6,7 @@ import { dom } from "../dom.js";
 import {
   cleanImageUrl,
   cleanName,
+  isAdminName,
   paintThumb,
   randomRoomCode,
   roomFromHash,
@@ -13,6 +14,102 @@ import {
 import { probeImage, rejectImageFile, uploadImage } from "../upload.js";
 import { state } from "./state.js";
 import { connect } from "./room.js";
+
+let autoPortrait = null;
+let autoSheet = false;
+let folderLookupId = 0;
+
+function playerSlug(name) {
+  const clean = cleanName(name).toLowerCase();
+  return clean ? clean.replace(/\s+/g, "_") : "";
+}
+
+function folderAsset(slug, file) {
+  return new URL("players/" + encodeURIComponent(slug) + "/" + file, window.location.href).href;
+}
+
+/* Tries each portrait candidate in order until one loads successfully. */
+function findPortrait(slug, done) {
+  const candidates = [
+    folderAsset(slug, "portrait.jpeg"),
+    folderAsset(slug, "portrait.png"),
+    folderAsset(slug, "portrait.jpg"),
+  ];
+  function next(index) {
+    if (index >= candidates.length) return done(null);
+    probeImage(candidates[index], (ok) => {
+      if (ok) done(candidates[index]);
+      else next(index + 1);
+    });
+  }
+  next(0);
+}
+
+function findSkills(slug, done) {
+  fetch(folderAsset(slug, "skills.json"))
+    .then((res) => (res.ok ? res.json() : null))
+    .then((data) => {
+      if (data && typeof data === "object" && !Array.isArray(data) && (data.attributes || data.skills)) {
+        done(data);
+      } else {
+        done(null);
+      }
+    })
+    .catch(() => done(null));
+}
+
+/* Resolves folder assets for non-admin names unless manually overridden. */
+function syncPlayerFolder(name, done) {
+  const currentId = ++folderLookupId;
+  const slug = playerSlug(name);
+  if (!slug || isAdminName(name)) {
+    if (autoPortrait && state.stagedPortrait === autoPortrait) {
+      state.stagedPortrait = null;
+      paintPreview();
+    }
+    if (autoSheet) {
+      state.stagedSheet = null;
+      autoSheet = false;
+      if (dom.joinError.textContent === "Stats loaded.") dom.joinError.textContent = "";
+    }
+    if (done) done();
+    return;
+  }
+
+  let pending = 2;
+  const finish = () => {
+    pending -= 1;
+    if (pending === 0 && done) done();
+  };
+
+  findPortrait(slug, (url) => {
+    if (currentId !== folderLookupId) return;
+    const manualPortrait = dom.portraitInput.files?.[0] || (dom.portraitUrl.value.trim() && state.stagedPortrait !== autoPortrait);
+    if (!manualPortrait) {
+      autoPortrait = url;
+      state.stagedPortrait = url;
+      paintPreview();
+    }
+    finish();
+  });
+
+  findSkills(slug, (data) => {
+    if (currentId !== folderLookupId) return;
+    const manualSheet = dom.statsInput.files?.[0] || (state.stagedSheet && !autoSheet);
+    if (!manualSheet) {
+      if (data) {
+        state.stagedSheet = window.DiscoSkillSheet?.normalize(data);
+        autoSheet = true;
+        dom.joinError.textContent = "Stats loaded.";
+      } else if (autoSheet) {
+        state.stagedSheet = null;
+        autoSheet = false;
+        if (dom.joinError.textContent === "Stats loaded.") dom.joinError.textContent = "";
+      }
+    }
+    finish();
+  });
+}
 
 function paintPreview() {
   paintThumb(dom.portraitPreview, {
@@ -25,6 +122,7 @@ function onPortraitFile() {
   const file = dom.portraitInput.files?.[0];
   dom.joinError.textContent = "";
   if (!file) return;
+  autoPortrait = null;
 
   const rejection = rejectImageFile(file);
   if (rejection) {
@@ -52,6 +150,7 @@ function onPortraitFile() {
 function onPortraitUrl() {
   dom.joinError.textContent = "";
   const raw = dom.portraitUrl.value.trim();
+  autoPortrait = null;
   if (!raw) {
     state.stagedPortrait = null;
     paintPreview();
@@ -84,6 +183,7 @@ function refuseSheet(message) {
 function onStatsFile() {
   const file = dom.statsInput.files?.[0];
   dom.joinError.textContent = "";
+  autoSheet = false;
   if (!file) {
     state.stagedSheet = null;
     return;
@@ -128,8 +228,10 @@ function onSubmit(event) {
   const room = roomFromHash() || randomRoomCode();
   dom.joinError.textContent = "";
   dom.joinButton.disabled = true;
-  connect(room, name, state.stagedPortrait);
-  dom.joinButton.disabled = false;
+  syncPlayerFolder(name, () => {
+    connect(room, name, state.stagedPortrait);
+    dom.joinButton.disabled = false;
+  });
 }
 
 export function bindJoin() {
@@ -138,6 +240,9 @@ export function bindJoin() {
   dom.statsInput.addEventListener("change", onStatsFile);
   dom.nameInput.addEventListener("input", () => {
     if (!state.stagedPortrait) paintPreview();
+  });
+  dom.nameInput.addEventListener("blur", () => {
+    syncPlayerFolder(dom.nameInput.value);
   });
   dom.joinForm.addEventListener("submit", onSubmit);
 }

@@ -11,6 +11,23 @@
   text-align: left;
 }
 
+.npc-list-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.85rem;
+}
+
+.npc-list-head .npc-subheading {
+  margin: 0;
+}
+
+.npc-list-head button {
+  padding: 0.2rem 0.6rem;
+  font-size: 0.75rem;
+}
+
 .npc-subheading {
   margin: 0 0 0.85rem;
   color: var(--text-old);

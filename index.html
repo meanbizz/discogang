@@ -662,7 +662,16 @@
             </form>
 
             <div class="npc-list-wrapper">
-              <h3 class="npc-subheading">Current NPCs</h3>
+              <div class="npc-list-head">
+                <h3 class="npc-subheading">Current NPCs</h3>
+                <button type="button" id="npc-import-button" class="option">Import</button>
+                <input
+                  id="npc-import-file"
+                  class="visually-hidden"
+                  type="file"
+                  accept="application/json,.json"
+                />
+              </div>
               <div id="npc-list" class="npc-list" role="list"></div>
             </div>
           </div>
@@ -768,7 +777,16 @@
             </form>
 
             <div class="npc-list-wrapper">
-              <h3 class="npc-subheading">Items in play</h3>
+              <div class="npc-list-head">
+                <h3 class="npc-subheading">Items in play</h3>
+                <button type="button" id="item-import-button" class="option">Import</button>
+                <input
+                  id="item-import-file"
+                  class="visually-hidden"
+                  type="file"
+                  accept="application/json,.json"
+                />
+              </div>
               <div id="item-list" class="npc-list" role="list"></div>
             </div>
           </div>

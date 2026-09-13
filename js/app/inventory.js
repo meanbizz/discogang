@@ -125,6 +125,29 @@ function totalHeld(name) {
 
 /* The catalogue as the administrateur sees it: everything minted, plus
    anything a bag holds that was never minted — orders can hand those out. */
+/* Merge imported items into catalogue, announce state and preload art. */
+export function importItems(list) {
+  if (!state.isAdmin || !Array.isArray(list)) return 0;
+  let count = 0;
+  cleanItems(list).forEach((item) => {
+    if (isCurrency(item.name)) return;
+    const existing = findItem(state.items, item.name);
+    if (existing) {
+      existing.image = item.image;
+      existing.description = item.description;
+      existing.modifiers = item.modifiers;
+    } else {
+      state.items.push(item);
+    }
+    holdImage(item.image);
+    count += 1;
+  });
+  publishState();
+  refreshViews();
+  refreshModifiers();
+  return count;
+}
+
 export function adminItems() {
   const known = new Set(state.items.map((item) => itemKey(item.name)));
   const extras = [];
