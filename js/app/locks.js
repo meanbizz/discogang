@@ -2,6 +2,8 @@
 
 import { dom } from "../dom.js";
 import * as dialogue from "../dialogue/dialogue.js";
+/* Loaded here so the countdown is wired wherever the room is. */
+import "./timer.js";
 import {
   state,
   countReady,
@@ -51,8 +53,19 @@ export function refreshPlanningLock() {
     : `Waiting on the others — ${tally.done} of ${tally.players} have finished the scene.`;
 }
 
+/* Import is always the administrateur's to press; the colour is the only thing
+   the table's readiness decides. */
+export function paintImportButton() {
+  const button = document.getElementById("import-button");
+  if (!button) return;
+  button.hidden = !state.isAdmin;
+  button.disabled = false;
+  button.dataset.ready = everyoneReady() ? "true" : "false";
+}
+
 /* The administrateur stays mute until every player has readied up. */
 export function refreshSpeakLock() {
+  paintImportButton();
   const locked = state.isAdmin && !everyoneReady();
 
   if (dom.textInput) dom.textInput.disabled = locked;

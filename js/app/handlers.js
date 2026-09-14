@@ -70,6 +70,7 @@ import {
   setStatusRolls,
 } from "./status.js";
 import { commitModifierOps, setTemporaryModifiers } from "./modifiers.js";
+import { commitTimer, setTimer } from "./timer.js";
 import { adoptProgress, publishProgress } from "./progress.js";
 import {
   acceptChoice,
@@ -394,6 +395,14 @@ function onHostReceiveData(connection, data) {
     return;
   }
 
+  /* The administrateur's countdown, from wherever the administrateur sits:
+     this seat arms its own bar and tells the table. */
+  if (data.type === "timer-set") {
+    if (!person?.admin) return;
+    commitTimer(data.seconds);
+    return;
+  }
+
   if (data.type === "npc-sync") {
     if (!person?.admin) return;
     setNpcs(data.npcs);
@@ -676,6 +685,12 @@ function onGuestReceiveData(data) {
   /* The live path: the host has just been told what somebody consumed. */
   if (data.type === "modifiers") {
     setTemporaryModifiers(data.modifiers);
+    return;
+  }
+
+  /* The live path: the administrateur just armed a countdown. */
+  if (data.type === "timer") {
+    setTimer(data.seconds);
     return;
   }
 

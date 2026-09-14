@@ -15,6 +15,7 @@
 
     <link rel="stylesheet" href="styles.css" />
     <link rel="stylesheet" href="./stats/disco-skills.css" />
+    <link rel="stylesheet" href="./css/timer.css" />
   </head>
   <body>
     <main class="shell">
@@ -154,18 +155,17 @@
         <!-- Turn Builder -->
         <section id="turn-builder" class="turn-builder">
           <h2 class="turn-builder-title">What is being planned</h2>
+
+          <!-- The administrateur's countdown, emptied second by second. -->
+          <div id="timer-bar" class="timer-bar" role="timer" hidden>
+            <div id="timer-bar-fill" class="timer-bar-fill"></div>
+            <span id="timer-bar-text" class="timer-bar-text"></span>
+          </div>
+
           <p id="turn-lock" class="lock-note" role="status" hidden></p>
 
           <div id="ready-banner" class="ready-banner" role="status" hidden>
             <span class="ready-banner-text">All players ready</span>
-            <button
-              type="button"
-              id="import-button"
-              class="import-turns"
-              title="Copy the planned turns to the clipboard"
-            >
-              Import
-            </button>
           </div>
 
           <div
@@ -290,6 +290,17 @@
         </div>
 
         <div id="admin-tools" class="admin-tools" hidden>
+          <button
+            type="button"
+            id="import-button"
+            class="import-turns"
+            data-ready="false"
+            title="Copy the planned turns to the clipboard"
+            hidden
+          >
+            Import
+          </button>
+          <button type="button" id="timer-button" class="option">Timer</button>
           <button type="button" id="npc-button" class="option">NPCs</button>
           <button type="button" id="items-button" class="option">Items</button>
           <button type="button" id="blur-button" class="option">Blur</button>
@@ -574,6 +585,45 @@
         </div>
       </div>
 
+      <!-- Timer Modal — administrateur only -->
+      <div id="timer-modal" class="modal" hidden>
+        <div class="modal-backdrop" data-close="true"></div>
+        <div
+          class="modal-card"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="timer-modal-title"
+        >
+          <button
+            type="button"
+            id="timer-modal-close"
+            class="modal-close"
+            aria-label="Close timer"
+          >
+            ×
+          </button>
+          <h2 id="timer-modal-title" class="modal-name">Timer</h2>
+          <div class="field timer-field">
+            <label for="timer-seconds">Duration in seconds</label>
+            <input
+              id="timer-seconds"
+              type="number"
+              inputmode="numeric"
+              min="1"
+              max="3600"
+              value="60"
+            />
+          </div>
+          <button type="button" id="timer-send" class="option">Send</button>
+          <p
+            id="timer-error"
+            class="error"
+            role="alert"
+            aria-live="assertive"
+          ></p>
+        </div>
+      </div>
+
       <!-- NPC Modal -->
       <div id="npc-modal" class="modal" hidden>
         <div class="modal-backdrop" data-close="true"></div>
@@ -728,7 +778,7 @@
                 ></textarea>
               </div>
 
-
+              <div class="field">
                 <div class="portrait-picker">
                   <div
                     id="item-image-preview"

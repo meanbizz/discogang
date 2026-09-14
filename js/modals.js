@@ -1031,4 +1031,103 @@ document.addEventListener("click", (event) => {
 window.addEventListener("resize", closeOddsTooltip);
 window.addEventListener("scroll", closeOddsTooltip, true);
 
+/* ---------------- Timer (administrateur) ---------------- */
+
+/* The dialog lives in the page like the others; timer.js registers what Send
+   should do, so this file never has to know about the wire. */
+let timerReturnFocus = null;
+let timerHandler = null;
+
+function timerEl(id) {
+  return document.getElementById(id);
+}
+
+export function setTimerHandler(fn) {
+  timerHandler = typeof fn === "function" ? fn : null;
+}
+
+export function openTimer() {
+  const modal = timerEl("timer-modal");
+  if (!modal || !modal.hidden) return;
+  const error = timerEl("timer-error");
+  if (error) error.textContent = "";
+  timerReturnFocus = activeFocus();
+  modal.hidden = false;
+  sfx.playModal();
+  const field = timerEl("timer-seconds");
+  if (field) field.focus();
+  else timerEl("timer-modal-close")?.focus();
+}
+
+export function closeTimer() {
+  const modal = timerEl("timer-modal");
+  if (!modal || modal.hidden) return;
+  modal.hidden = true;
+  sfx.playCancel();
+  if (timerReturnFocus && document.contains(timerReturnFocus)) {
+    timerReturnFocus.focus();
+  }
+  timerReturnFocus = null;
+}
+
+export function noteTimer(text) {
+  const error = timerEl("timer-error");
+  if (error) error.textContent = text || "";
+}
+
+function sendTimer() {
+  const field = timerEl("timer-seconds");
+  if (!field || !timerHandler) return;
+  const seconds = Math.round(Number(field.value));
+  if (!isFinite(seconds) || seconds < 1 || seconds > 3600) {
+    noteTimer("Give the timer between 1 and 3600 seconds.");
+    return;
+  }
+  noteTimer("");
+  if (timerHandler(seconds)) closeTimer();
+  else noteTimer("Not connected — the timer went nowhere.");
+}
+
+/* Delegated so the administrateur's tool row can be reparented freely, and in
+   the capture phase so no other closer sees the opening press. */
+document.addEventListener(
+  "click",
+  (event) => {
+    const target = event.target;
+    if (!target || typeof target.closest !== "function") return;
+
+    if (target.closest("#timer-button")) {
+      event.preventDefault();
+      event.stopPropagation();
+      openTimer();
+      return;
+    }
+    if (target.closest("#timer-send")) {
+      event.preventDefault();
+      event.stopPropagation();
+      sendTimer();
+      return;
+    }
+    if (
+      target.closest("#timer-modal-close") ||
+      (target.closest("#timer-modal") && target.hasAttribute("data-close"))
+    ) {
+      event.preventDefault();
+      event.stopPropagation();
+      closeTimer();
+    }
+  },
+  true,
+);
+
+document.addEventListener("keydown", (event) => {
+  const modal = timerEl("timer-modal");
+  if (!modal || modal.hidden) return;
+  if (event.key === "Escape") closeTimer();
+  else if (event.key === "Enter" && event.target?.id === "timer-seconds") {
+    event.preventDefault();
+    sendTimer();
+  }
+});
+
 export { cleanName };

@@ -37,6 +37,7 @@ import { setInventory } from "./inventory.js";
 import { setGoals } from "./goals.js";
 import { setStatusRolls } from "./status.js";
 import { refreshLedger } from "./progress.js";
+import { resetTimer } from "./timer.js";
 
 function seat(isAdmin) {
   dom.roleLabel.hidden = !isAdmin;
@@ -163,6 +164,7 @@ export function leave() {
 
   dialogue.reset();
   overlays.reset();
+  resetTimer();
   state.dialoguePayload = null;
   state.dialogueRounds = [];
   state.dialogueLive = false;
