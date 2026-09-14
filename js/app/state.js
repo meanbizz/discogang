@@ -36,6 +36,8 @@ export const state = {
      peer id dies with the wire. */
   down: [],
   kia: [],
+  /* Whose plans read blurred everywhere but their author's seat. */
+  blurred: [],
   selfReady: false,
   profile: { name: "", portrait: null },
   roomId: "",
@@ -201,6 +203,19 @@ export function narrationExclusions() {
   });
   if (state.profile.name) names.push(state.profile.name);
   return names;
+}
+
+/* ---------------- Blur ---------------- */
+
+/* Whether plans by this author read blurred at this seat: every seat's do
+   except the author's own, judged against this seat's name. */
+export function blursFor(author) {
+  const wanted = cleanName(author).toLowerCase();
+  if (!wanted) return false;
+  if (wanted === cleanName(state.profile.name).toLowerCase()) return false;
+  return state.blurred.some(
+    (held) => cleanName(held).toLowerCase() === wanted,
+  );
 }
 
 /* ---------------- Tallies ---------------- */

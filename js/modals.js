@@ -753,6 +753,72 @@ export function refreshGoals(list) {
   renderGoalsList(list);
 }
 
+/* ---------------- Blur ---------------- */
+
+let blurReturnFocus = null;
+
+/* One checkbox a player, ticked when their plans read blurred at every
+   other seat. Rebuilt on every change, with the tick that caused it put
+   back under the pointer or the caret. */
+export function renderBlurList(players, blurred, onToggle) {
+  if (!dom.blurList) return;
+  const names = Array.isArray(players) ? players : [];
+  const ticks = Array.isArray(blurred) ? blurred : [];
+
+  const active = document.activeElement;
+  const keepName =
+    active && dom.blurList.contains(active) && active.closest(".blur-row")
+      ? active.closest(".blur-row").dataset.name
+      : null;
+
+  dom.blurList.textContent = "";
+  if (dom.blurEmpty) dom.blurEmpty.hidden = names.length > 0;
+
+  names.forEach((name) => {
+    const key = cleanName(name).toLowerCase();
+    const row = document.createElement("label");
+    row.className = "blur-row";
+    row.setAttribute("role", "listitem");
+    row.dataset.name = name;
+
+    const box = document.createElement("input");
+    box.type = "checkbox";
+    box.checked = ticks.some(
+      (held) => cleanName(held).toLowerCase() === key,
+    );
+    box.addEventListener("change", () => onToggle(name, box.checked));
+
+    const text = document.createElement("span");
+    text.className = "blur-name";
+    text.textContent = name;
+
+    row.appendChild(box);
+    row.appendChild(text);
+    dom.blurList.appendChild(row);
+
+    if (name === keepName) box.focus();
+  });
+}
+
+export function openBlurModal(players, blurred, onToggle) {
+  if (!dom.blurModal) return;
+  renderBlurList(players, blurred, onToggle);
+  blurReturnFocus = activeFocus();
+  dom.blurModal.hidden = false;
+  sfx.playModal();
+  dom.blurModalClose.focus();
+}
+
+export function closeBlur() {
+  if (!dom.blurModal || dom.blurModal.hidden) return;
+  dom.blurModal.hidden = true;
+  sfx.playCancel();
+  if (blurReturnFocus && document.contains(blurReturnFocus)) {
+    blurReturnFocus.focus();
+  }
+  blurReturnFocus = null;
+}
+
 /* ---------------- Sound ---------------- */
 
 /* The dials are this seat's own: nothing here is sent on the wire, since

@@ -61,6 +61,7 @@ import { refreshPlanningLock } from "./locks.js";
 import { applyScene, setNpcs } from "./scene.js";
 import { applySession } from "./save.js";
 import { commitOps, inventoryPayload, setInventory } from "./inventory.js";
+import { blurPayload, setBlurred } from "./blur.js";
 import { checkPendingGoals, commitGoalOps, setGoals } from "./goals.js";
 import {
   commitDown,
@@ -182,6 +183,8 @@ function onHostReceiveData(connection, data) {
       /* What each seat has consumed, so a joiner's cards read like everybody
          else's copy of them. */
       modifiers: state.temporaryModifiers,
+      /* Whose plans read blurred, so a joiner blurs the same names. */
+      blur: state.blurred,
       dialogue: state.dialoguePayload,
       /* Each round carries what was chosen in it, so a joiner inherits the
          whole record and not just the trees. */
@@ -355,6 +358,14 @@ function onHostReceiveData(connection, data) {
     return;
   }
 
+  /* The administrateur's blur roll: adopted here, then told to the rest. */
+  if (data.type === "blur-set") {
+    if (!person?.admin) return;
+    setBlurred(data.names);
+    broadcast(blurPayload(), connection.peer);
+    return;
+  }
+
   /* The administrateur edited the catalogue, which can rename what people
      already carry but never moves a count, so there is nothing to announce. */
   if (data.type === "inventory-state") {
@@ -428,6 +439,7 @@ function firstWelcome(data, current, live) {
   setGoals(data.goals);
   setStatusRolls(data);
   setTemporaryModifiers(data.modifiers);
+  setBlurred(data.blur);
 
   /* A save the room already read may hold this seat's ledger. Adopting it
      publishes; otherwise the table is simply told what this seat brought. */
@@ -507,6 +519,7 @@ function laterWelcome(data, current, live) {
   setStatusRolls(data);
   /* Whatever wore off while the wire was down has worn off. */
   setTemporaryModifiers(data.modifiers);
+  setBlurred(data.blur);
 
   /* This seat's own ledger is the better copy; the host is simply reminded
      of it. */
@@ -663,6 +676,12 @@ function onGuestReceiveData(data) {
   /* The live path: the host has just been told what somebody consumed. */
   if (data.type === "modifiers") {
     setTemporaryModifiers(data.modifiers);
+    return;
+  }
+
+  /* The live path: the administrateur just moved the blur roll. */
+  if (data.type === "blur") {
+    setBlurred(data.names);
     return;
   }
 

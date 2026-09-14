@@ -292,6 +292,7 @@
         <div id="admin-tools" class="admin-tools" hidden>
           <button type="button" id="npc-button" class="option">NPCs</button>
           <button type="button" id="items-button" class="option">Items</button>
+          <button type="button" id="blur-button" class="option">Blur</button>
           <button
             type="button"
             id="sound-button"
@@ -790,6 +791,32 @@
               <div id="item-list" class="npc-list" role="list"></div>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- Blur Modal — administrateur only: whose plans read blurred where -->
+      <div id="blur-modal" class="modal" hidden>
+        <div class="modal-backdrop" data-close="true"></div>
+        <div
+          class="modal-card modal-card-wide"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="blur-modal-title"
+        >
+          <button
+            type="button"
+            id="blur-modal-close"
+            class="modal-close"
+            aria-label="Close blur settings"
+          >
+            ×
+          </button>
+          <h2 id="blur-modal-title" class="modal-name">Blur plans</h2>
+          <p class="blur-note">
+            A ticked player's plans are blurred at every seat but their own.
+          </p>
+          <div id="blur-list" class="blur-list" role="list"></div>
+          <p id="blur-empty" class="inv-empty">Nobody to blur yet.</p>
         </div>
       </div>
 

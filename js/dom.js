@@ -171,6 +171,13 @@ export const dom = {
   itemFormError: document.getElementById("item-form-error"),
   itemList: document.getElementById("item-list"),
 
+  // Blur — administrateur only: whose plans read blurred elsewhere
+  blurButton: document.getElementById("blur-button"),
+  blurModal: document.getElementById("blur-modal"),
+  blurModalClose: document.getElementById("blur-modal-close"),
+  blurList: document.getElementById("blur-list"),
+  blurEmpty: document.getElementById("blur-empty"),
+
   // One item, looked at closely: its whole picture and what is written of it
   itemViewModal: document.getElementById("item-view-modal"),
   itemViewClose: document.getElementById("item-view-close"),

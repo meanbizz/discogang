@@ -9,6 +9,7 @@ import { setNarrationExclusions } from "../audio/narration.js";
 import { paintVitalBar } from "../vitals.js";
 import {
   state,
+  blursFor,
   everyoneReady,
   isDown,
   isKia,
@@ -306,6 +307,8 @@ export function renderTurn(entry) {
   wrapper.dataset.slot = slot;
   if (entry.stale) wrapper.dataset.stale = "true";
   if (entry.roundEnd) wrapper.dataset.roundEnd = "true";
+  /* Blurred at every seat but its author's, when the roll says so. */
+  if (blursFor(entry.author)) wrapper.classList.add("is-blurred");
   wrapper.appendChild(line);
 
   const pinned =

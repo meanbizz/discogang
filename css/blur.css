@@ -1,0 +1,43 @@
+/* css/blur.css */
+
+/* The administrateur's blur roll: a ticked player's plans read as a smear at
+   every seat but their own. One class per entry, decided at render time. */
+
+.turn-entry.is-blurred .turn-body {
+  filter: blur(10px);
+  user-select: none;
+}
+
+/* ---------------- The blur modal ---------------- */
+
+.blur-note {
+  margin: 0.25rem 0 0;
+  color: var(--text-old);
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+.blur-list {
+  display: grid;
+  gap: 0.4rem;
+  margin-top: 1rem;
+}
+
+.blur-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.35rem 0.6rem;
+  background: var(--bg-sunk);
+  border: var(--hairline);
+  color: var(--text-now);
+  font-size: 0.9rem;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  cursor: pointer;
+}
+
+.blur-row input {
+  accent-color: var(--option);
+  cursor: pointer;
+}

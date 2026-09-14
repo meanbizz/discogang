@@ -40,6 +40,7 @@ import {
   submitItemForm,
 } from "./inventory.js";
 import { openGoals } from "./goals.js";
+import { openBlur } from "./blur.js";
 import { leave } from "./room.js";
 
 /* Enter sends; Shift+Enter is a new line. requestSubmit keeps the form's own
@@ -278,6 +279,7 @@ function bindModals() {
     modals.closeInventory();
     modals.closeItemsModal();
     modals.closeGoals();
+    modals.closeBlur();
     modals.closeSound();
     modals.closeOddsTooltip();
   });
@@ -563,6 +565,21 @@ function bindItemForm() {
   }
 }
 
+/* The administrateur's blur switch and its modal. */
+function bindBlur() {
+  if (dom.blurButton) {
+    dom.blurButton.addEventListener("click", openBlur);
+  }
+  if (dom.blurModalClose) {
+    dom.blurModalClose.addEventListener("click", modals.closeBlur);
+  }
+  if (dom.blurModal) {
+    dom.blurModal.addEventListener("click", (event) => {
+      if (event.target.dataset.close === "true") modals.closeBlur();
+    });
+  }
+}
+
 /* Phone only: the scene column folds away so the log keeps the screen. The
    fold itself is CSS; this is only the switch. */
 function bindStageSide() {
@@ -591,6 +608,7 @@ export function bindSession() {
   bindInventory();
   bindGoals();
   bindItemForm();
+  bindBlur();
   bindStageSide();
 
   /* Player only: the button lives in the panel foot, which is detached for
