@@ -757,13 +757,11 @@ export function refreshGoals(list) {
 
 let blurReturnFocus = null;
 
-/* One checkbox a player, ticked when their plans read blurred at every
-   other seat. Rebuilt on every change, with the tick that caused it put
-   back under the pointer or the caret. */
-export function renderBlurList(players, blurred, onToggle) {
+/* One dropdown per player setting Present, Away, Hindered, or Concealed. */
+export function renderBlurList(players, blurred, onModeChange) {
   if (!dom.blurList) return;
   const names = Array.isArray(players) ? players : [];
-  const ticks = Array.isArray(blurred) ? blurred : [];
+  const states = blurred && typeof blurred === "object" ? blurred : {};
 
   const active = document.activeElement;
   const keepName =
@@ -774,35 +772,51 @@ export function renderBlurList(players, blurred, onToggle) {
   dom.blurList.textContent = "";
   if (dom.blurEmpty) dom.blurEmpty.hidden = names.length > 0;
 
+  const MODES = [
+    { value: "present", label: "Present" },
+    { value: "away", label: "Away" },
+    { value: "hindered", label: "Hindered" },
+    { value: "concealed", label: "Concealed" },
+  ];
+
   names.forEach((name) => {
     const key = cleanName(name).toLowerCase();
-    const row = document.createElement("label");
+    const row = document.createElement("div");
     row.className = "blur-row";
     row.setAttribute("role", "listitem");
     row.dataset.name = name;
-
-    const box = document.createElement("input");
-    box.type = "checkbox";
-    box.checked = ticks.some(
-      (held) => cleanName(held).toLowerCase() === key,
-    );
-    box.addEventListener("change", () => onToggle(name, box.checked));
 
     const text = document.createElement("span");
     text.className = "blur-name";
     text.textContent = name;
 
-    row.appendChild(box);
+    const select = document.createElement("select");
+    select.className = "blur-select";
+    select.setAttribute("aria-label", `Blur state for ${name}`);
+
+    const currentMode = states[key] || "present";
+
+    MODES.forEach((m) => {
+      const opt = document.createElement("option");
+      opt.value = m.value;
+      opt.textContent = m.label;
+      if (m.value === currentMode) opt.selected = true;
+      select.appendChild(opt);
+    });
+
+    select.addEventListener("change", () => onModeChange(name, select.value));
+
     row.appendChild(text);
+    row.appendChild(select);
     dom.blurList.appendChild(row);
 
-    if (name === keepName) box.focus();
+    if (name === keepName) select.focus();
   });
 }
 
-export function openBlurModal(players, blurred, onToggle) {
+export function openBlurModal(players, blurred, onModeChange) {
   if (!dom.blurModal) return;
-  renderBlurList(players, blurred, onToggle);
+  renderBlurList(players, blurred, onModeChange);
   blurReturnFocus = activeFocus();
   dom.blurModal.hidden = false;
   sfx.playModal();

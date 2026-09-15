@@ -26,6 +26,7 @@
 .blur-row {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 0.6rem;
   padding: 0.35rem 0.6rem;
   background: var(--bg-sunk);
@@ -34,10 +35,18 @@
   font-size: 0.9rem;
   letter-spacing: 0.04em;
   text-transform: none;
+}
+
+.blur-select {
+  background: var(--bg);
+  border: var(--hairline);
+  color: var(--text-now);
+  padding: 0.25rem 0.5rem;
+  font-size: 0.85rem;
+  font-family: inherit;
   cursor: pointer;
 }
 
-.blur-row input {
-  accent-color: var(--option);
-  cursor: pointer;
+.blur-select:focus-visible {
+  outline: 1px solid var(--option-hi);
 }

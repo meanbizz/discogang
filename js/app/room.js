@@ -103,7 +103,7 @@ export function connect(room, name, portrait) {
   /* Nobody is on the floor in a room that has not started. */
   setStatusRolls({});
   /* Nothing is blurred in a room that has not started either. */
-  state.blurred = [];
+  state.blurred = {};
   renderRoster();
   replaceLog([]);
   replaceTurnLog([]);
@@ -193,7 +193,7 @@ export function leave() {
   setInventory([], {});
   setGoals({});
   setStatusRolls({});
-  state.blurred = [];
+  state.blurred = {};
 
   dom.sessionPanel.hidden = true;
   dom.joinPanel.hidden = false;

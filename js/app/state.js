@@ -36,8 +36,8 @@ export const state = {
      peer id dies with the wire. */
   down: [],
   kia: [],
-  /* Whose plans read blurred everywhere but their author's seat. */
-  blurred: [],
+  /* Player blur modes: lowercased name -> 'away' | 'hindered' | 'concealed'. */
+  blurred: {},
   selfReady: false,
   profile: { name: "", portrait: null },
   roomId: "",
@@ -207,15 +207,21 @@ export function narrationExclusions() {
 
 /* ---------------- Blur ---------------- */
 
-/* Whether plans by this author read blurred at this seat: every seat's do
-   except the author's own, judged against this seat's name. */
+/* Evaluates whether author's message is blurred to viewer given their blur modes. */
 export function blursFor(author) {
-  const wanted = cleanName(author).toLowerCase();
-  if (!wanted) return false;
-  if (wanted === cleanName(state.profile.name).toLowerCase()) return false;
-  return state.blurred.some(
-    (held) => cleanName(held).toLowerCase() === wanted,
-  );
+  /* The administrateur reads every plan plainly, whatever the modes say. */
+  if (state.isAdmin) return false;
+  const authorKey = cleanName(author).toLowerCase();
+  const selfKey = cleanName(state.profile.name).toLowerCase();
+  if (!authorKey || !selfKey || authorKey === selfKey) return false;
+
+  const authorMode = (state.blurred && state.blurred[authorKey]) || "present";
+  const selfMode = (state.blurred && state.blurred[selfKey]) || "present";
+
+  const authorConcealed = authorMode === "away" || authorMode === "concealed";
+  const selfBlind = selfMode === "away" || selfMode === "hindered";
+
+  return authorConcealed || selfBlind;
 }
 
 /* ---------------- Tallies ---------------- */

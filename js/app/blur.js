@@ -10,8 +10,32 @@ import { state } from "./state.js";
 import { network, broadcast, sendUpstream } from "./net.js";
 import { replaceTurnLog } from "./views.js";
 
+export function cleanBlurStates(raw) {
+  /* Plain literal: BinaryPack throws on null-prototype objects, which kills
+     the blur payload on the wire. */
+  const out = {};
+  if (Array.isArray(raw)) {
+    raw.forEach((name) => {
+      const clean = cleanName(name);
+      if (clean) out[clean.toLowerCase()] = "concealed";
+    });
+    return out;
+  }
+  if (raw && typeof raw === "object") {
+    Object.keys(raw).forEach((name) => {
+      const clean = cleanName(name);
+      if (!clean) return;
+      const val = String(raw[name] || "").trim().toLowerCase();
+      if (val === "away" || val === "hindered" || val === "concealed") {
+        out[clean.toLowerCase()] = val;
+      }
+    });
+  }
+  return out;
+}
+
 export function blurPayload() {
-  return { type: "blur", names: state.blurred };
+  return { type: "blur", states: state.blurred };
 }
 
 function playerNames() {
@@ -22,42 +46,35 @@ function playerNames() {
   return out;
 }
 
-/* The roll adopted as it stands: the plan log repaints, since the blur is a
-   class each entry earns at render time. */
+/* Adopts the blur states map and re-renders the plan log and modal list. */
 export function setBlurred(raw) {
-  const seen = Object.create(null);
-  const out = [];
-  (Array.isArray(raw) ? raw : []).forEach((name) => {
-    const clean = cleanName(name);
-    const key = clean.toLowerCase();
-    if (!clean || seen[key]) return;
-    seen[key] = true;
-    out.push(clean);
-  });
-  state.blurred = out;
+  state.blurred = cleanBlurStates(raw);
   replaceTurnLog(state.turnEntries);
-  modals.renderBlurList(playerNames(), state.blurred, togglePlayer);
+  modals.renderBlurList(playerNames(), state.blurred, setPlayerMode);
 }
 
-/* The administrateur's own hand on a checkbox. */
-function togglePlayer(name, on) {
+/* Handles dropdown changes for a player. */
+export function setPlayerMode(name, mode) {
   if (!state.isAdmin) return;
   const key = cleanName(name).toLowerCase();
-  const held = state.blurred.filter(
-    (heldName) => cleanName(heldName).toLowerCase() !== key,
-  );
-  if (on) held.push(cleanName(name));
-  setBlurred(held);
+  const next = Object.assign({}, state.blurred);
+  const cleanVal = String(mode || "").trim().toLowerCase();
+  if (cleanVal === "away" || cleanVal === "hindered" || cleanVal === "concealed") {
+    next[key] = cleanVal;
+  } else {
+    delete next[key];
+  }
+  setBlurred(next);
 
   if (network.isHost) {
     broadcast(blurPayload());
     return;
   }
-  sendUpstream({ type: "blur-set", names: state.blurred });
+  sendUpstream({ type: "blur-set", states: state.blurred });
 }
 
 /* The administrateur's desk is the only place the modal opens from. */
 export function openBlur() {
   if (!state.isAdmin) return;
-  modals.openBlurModal(playerNames(), state.blurred, togglePlayer);
+  modals.openBlurModal(playerNames(), state.blurred, setPlayerMode);
 }

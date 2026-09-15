@@ -362,7 +362,7 @@ function onHostReceiveData(connection, data) {
   /* The administrateur's blur roll: adopted here, then told to the rest. */
   if (data.type === "blur-set") {
     if (!person?.admin) return;
-    setBlurred(data.names);
+    setBlurred(data.states || data.names);
     broadcast(blurPayload(), connection.peer);
     return;
   }
@@ -696,7 +696,7 @@ function onGuestReceiveData(data) {
 
   /* The live path: the administrateur just moved the blur roll. */
   if (data.type === "blur") {
-    setBlurred(data.names);
+    setBlurred(data.states || data.names);
     return;
   }
 

@@ -307,8 +307,8 @@ export function renderTurn(entry) {
   wrapper.dataset.slot = slot;
   if (entry.stale) wrapper.dataset.stale = "true";
   if (entry.roundEnd) wrapper.dataset.roundEnd = "true";
-  /* Blurred at every seat but its author's, when the roll says so. */
-  if (blursFor(entry.author) && !state.isAdmin) wrapper.classList.add("is-blurred");
+  /* Blurred at every seat but its author's, per the author's and viewer's modes. */
+  if (blursFor(entry.author)) wrapper.classList.add("is-blurred");
   wrapper.appendChild(line);
 
   const pinned =
