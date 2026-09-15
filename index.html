@@ -154,7 +154,19 @@
 
         <!-- Turn Builder -->
         <section id="turn-builder" class="turn-builder">
-          <h2 class="turn-builder-title">What is being planned</h2>
+          <div class="turn-builder-head">
+            <h2 class="turn-builder-title">What is being planned</h2>
+            <button
+              type="button"
+              id="turn-clear"
+              class="turn-clear"
+              hidden
+              title="Delete every plan in the planning log"
+              aria-label="Clear the whole planning log"
+            >
+              Clear
+            </button>
+          </div>
 
           <!-- The administrateur's countdown, emptied second by second. -->
           <div id="timer-bar" class="timer-bar" role="timer" hidden>
@@ -902,14 +914,6 @@
         aria-hidden="true"
       ></div>
     </main>
-
-    <!-- Item tooltip: fixed to the viewport, so it lives outside the modals -->
-    <div
-      id="inventory-tooltip"
-      class="inv-tooltip"
-      role="tooltip"
-      aria-hidden="true"
-    ></div>
 
     <!-- Skill-check verdict overlay -->
     <div id="check-overlay" class="check-overlay" aria-hidden="true" hidden>

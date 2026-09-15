@@ -41,6 +41,7 @@ import { resetTimer } from "./timer.js";
 
 function seat(isAdmin) {
   dom.roleLabel.hidden = !isAdmin;
+  if (dom.turnClear) dom.turnClear.hidden = !isAdmin;
   setPresent(anchors.deck, dom.deck, isAdmin);
   setPresent(anchors.adminTools, dom.adminTools, isAdmin);
   setPresent(anchors.composer, dom.composer, isAdmin);
@@ -65,6 +66,7 @@ function seatSoundButton(isAdmin) {
 
 function clearSeat() {
   dom.roleLabel.hidden = true;
+  if (dom.turnClear) dom.turnClear.hidden = true;
   setPresent(anchors.deck, dom.deck, false);
   setPresent(anchors.adminTools, dom.adminTools, false);
   setPresent(anchors.composer, dom.composer, false);

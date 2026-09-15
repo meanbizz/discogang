@@ -15,6 +15,7 @@ import { ledger } from "../xp.js";
 import { state } from "./state.js";
 import { network } from "./net.js";
 import {
+  clearTurnLog,
   exportCharacter,
   exportTurns,
   setSelfReady,
@@ -98,6 +99,9 @@ function bindComposers() {
 
   dom.turnReady.addEventListener("click", () => setSelfReady(!state.selfReady));
   dom.importButton.addEventListener("click", exportTurns);
+  if (dom.turnClear) {
+    dom.turnClear.addEventListener("click", clearTurnLog);
+  }
 }
 
 /* The file input is hidden; Load is what the administrateur presses, and

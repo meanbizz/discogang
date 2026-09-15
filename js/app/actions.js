@@ -20,6 +20,7 @@ import {
   paintReadyButton,
   renderEntry,
   renderRoster,
+  replaceTurnLog,
   systemNote,
 } from "./views.js";
 import { planningUnlocked } from "./locks.js";
@@ -132,6 +133,27 @@ export function shareTurn(text) {
     return true;
   }
   return sendUpstream({ type: "turn", turn: { text: body } });
+}
+
+/* The administrateur's broom: the whole plan log, gone at every seat after
+   one confirmation. */
+export function clearTurnLog() {
+  if (!state.isAdmin) return;
+  const sure = window.confirm(
+    "Are you sure you want to delete the whole planning log?",
+  );
+  if (!sure) return;
+
+  if (network.isHost) {
+    replaceTurnLog([]);
+    broadcast({ type: "turns", turns: state.turnEntries });
+    return;
+  }
+  if (sendUpstream({ type: "turns-clear" })) {
+    replaceTurnLog([]);
+    return;
+  }
+  systemNote("Not connected — the planning log was not cleared.");
 }
 
 let importResetTimer = null;

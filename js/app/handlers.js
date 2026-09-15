@@ -238,6 +238,14 @@ function onHostReceiveData(connection, data) {
     return;
   }
 
+  /* The administrateur swept the board: every seat's plan log goes with it. */
+  if (data.type === "turns-clear") {
+    if (!person?.admin) return;
+    replaceTurnLog([]);
+    broadcast({ type: "turns", turns: state.turnEntries }, connection.peer);
+    return;
+  }
+
   if (data.type === "ready") {
     if (!person || person.admin) return;
     /* A seat on the floor cannot reach the switch, whatever it sends. */

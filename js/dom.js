@@ -28,6 +28,7 @@ export const dom = {
   composerLock: document.getElementById("composer-lock"),
 
   turnLog: document.getElementById("turn-builder-log"),
+  turnClear: document.getElementById("turn-clear"),
   turnComposer: document.getElementById("turn-composer"),
   turnInput: document.getElementById("turn-input"),
   turnReady: document.getElementById("turn-ready"),
@@ -149,7 +150,6 @@ export const dom = {
   inventoryModalClose: document.getElementById("inventory-modal-close"),
   inventoryGrid: document.getElementById("inventory-grid"),
   inventoryLock: document.getElementById("inventory-lock"),
-  inventoryTooltip: document.getElementById("inventory-tooltip"),
 
   // Items — administrateur only
   itemsButton: document.getElementById("items-button"),

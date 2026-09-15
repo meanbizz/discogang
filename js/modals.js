@@ -358,21 +358,10 @@ function paintItemSquare(element, item) {
   paintThumb(element, { name: held.name || "", portrait: null });
 }
 
-/* ---------------- Item tooltip ---------------- */
-
-/* Same shape as the skill sheet's: fixed, hung off whatever was pressed, and
-   dropped the moment the page moves under it. */
-function hideItemTooltip() {
-  const tip = dom.inventoryTooltip;
-  if (!tip) return;
-  tip.classList.remove("is-open");
-  tip.setAttribute("aria-hidden", "true");
-  tip.textContent = "";
-  delete tip.dataset.item;
-}
+/* ---------------- Tooltip placing ---------------- */
 
 /* Centered under whatever was pressed, flipped above it when there is no
-   room below — shared by the item and odds tooltips. */
+   room below. */
 function placeTooltip(tip, anchor) {
   const from = anchor.getBoundingClientRect();
   const box = tip.getBoundingClientRect();
@@ -387,51 +376,6 @@ function placeTooltip(tip, anchor) {
 
   tip.style.left = Math.round(left) + "px";
   tip.style.top = Math.round(top) + "px";
-}
-
-function positionItemTooltip(anchor) {
-  if (dom.inventoryTooltip) placeTooltip(dom.inventoryTooltip, anchor);
-}
-
-function toggleItemTooltip(anchor, item) {
-  const tip = dom.inventoryTooltip;
-  if (!tip) return;
-  if (tip.classList.contains("is-open") && tip.dataset.item === item.name) {
-    hideItemTooltip();
-    return;
-  }
-
-  tip.textContent = "";
-  const title = document.createElement("p");
-  title.className = "inv-tooltip-title";
-  title.textContent = item.name;
-  const body = document.createElement("p");
-  body.className = "inv-tooltip-text";
-  body.textContent = item.description || "Nothing is written about it.";
-  tip.appendChild(title);
-  tip.appendChild(body);
-
-  const moved = describeModifierList(item.modifiers);
-  if (moved) {
-    const mods = document.createElement("p");
-    mods.className = "inv-tooltip-text inv-tooltip-mods";
-    mods.textContent = "While carried: " + moved;
-    tip.appendChild(mods);
-  }
-
-  /* A purse says what is in it, since its square carries a number rather than
-     a count of things. */
-  if (item.currency) {
-    const purse = document.createElement("p");
-    purse.className = "inv-tooltip-text inv-tooltip-purse";
-    purse.textContent = "You currently have " + (item.count || 0) + ".";
-    tip.appendChild(purse);
-  }
-
-  tip.dataset.item = item.name;
-  tip.setAttribute("aria-hidden", "false");
-  tip.classList.add("is-open");
-  positionItemTooltip(anchor);
 }
 
 /* ---------------- Inventory (player) ---------------- */
@@ -494,19 +438,7 @@ export function renderInventoryGrid(list, onPick) {
     square.addEventListener("click", () => onPick(item));
     cell.appendChild(square);
 
-    const info = document.createElement("button");
-    info.type = "button";
-    info.className = "inv-info";
-    info.textContent = "i";
-    info.title = "What is this?";
-    info.setAttribute("aria-label", "About " + item.name);
-    info.addEventListener("click", (event) => {
-      event.stopPropagation();
-      toggleItemTooltip(info, item);
-    });
-    cell.appendChild(info);
-
-    /* The whole picture, under the square rather than in a tooltip. */
+    /* The whole picture and everything written about it, in one place. */
     const look = document.createElement("button");
     look.type = "button";
     look.className = "inv-inspect";
@@ -531,7 +463,6 @@ let itemViewReturnFocus = null;
    what is written about it underneath. Read only, like the tooltip. */
 export function openItemView(item) {
   if (!dom.itemViewModal || !item) return;
-  hideItemTooltip();
 
   if (dom.itemViewImage) {
     if (item.image) {
@@ -672,7 +603,6 @@ export function openInventory(list, onPick) {
 
 export function closeInventory() {
   if (!dom.inventoryModal || dom.inventoryModal.hidden) return;
-  hideItemTooltip();
   noteInventory("");
   dom.inventoryModal.hidden = true;
   sfx.playCancel();
@@ -1014,27 +944,8 @@ export function setStagedItemImage(url) {
   stagedItemImage = url;
 }
 
-/* A press anywhere else puts it away; the info buttons stop their own click
-   from reaching the document, so opening and toggling still work. */
-document.addEventListener("click", (event) => {
-  if (!dom.inventoryTooltip?.classList.contains("is-open")) return;
-  if (event.target?.closest?.(".inv-info")) return;
-  hideItemTooltip();
-});
-
-window.addEventListener("resize", hideItemTooltip);
-window.addEventListener("scroll", hideItemTooltip, true);
-
-/* Any press that is not the ⓘ button itself counts as "somewhere else". */
-document.addEventListener("click", (event) => {
-  const tip = dom.inventoryTooltip;
-  if (!tip || !tip.classList.contains("is-open")) return;
-  if (event.target.closest(".inv-info")) return;
-  hideItemTooltip();
-});
-
-/* The odds tooltip answers the same rules: a press anywhere else puts it
-   away, and the button that opened it is left to toggle it. */
+/* The odds tooltip: a press anywhere else puts it away, and the button that
+   opened it is left to toggle it. */
 document.addEventListener("click", (event) => {
   const tip = dom.oddsTooltip;
   if (!tip || !tip.classList.contains("is-open")) return;
