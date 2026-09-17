@@ -42,6 +42,7 @@ export const state = {
   profile: { name: "", portrait: null },
   roomId: "",
   scene: { image: null },
+  time: null,
   /* Skill art shown while a dialogue node is speaking. */
   sceneOverride: null,
   stagedPortrait: null,

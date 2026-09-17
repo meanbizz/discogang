@@ -32,7 +32,7 @@ import {
   refreshPlanningLock,
   refreshSpeakLock,
 } from "./locks.js";
-import { applyScene } from "./scene.js";
+import { applyScene, applyTime } from "./scene.js";
 import { setInventory } from "./inventory.js";
 import { setGoals } from "./goals.js";
 import { setStatusRolls } from "./status.js";
@@ -127,6 +127,7 @@ export function connect(room, name, portrait) {
   refreshLoadButton();
 
   applyScene({ image: null });
+  applyTime(null);
   state.sheetState = state.isAdmin
     ? null
     : window.DiscoSkillSheet?.normalize(state.stagedSheet);
@@ -220,6 +221,7 @@ export function leave() {
   vitals.refreshVitals(null, true);
   renderTurnEmptyState();
   applyScene({ image: null });
+  applyTime(null);
   setStatus("offline", "Offline");
   refreshPlanningLock();
   refreshSpeakLock();

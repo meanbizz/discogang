@@ -44,6 +44,7 @@ export const dom = {
 
   stageSide: document.getElementById("stage-side"),
   sceneThumb: document.getElementById("scene-thumb"),
+  stageTime: document.getElementById("stage-time"),
 
   panelFoot: document.getElementById("panel-foot"),
   healthBar: document.getElementById("health-bar"),

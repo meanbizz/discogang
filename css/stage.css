@@ -6,6 +6,7 @@
   display: flex;
   align-items: flex-start;
   padding: 1rem 0;
+  position: relative;
 }
 
 .stage-side {
@@ -31,6 +32,27 @@
 
 .scene-thumb:hover {
   border-color: var(--text-old);
+}
+
+.stage-time {
+  position: absolute;
+  top: 16.5rem;
+  left: 0;
+  width: var(--side-width);
+  text-align: center;
+  color: var(--text-now);
+  font-size: 0.9rem;
+  letter-spacing: 0.08em;
+  font-family: 'Core Sans ES W15 35 Light';
+  pointer-events: none;
+}
+
+.stage-time[hidden] {
+  display: none;
+}
+
+.stage:not(:has(.scene-thumb:not([hidden]))) .stage-time {
+  top: 1rem;
 }
 
 .log {
@@ -123,6 +145,15 @@
     color: var(--option-hi);
     font-size: 0.9rem;
     line-height: 1.5;
+  }
+
+  .stage-time {
+    position: absolute;
+    top: 0;
+    width: auto;
+    line-height: 1.5;
+    font-size: 1.8rem;
+    text-align: right;
   }
 
   .stage-side-toggle[aria-expanded="true"] {

@@ -19,6 +19,20 @@ let autoPortrait = null;
 let autoSheet = false;
 let folderLookupId = 0;
 
+/* Everything the join form waits on, counted so the button comes back when
+   the last load lands — success, failure or superseded alike. */
+let busyLoads = 0;
+
+function beginLoad(lock) {
+  busyLoads += 1;
+  if (lock) dom.joinButton.disabled = true;
+}
+
+function endLoad() {
+  busyLoads = Math.max(0, busyLoads - 1);
+  if (!busyLoads) dom.joinButton.disabled = false;
+}
+
 function playerSlug(name) {
   const clean = cleanName(name).toLowerCase();
   return clean ? clean.replace(/\s+/g, "_") : "";
@@ -81,20 +95,27 @@ function syncPlayerFolder(name, done) {
     pending -= 1;
     if (pending === 0 && done) done();
   };
+  /* Only Join, which waits on this lookup, presses the button down; the
+     name-blur lookup counts quietly, so it cannot swallow the click. */
+  const lock = Boolean(done);
 
+  beginLoad(lock);
   findPortrait(slug, (url) => {
-    if (currentId !== folderLookupId) return;
+    /* Superseded by a newer lookup: release the claim, settle nothing else. */
+    if (currentId !== folderLookupId) return endLoad();
     const manualPortrait = dom.portraitInput.files?.[0] || (dom.portraitUrl.value.trim() && state.stagedPortrait !== autoPortrait);
     if (!manualPortrait) {
       autoPortrait = url;
       state.stagedPortrait = url;
       paintPreview();
     }
+    endLoad();
     finish();
   });
 
+  beginLoad(lock);
   findSkills(slug, (data) => {
-    if (currentId !== folderLookupId) return;
+    if (currentId !== folderLookupId) return endLoad();
     const manualSheet = dom.statsInput.files?.[0] || (state.stagedSheet && !autoSheet);
     if (!manualSheet) {
       if (data) {
@@ -107,6 +128,7 @@ function syncPlayerFolder(name, done) {
         if (dom.joinError.textContent === "Stats loaded.") dom.joinError.textContent = "";
       }
     }
+    endLoad();
     finish();
   });
 }
@@ -132,9 +154,9 @@ function onPortraitFile() {
   }
 
   dom.joinError.textContent = "Uploading the portrait…";
-  dom.joinButton.disabled = true;
+  beginLoad(true);
   uploadImage(file, (url, error) => {
-    dom.joinButton.disabled = false;
+    endLoad();
     dom.portraitInput.value = "";
     if (error) {
       dom.joinError.textContent = error;
@@ -193,9 +215,14 @@ function onStatsFile() {
     return;
   }
 
+  beginLoad(true);
   const reader = new FileReader();
-  reader.onerror = () => refuseSheet("That file could not be read.");
+  reader.onerror = () => {
+    endLoad();
+    refuseSheet("That file could not be read.");
+  };
   reader.onload = () => {
+    endLoad();
     let parsed;
     try {
       parsed = JSON.parse(String(reader.result));

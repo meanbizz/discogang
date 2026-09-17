@@ -58,7 +58,7 @@ import {
   systemNote,
 } from "./views.js";
 import { refreshPlanningLock } from "./locks.js";
-import { applyScene, setNpcs } from "./scene.js";
+import { applyScene, applyTime, commitTime, setNpcs } from "./scene.js";
 import { applySession } from "./save.js";
 import { commitOps, inventoryPayload, setInventory } from "./inventory.js";
 import { blurPayload, setBlurred } from "./blur.js";
@@ -148,7 +148,9 @@ function onHostReceiveData(connection, data) {
       admin: joiningAdmin,
       slot: joiningAdmin
         ? 0
-        : previous?.slot || (held && held.slot) || network.nextSlot(state.roster),
+        : previous?.slot ||
+          (held && held.slot) ||
+          network.nextSlot(state.roster),
       /* Readying up again, or re-reading a scene already finished, is not
          something a dropped wire should cost anybody. */
       ready: Boolean(resuming && flags && flags.ready),
@@ -171,6 +173,7 @@ function onHostReceiveData(connection, data) {
       turns: state.turnEntries,
       track: music.getCurrentTrack(),
       scene: state.scene,
+      time: state.time,
       npcs: state.npcs,
       /* The catalogue and every bag, so a joiner can read their pockets. */
       items: state.items,
@@ -375,6 +378,13 @@ function onHostReceiveData(connection, data) {
     return;
   }
 
+  if (data.type === "time-set") {
+    if (!person?.admin) return;
+    const time = cleanTime(data.time);
+    if (time) commitTime(time);
+    return;
+  }
+
   /* The administrateur edited the catalogue, which can rename what people
      already carry but never moves a count, so there is nothing to announce. */
   if (data.type === "inventory-state") {
@@ -451,6 +461,7 @@ function firstWelcome(data, current, live) {
       .filter(Boolean),
   );
   applyScene(data.scene);
+  applyTime(data.time);
   if (Array.isArray(data.npcs)) setNpcs(data.npcs);
   setInventory(data.items, data.inventories);
   setGoals(data.goals);
@@ -658,6 +669,11 @@ function onGuestReceiveData(data) {
      something to say about this seat in particular. */
   if (data.type === "progress-restore") {
     adoptProgress(data.progress);
+    return;
+  }
+
+  if (data.type === "time") {
+    applyTime(data.time);
     return;
   }
 

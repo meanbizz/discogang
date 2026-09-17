@@ -1,7 +1,14 @@
 /* The scene image beside the log, and the NPC roster behind it. */
 
 import { dom } from "../dom.js";
-import { cleanName, cleanNpc, cleanScene, paintThumb, uid } from "../utils.js";
+import {
+  cleanName,
+  cleanNpc,
+  cleanScene,
+  cleanTime,
+  paintThumb,
+  uid,
+} from "../utils.js";
 import { normalizeKey } from "../dialogue/text.js";
 import * as modals from "../modals.js";
 import { holdImage } from "../assets.js";
@@ -42,6 +49,36 @@ export function applyScene(next) {
 
 export function currentSceneImage() {
   return state.sceneOverride || state.scene.image;
+}
+
+export function renderTime() {
+  if (!dom.stageTime) return;
+  if (state.time) {
+    dom.stageTime.textContent = state.time;
+    dom.stageTime.hidden = false;
+  } else {
+    dom.stageTime.textContent = "";
+    dom.stageTime.hidden = true;
+  }
+}
+
+export function applyTime(time) {
+  state.time = cleanTime(time);
+  renderTime();
+}
+
+export function commitTime(time) {
+  applyTime(time);
+  broadcast({ type: "time", time: state.time });
+}
+
+export function publishTime(time) {
+  if (!time) return;
+  if (network.isHost) {
+    commitTime(time);
+    return;
+  }
+  sendUpstream({ type: "time-set", time });
 }
 
 export function setNpcs(list) {

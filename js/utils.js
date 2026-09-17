@@ -99,6 +99,13 @@ export function cleanScene(raw) {
   return { image: cleanImageUrl(raw.image) };
 }
 
+// Clean and validate "hh:mm" time string.
+export function cleanTime(value) {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return /^([01]?\d|2[0-3]):[0-5]\d$/.test(trimmed) ? trimmed : null;
+}
+
 export function cleanNpc(raw) {
   if (!raw || typeof raw !== "object") return null;
   const name = cleanName(raw.name);

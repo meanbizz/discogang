@@ -42,7 +42,7 @@ export function refreshPlanningLock() {
     dom.turnLock.hidden = false;
     dom.turnLock.textContent = isSelfKia()
       ? "You have died and have found peace."
-      : "You are down and have fallen unconscious. You are unable to plan anything.";
+      : "You have fallen unconscious. You are unable to plan anything.";
     return;
   }
 
