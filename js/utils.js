@@ -121,33 +121,16 @@ export function isAdminName(name) {
   return cleanName(name).toLowerCase() === ADMIN_NAME;
 }
 
-/* data-mark says whether the fallback is a real initial or a bare question
-   mark, so only the latter is dimmed. */
+export { Portrait, paintPortrait, clearPortrait } from "./portrait.js";
+import { Portrait } from "./portrait.js";
+
+// Proxies thumbnail operations to the unified Portrait component.
 export function paintThumb(element, person) {
-  if (!element) return;
-  const portrait = person && person.portrait ? person.portrait : null;
-
-  if (portrait) {
-    element.style.setProperty(PORTRAIT_VAR, cssUrl(portrait));
-    element.removeAttribute("data-empty");
-    element.removeAttribute("data-mark");
-    element.textContent = "";
-    return;
-  }
-
-  element.style.removeProperty(PORTRAIT_VAR);
-  element.setAttribute("data-empty", "true");
-  const initial = person && person.name ? person.name.charAt(0) : "";
-  element.setAttribute("data-mark", initial ? "letter" : "unknown");
-  element.textContent = initial || "?";
+  new Portrait(element).render(person);
 }
 
 export function clearThumb(element) {
-  if (!element) return;
-  element.style.removeProperty(PORTRAIT_VAR);
-  element.setAttribute("data-empty", "true");
-  element.setAttribute("data-mark", "unknown");
-  element.textContent = "";
+  new Portrait(element).clear();
 }
 
 /* "spoken" → quote, (aside) → aside, *style* → past. Text only: every piece

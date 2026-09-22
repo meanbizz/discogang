@@ -25,6 +25,7 @@
   font-size: 0.85rem;
 }
 
+.portrait,
 .thumb {
   position: relative;
   isolation: isolate;
@@ -41,10 +42,9 @@
   filter: grayscale(0.25) contrast(1.05);
 }
 
-/* One frame rule for every framed face, whatever its size: it stands slightly
-   proud of the portrait and sits underneath it. Scene art and item squares are
-   not portraits, so they keep their bare box. */
-.thumb:not(.scene-thumb)::before,
+/* Unified portrait frame styling applied across all variants including scene art. */
+.portrait:not([data-framed="false"])::before,
+.thumb:not([data-framed="false"])::before,
 .modal-portrait::before {
   content: "";
   position: absolute;
@@ -54,11 +54,12 @@
   pointer-events: none;
 }
 
-/* The enlarged portrait hugs its box a little tighter. */
+.portrait[data-size="modal"]::before,
 .modal-portrait::before {
   inset: -5%;
 }
 
+.portrait::after,
 .thumb::after,
 .modal-portrait::after {
   content: "";
@@ -69,21 +70,44 @@
   pointer-events: none;
 }
 
-/* Sizes must out-specify the bare .thumb box. */
+.portrait[data-size="lg"],
 .thumb.thumb-lg {
   width: 5rem;
   height: 7.5rem;
   font-size: 1.6rem;
 }
 
-/* The question mark reads dimmer than a real initial. */
+.portrait[data-size="modal"],
+.modal-portrait {
+  width: min(78vw, 22rem, 52vh);
+  aspect-ratio: 2 / 3;
+  height: auto;
+  margin: 0 auto 1rem;
+  font-size: 4rem;
+}
+
+.portrait[data-size="scene"],
+.thumb.scene-thumb {
+  width: var(--side-width);
+  height: 15rem;
+  padding: 0;
+  overflow: visible;
+  font-size: 3rem;
+  cursor: pointer;
+}
+
+.portrait[data-size="scene"]:hover,
+.scene-thumb:hover {
+  border-color: var(--text-old);
+}
+
+.portrait[data-mark="unknown"],
 .thumb[data-mark="unknown"],
 .modal-portrait[data-mark="unknown"] {
   color: #4a4a47;
 }
 
-/* Nothing to show beside the log: the box goes, its column stays. Two classes
-   and the attribute, so it out-specifies the bare .thumb display. */
+.portrait[data-size="scene"][hidden],
 .thumb.scene-thumb[hidden] {
   display: none;
 }

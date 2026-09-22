@@ -20,12 +20,12 @@
   display: none;
 }
 
-/* Two classes, so the bare .thumb box cannot win on source order. */
+/* Allows the portrait frame to project beyond boundaries without clipping. */
 .thumb.scene-thumb {
   width: var(--side-width);
   height: 15rem;
   padding: 0;
-  overflow: hidden;
+  overflow: visible;
   font-size: 3rem;
   cursor: pointer;
 }
