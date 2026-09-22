@@ -36,13 +36,12 @@
 
 .stage-time {
   position: absolute;
-  top: 16.5rem;
+  top: 17.5rem;
   left: 0;
   width: var(--side-width);
   text-align: center;
   color: var(--text-now);
-  font-size: 0.9rem;
-  letter-spacing: 0.08em;
+  font-size: 1.5rem;
   font-family: 'Core Sans ES W15 35 Light';
   pointer-events: none;
 }
