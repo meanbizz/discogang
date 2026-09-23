@@ -607,6 +607,9 @@ function onGuestReceiveData(data) {
   }
 
   if (data.type === "roster" && Array.isArray(data.people)) {
+    state.roster.forEach((person) => {
+      if (!person.admin) rememberSeat(person);
+    });
     state.roster.clear();
     data.people.forEach((raw) => {
       if (!raw || typeof raw.id !== "string") return;
@@ -614,7 +617,7 @@ function onGuestReceiveData(data) {
       let slot = Number(raw.slot) || 0;
       if (slot < 0 || slot > PLAYER_SLOTS) slot = 0;
       const reading = cleanProgress(raw);
-      state.roster.set(raw.id, {
+      const person = {
         id: raw.id,
         name,
         portrait: cleanImageUrl(raw.portrait),
@@ -626,7 +629,9 @@ function onGuestReceiveData(data) {
         allocated: reading.allocated,
         xp: reading.xp,
         vitals: reading.vitals,
-      });
+      };
+      state.roster.set(raw.id, person);
+      if (!person.admin) rememberSeat(person);
     });
     renderRoster();
     const me = state.roster.get(network.selfId);

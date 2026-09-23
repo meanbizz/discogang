@@ -51,8 +51,19 @@ export function noteSession(text) {
 export function exportSession() {
   if (!state.isAdmin) return;
 
-  const people = [];
-  state.roster.forEach((person) => people.push(person));
+  const peopleMap = new Map();
+  state.savedProgress.forEach((p, k) => {
+    if (p && p.name) peopleMap.set(k, Object.assign({}, p));
+  });
+  state.seats.forEach((p, k) => {
+    if (p && p.name) peopleMap.set(k, Object.assign({}, p));
+  });
+  state.roster.forEach((p) => {
+    const k = cleanName(p.name).toLowerCase();
+    if (k) peopleMap.set(k, p);
+    else peopleMap.set(p.id, p);
+  });
+  const people = Array.from(peopleMap.values());
 
   const snap = session.snapshot({
     room: state.roomId,
@@ -103,8 +114,8 @@ function restoreSlots(people) {
    about is handed their own half of it, and nobody is handed anybody else's.
    Whoever arrives later gets theirs in their welcome. */
 function restoreProgress(people) {
-  if (!network.isHost) return;
   rememberProgress(people);
+  if (!network.isHost) return;
 
   state.roster.forEach((person) => {
     if (person.admin) return;

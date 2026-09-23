@@ -131,13 +131,18 @@ export function rememberSeat(person) {
   if (!person || person.admin) return;
   const key = seatKey(person.name);
   if (!key) return;
+  const held = state.seats.get(key) || {};
   state.seats.set(key, {
-    slot: person.slot || 0,
+    name: person.name || held.name,
+    portrait: person.portrait || held.portrait || null,
+    admin: false,
+    slot: person.slot || held.slot || 0,
     ready: Boolean(person.ready),
     done: Boolean(person.done),
-    skills: person.skills || {},
-    allocated: person.allocated || {},
-    xp: person.xp || null,
+    skills: person.skills || held.skills || {},
+    allocated: person.allocated || held.allocated || {},
+    xp: person.xp || held.xp || null,
+    vitals: person.vitals || held.vitals || null,
     at: Date.now(),
   });
 }
@@ -156,6 +161,10 @@ export function rememberProgress(people) {
     const key = seatKey(person.name);
     if (!key) return;
     state.savedProgress.set(key, {
+      name: person.name,
+      portrait: person.portrait || null,
+      admin: false,
+      slot: person.slot || 0,
       skills: person.skills || {},
       allocated: person.allocated || {},
       xp: person.xp || null,
