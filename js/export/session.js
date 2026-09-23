@@ -79,6 +79,7 @@ function cleanPerson(raw) {
   if (!name) return null;
   let slot = Number(raw.slot) || 0;
   if (slot < 0 || slot > PLAYER_SLOTS) slot = 0;
+  const sig = typeof raw.signature === "string" ? raw.signature : typeof raw.signatureSkill === "string" ? raw.signatureSkill : null;
   return {
     name,
     portrait: cleanImageUrl(raw.portrait),
@@ -86,6 +87,7 @@ function cleanPerson(raw) {
     slot,
     skills: cleanScores(raw.skills),
     allocated: cleanAllocated(raw.allocated),
+    signature: sig,
     xp: cleanXpLedger(raw.xp),
   };
 }

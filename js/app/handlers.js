@@ -274,11 +274,11 @@ function onHostReceiveData(connection, data) {
     if (!person || person.admin) return;
     const reading = cleanProgress(data);
     person.skills = reading.skills;
+    person.baseSkills = reading.baseSkills;
     person.allocated = reading.allocated;
+    person.signature = reading.signature;
     person.xp = reading.xp;
     person.vitals = reading.vitals;
-    /* Remembered now rather than at the drop, so a wire that dies without
-       warning still leaves the ledger behind. */
     rememberSeat(person);
     broadcast(rosterPayload());
     return;
@@ -626,7 +626,9 @@ function onGuestReceiveData(data) {
         ready: Boolean(raw.ready),
         done: Boolean(raw.done),
         skills: reading.skills,
+        baseSkills: reading.baseSkills,
         allocated: reading.allocated,
+        signature: reading.signature,
         xp: reading.xp,
         vitals: reading.vitals,
       };

@@ -95,11 +95,14 @@ function cleanVitalsReading(raw) {
 
 export function cleanProgress(raw) {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
-    return { skills: {}, allocated: {}, xp: null, vitals: null };
+    return { skills: {}, allocated: {}, xp: null, vitals: null, signature: null };
   }
+  const sig = typeof raw.signature === "string" ? raw.signature : typeof raw.signatureSkill === "string" ? raw.signatureSkill : null;
   return {
     skills: cleanScores(raw.skills),
+    baseSkills: cleanScores(raw.baseSkills || raw.skills),
     allocated: cleanAllocated(raw.allocated),
+    signature: sig,
     xp: cleanXpLedger(raw.xp),
     vitals: cleanVitalsReading(raw.vitals),
   };
@@ -140,7 +143,9 @@ export function rememberSeat(person) {
     ready: Boolean(person.ready),
     done: Boolean(person.done),
     skills: person.skills || held.skills || {},
+    baseSkills: person.baseSkills || held.baseSkills || person.skills || {},
     allocated: person.allocated || held.allocated || {},
+    signature: person.signature || held.signature || null,
     xp: person.xp || held.xp || null,
     vitals: person.vitals || held.vitals || null,
     at: Date.now(),
@@ -167,6 +172,7 @@ export function rememberProgress(people) {
       slot: person.slot || 0,
       skills: person.skills || {},
       allocated: person.allocated || {},
+      signature: person.signature || person.signatureSkill || null,
       xp: person.xp || null,
     });
   });

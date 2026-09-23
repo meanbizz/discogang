@@ -46,8 +46,16 @@ function count(value, fallback) {
   return isFinite(number) && number >= 0 ? number : fallback;
 }
 
-/* One number per attribute, in the sheet's own order, so the file reads the
-   way the cards are laid out. */
+function signatureOf(sheetState) {
+  const held = (sheetState && sheetState.skills) || {};
+  const ids = orderedSkillIds();
+  for (let i = 0; i < ids.length; i += 1) {
+    if (held[ids[i]]?.signature) return ids[i];
+  }
+  return null;
+}
+
+/* One number per attribute, in the sheet's own order. */
 function attributesOf(sheetState) {
   const held = (sheetState && sheetState.attributes) || {};
   const out = {};
@@ -129,11 +137,14 @@ function barOf(bar) {
 
 export function snapshot(source) {
   const from = source || {};
+  const signature = signatureOf(from.sheetState);
   return {
     kind: CHARACTER_KIND,
     version: CHARACTER_VERSION,
     savedAt: new Date().toISOString(),
     name: cleanName(from.name),
+    signatureSkill: signature,
+    signature,
     attributes: attributesOf(from.sheetState),
     skills: skillsOf(from.sheetState, from.modifiers),
     inventory: inventoryOf(from.items),

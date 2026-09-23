@@ -123,7 +123,16 @@ export function allocatedPoints(sheetState) {
 
 /* A copy of the sheet with the saved points written back in. The sheet's own
    normalize is what caps them against the attributes afterwards. */
-export function adoptAllocated(sheetState, allocated) {
+export function signatureSkill(sheetState) {
+  const held = sheetState && sheetState.skills ? sheetState.skills : {};
+  const ids = orderedSkillIds();
+  for (let i = 0; i < ids.length; i += 1) {
+    if (held[ids[i]]?.signature) return ids[i];
+  }
+  return null;
+}
+
+export function adoptAllocated(sheetState, allocated, signature) {
   const source = sheetState && typeof sheetState === "object" ? sheetState : {};
   const next = {
     attributes: Object.assign({}, source.attributes),
@@ -142,6 +151,12 @@ export function adoptAllocated(sheetState, allocated) {
     if (!next.skills[id]) next.skills[id] = { points: 0, signature: false };
     next.skills[id].points = wanted[id];
   });
+
+  if (signature && next.skills[signature]) {
+    Object.keys(next.skills).forEach((id) => {
+      next.skills[id].signature = id === signature;
+    });
+  }
   return next;
 }
 

@@ -222,8 +222,7 @@ export function exportTurns() {
   if (skills.length) {
     parts.push("# Players skills\n" + skills.join("\n"));
   }
-  /* The scores above already carry these; they are named separately so the
-     administrateur can see what will stop carrying them. */
+  // Modifiers active on players are listed separately from base skills.
   if (mods.length) {
     parts.push("# Players active modifiers\n" + mods.join("\n"));
   }

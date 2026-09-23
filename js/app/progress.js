@@ -15,6 +15,7 @@ import {
   allocatedPoints,
   cleanAllocated,
   describeSkills,
+  signatureSkill,
   skillScores,
 } from "../sheet.js";
 import * as dialogue from "../dialogue/dialogue.js";
@@ -25,14 +26,16 @@ import { network, broadcast, sendUpstream } from "./net.js";
 /* skills is what a check is written against; allocated is only the points the
    player spent, which is the half a save has to give back. */
 export function progressPayload() {
+  const sig = signatureSkill(state.sheetState);
+  const base = skillScores(state.sheetState);
   return {
     type: "progress",
     xp: xpPayload(),
-    /* What a check is actually written against, modifiers and all — the
-       administrateur reads these to know what the table can do right now. */
-    skills: skillScores(state.sheetState, state.activeModifiers),
+    skills: base,
+    baseSkills: base,
     allocated: allocatedPoints(state.sheetState),
-    /* The two bars as they stand, so the roster can show every seat's. */
+    signature: sig,
+    signatureSkill: sig,
     vitals: vitalsReading(),
   };
 }
@@ -87,16 +90,15 @@ export function adoptProgress(raw) {
   setXp(raw.xp);
 
   const wanted = cleanAllocated(raw.allocated);
-  if (Object.keys(wanted).length && window.DiscoSkillSheet) {
+  const sig = raw.signature || raw.signatureSkill || null;
+  if (window.DiscoSkillSheet && (Object.keys(wanted).length || sig)) {
     const merged = window.DiscoSkillSheet.normalize(
-      adoptAllocated(state.sheetState, wanted),
+      adoptAllocated(state.sheetState, wanted, sig),
     );
     state.sheetState = merged;
     dialogue.setSheet(merged);
     const sheet = modals.getSheetInstance();
     if (sheet) sheet.setState(merged, true);
-    /* A restored point in endurance or volition raises a ceiling, and the bar
-       should show it without healing anybody. */
     refreshVitals(merged, false);
   }
 
@@ -110,7 +112,11 @@ export function skillLines() {
   const out = [];
   state.roster.forEach((person) => {
     if (person.admin) return;
-    const written = describeSkills(person.skills);
+    const scores =
+      person.id === state.selfId && state.sheetState
+        ? skillScores(state.sheetState)
+        : person.baseSkills || person.skills;
+    const written = describeSkills(scores);
     out.push(person.name + ":" + (written || "no sheet loaded"));
   });
   return out;

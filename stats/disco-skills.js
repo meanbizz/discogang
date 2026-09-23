@@ -307,6 +307,13 @@
       });
     }
 
+    var sig = incoming.signatureSkill || incoming.signature;
+    if (typeof sig === "string" && state.skills[sig]) {
+      Object.keys(state.skills).forEach(function (id) {
+        state.skills[id].signature = id === sig;
+      });
+    }
+
     if (
       typeof incoming.selected === "string" &&
       state.skills[incoming.selected]
