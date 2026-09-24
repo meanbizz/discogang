@@ -8,6 +8,7 @@
    what the table is capable of and a save has something to give back. The
    administrateur keeps no sheet, so nothing here speaks for them. */
 
+import { dom } from "../dom.js";
 import * as modals from "../modals.js";
 import { ledger, setXp, spendPoint, xpPayload } from "../xp.js";
 import {
@@ -60,7 +61,11 @@ export function publishProgress() {
 
 /* The open sheet's header, told what it may spend. */
 export function refreshLedger() {
-  modals.refreshPsycheLedger(ledger());
+  const current = ledger();
+  modals.refreshPsycheLedger(current);
+  if (dom.psycheButton) {
+    dom.psycheButton.classList.toggle("has-points", (current.points || 0) > 0);
+  }
 }
 
 /* The sheet asks before it moves a pip; this is the answer. Returning false

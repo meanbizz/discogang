@@ -17,7 +17,6 @@ import {
   setStatus,
 } from "./app/views.js";
 import {
-  refreshLoadButton,
   refreshPlanningLock,
   refreshSpeakLock,
 } from "./app/locks.js";
@@ -39,7 +38,6 @@ import { renderScene } from "./app/scene.js";
   paintReadyButton();
   refreshPlanningLock();
   refreshSpeakLock();
-  refreshLoadButton();
   dom.nameInput.focus();
   setStatus("offline", "Offline");
 })();

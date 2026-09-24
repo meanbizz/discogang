@@ -686,18 +686,22 @@ export function refreshGoals(list) {
 /* ---------------- Blur ---------------- */
 
 let blurReturnFocus = null;
+let blurModeHandler = null;
+let blurExemptHandler = null;
 
-/* One dropdown per player setting Present, Away, Hindered, or Concealed. */
-export function renderBlurList(players, blurred, onModeChange) {
+/* One dropdown per player plus an exempt checkboxes column for other players. */
+export function renderBlurList(players, blurred, onModeChange, onExemptChange) {
   if (!dom.blurList) return;
+  if (onModeChange) blurModeHandler = onModeChange;
+  if (onExemptChange) blurExemptHandler = onExemptChange;
+
   const names = Array.isArray(players) ? players : [];
   const states = blurred && typeof blurred === "object" ? blurred : {};
 
   const active = document.activeElement;
-  const keepName =
-    active && dom.blurList.contains(active) && active.closest(".blur-row")
-      ? active.closest(".blur-row").dataset.name
-      : null;
+  const keepName = active?.closest?.(".blur-row")?.dataset?.name;
+  const keepOther = active?.dataset?.other;
+  const keepType = active?.tagName;
 
   dom.blurList.textContent = "";
   if (dom.blurEmpty) dom.blurEmpty.hidden = names.length > 0;
@@ -724,7 +728,11 @@ export function renderBlurList(players, blurred, onModeChange) {
     select.className = "blur-select";
     select.setAttribute("aria-label", `Blur state for ${name}`);
 
-    const currentMode = states[key] || "present";
+    const entry = states[key];
+    const currentMode =
+      (typeof entry === "string" ? entry : entry?.mode) || "present";
+    const currentExempt =
+      entry && Array.isArray(entry.exempt) ? entry.exempt : [];
 
     MODES.forEach((m) => {
       const opt = document.createElement("option");
@@ -734,19 +742,55 @@ export function renderBlurList(players, blurred, onModeChange) {
       select.appendChild(opt);
     });
 
-    select.addEventListener("change", () => onModeChange(name, select.value));
+    select.addEventListener("change", () => {
+      if (blurModeHandler) blurModeHandler(name, select.value);
+    });
+
+    const otherPlayers = names.filter(
+      (other) => cleanName(other).toLowerCase() !== key,
+    );
+    const exemptCol = document.createElement("div");
+    exemptCol.className = "blur-exempt-col";
+
+    otherPlayers.forEach((other) => {
+      const otherKey = cleanName(other).toLowerCase();
+      const label = document.createElement("label");
+      label.className = "blur-exempt-label";
+
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.className = "blur-exempt-check";
+      cb.dataset.other = otherKey;
+      cb.checked = currentExempt.includes(otherKey);
+      cb.setAttribute("aria-label", `${other} exempt from ${name}'s blur`);
+
+      cb.addEventListener("change", () => {
+        if (blurExemptHandler) blurExemptHandler(name, other, cb.checked);
+      });
+
+      label.appendChild(cb);
+      label.appendChild(document.createTextNode(other));
+      exemptCol.appendChild(label);
+
+      if (keepType === "INPUT" && keepName === name && keepOther === otherKey) {
+        setTimeout(() => cb.focus(), 0);
+      }
+    });
 
     row.appendChild(text);
     row.appendChild(select);
+    row.appendChild(exemptCol);
     dom.blurList.appendChild(row);
 
-    if (name === keepName) select.focus();
+    if (keepType === "SELECT" && keepName === name) {
+      setTimeout(() => select.focus(), 0);
+    }
   });
 }
 
-export function openBlurModal(players, blurred, onModeChange) {
+export function openBlurModal(players, blurred, onModeChange, onExemptChange) {
   if (!dom.blurModal) return;
-  renderBlurList(players, blurred, onModeChange);
+  renderBlurList(players, blurred, onModeChange, onExemptChange);
   blurReturnFocus = activeFocus();
   dom.blurModal.hidden = false;
   sfx.playModal();

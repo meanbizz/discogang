@@ -44,6 +44,8 @@ export const IMAGE_TYPES = [
   "image/jpeg",
   "image/webp",
   "image/gif",
+  "image/jfif",
+  "image/pjpeg",
 ];
 export const IMAGE_MAX_BYTES = 5 * 1024 * 1024;
 export const IMAGE_URL_MAX_CHARS = 2048;

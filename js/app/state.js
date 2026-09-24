@@ -56,8 +56,6 @@ export const state = {
      comes back is welcomed again, and a second welcome must not rebuild the
      scene the player is in the middle of reading. */
   welcomed: false,
-  /* A save is read once per session; this remembers that it happened. */
-  sessionRestored: false,
   /* Host only. Lowercased name -> what that seat had when it went quiet. */
   seats: new Map(),
   /* Host only. Lowercased name -> the progress a loaded save recorded. */
@@ -231,8 +229,17 @@ export function blursFor(author) {
   const selfKey = cleanName(state.profile.name).toLowerCase();
   if (!authorKey || !selfKey || authorKey === selfKey) return false;
 
-  const authorMode = (state.blurred && state.blurred[authorKey]) || "present";
-  const selfMode = (state.blurred && state.blurred[selfKey]) || "present";
+  const authorEntry = state.blurred && state.blurred[authorKey];
+  const authorMode =
+    (typeof authorEntry === "string" ? authorEntry : authorEntry?.mode) || "present";
+  const authorExempt =
+    authorEntry && Array.isArray(authorEntry.exempt) ? authorEntry.exempt : [];
+
+  if (authorExempt.includes(selfKey)) return false;
+
+  const selfEntry = state.blurred && state.blurred[selfKey];
+  const selfMode =
+    (typeof selfEntry === "string" ? selfEntry : selfEntry?.mode) || "present";
 
   const authorConcealed = authorMode === "away" || authorMode === "concealed";
   const selfBlind = selfMode === "away" || selfMode === "hindered";

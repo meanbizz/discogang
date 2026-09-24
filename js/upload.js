@@ -10,7 +10,8 @@ export function uploadConfigured() {
 
 /* Returns the reason to refuse, or "" when the file is fine. */
 export function rejectImageFile(file) {
-  if (!IMAGE_TYPES.includes(file.type)) {
+  const isJfif = Boolean(file && file.name && /\.jfif$/i.test(file.name));
+  if (!IMAGE_TYPES.includes(file.type) && !isJfif) {
     return "Use a PNG, JPEG, WebP or GIF image.";
   }
   if (file.size > IMAGE_MAX_BYTES) {

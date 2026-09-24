@@ -17,7 +17,7 @@ export function cleanBlurStates(raw) {
   if (Array.isArray(raw)) {
     raw.forEach((name) => {
       const clean = cleanName(name);
-      if (clean) out[clean.toLowerCase()] = "concealed";
+      if (clean) out[clean.toLowerCase()] = { mode: "concealed", exempt: [] };
     });
     return out;
   }
@@ -25,9 +25,23 @@ export function cleanBlurStates(raw) {
     Object.keys(raw).forEach((name) => {
       const clean = cleanName(name);
       if (!clean) return;
-      const val = String(raw[name] || "").trim().toLowerCase();
-      if (val === "away" || val === "hindered" || val === "concealed") {
-        out[clean.toLowerCase()] = val;
+      const val = raw[name];
+      let mode = "present";
+      let exempt = [];
+      if (typeof val === "string") {
+        const s = val.trim().toLowerCase();
+        if (s === "away" || s === "hindered" || s === "concealed") mode = s;
+      } else if (val && typeof val === "object") {
+        const s = String(val.mode || "").trim().toLowerCase();
+        if (s === "away" || s === "hindered" || s === "concealed") mode = s;
+        if (Array.isArray(val.exempt)) {
+          exempt = val.exempt
+            .map((n) => cleanName(n).toLowerCase())
+            .filter(Boolean);
+        }
+      }
+      if (mode !== "present" || exempt.length > 0) {
+        out[clean.toLowerCase()] = { mode, exempt };
       }
     });
   }
@@ -50,7 +64,7 @@ function playerNames() {
 export function setBlurred(raw) {
   state.blurred = cleanBlurStates(raw);
   replaceTurnLog(state.turnEntries);
-  modals.renderBlurList(playerNames(), state.blurred, setPlayerMode);
+  modals.renderBlurList(playerNames(), state.blurred, setPlayerMode, setPlayerExempt);
 }
 
 /* Handles dropdown changes for a player. */
@@ -58,11 +72,47 @@ export function setPlayerMode(name, mode) {
   if (!state.isAdmin) return;
   const key = cleanName(name).toLowerCase();
   const next = Object.assign({}, state.blurred);
+  const current = next[key]
+    ? { mode: next[key].mode || "present", exempt: (next[key].exempt || []).slice() }
+    : { mode: "present", exempt: [] };
   const cleanVal = String(mode || "").trim().toLowerCase();
-  if (cleanVal === "away" || cleanVal === "hindered" || cleanVal === "concealed") {
-    next[key] = cleanVal;
-  } else {
+  current.mode =
+    cleanVal === "away" || cleanVal === "hindered" || cleanVal === "concealed"
+      ? cleanVal
+      : "present";
+  if (current.mode === "present" && current.exempt.length === 0) {
     delete next[key];
+  } else {
+    next[key] = current;
+  }
+  setBlurred(next);
+
+  if (network.isHost) {
+    broadcast(blurPayload());
+    return;
+  }
+  sendUpstream({ type: "blur-set", states: state.blurred });
+}
+
+/* Handles exempt checkbox changes for a player. */
+export function setPlayerExempt(name, otherName, isExempt) {
+  if (!state.isAdmin) return;
+  const key = cleanName(name).toLowerCase();
+  const otherKey = cleanName(otherName).toLowerCase();
+  if (!key || !otherKey) return;
+  const next = Object.assign({}, state.blurred);
+  const current = next[key]
+    ? { mode: next[key].mode || "present", exempt: (next[key].exempt || []).slice() }
+    : { mode: "present", exempt: [] };
+  if (isExempt) {
+    if (!current.exempt.includes(otherKey)) current.exempt.push(otherKey);
+  } else {
+    current.exempt = current.exempt.filter((k) => k !== otherKey);
+  }
+  if (current.mode === "present" && current.exempt.length === 0) {
+    delete next[key];
+  } else {
+    next[key] = current;
   }
   setBlurred(next);
 
@@ -76,5 +126,5 @@ export function setPlayerMode(name, mode) {
 /* The administrateur's desk is the only place the modal opens from. */
 export function openBlur() {
   if (!state.isAdmin) return;
-  modals.openBlurModal(playerNames(), state.blurred, setPlayerMode);
+  modals.openBlurModal(playerNames(), state.blurred, setPlayerMode, setPlayerExempt);
 }

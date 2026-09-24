@@ -24,8 +24,6 @@ import {
 import { network, broadcast, sendUpstream } from "./net.js";
 import { renderRoster, replaceLog, replaceTurnLog } from "./views.js";
 import {
-  loadAllowed,
-  refreshLoadButton,
   refreshPlanningLock,
   refreshSpeakLock,
 } from "./locks.js";
@@ -203,20 +201,11 @@ export function applySession(snap) {
   renderRoster();
   refreshPlanningLock();
   refreshSpeakLock();
-  refreshLoadButton();
 }
 
 /* Administrateur only: apply it here, then push it to the table. */
 export function loadSession(snap) {
   if (!state.isAdmin || !snap) return;
-  if (!loadAllowed()) {
-    refreshLoadButton();
-    noteSession(
-      "A save only loads into an untouched room. Leave and rejoin to read one.",
-    );
-    return;
-  }
-
   applySession(snap);
 
   if (network.isHost) {

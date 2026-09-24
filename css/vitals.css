@@ -58,6 +58,18 @@
   letter-spacing: 0.18em;
 }
 
+button.psyche.has-points {
+  border-color: var(--ready);
+  background: rgba(111, 191, 115, 0.16);
+  color: var(--ready);
+}
+
+button.psyche.has-points:hover {
+  border-color: var(--ready);
+  background: var(--ready);
+  color: var(--bg);
+}
+
 /* ---------------- Under your own name ---------------- */
 
 /* The name and the bars, stacked: min-width lets the name go on clipping to

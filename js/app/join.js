@@ -48,6 +48,7 @@ function findPortrait(slug, done) {
     folderAsset(slug, "portrait.jpeg"),
     folderAsset(slug, "portrait.png"),
     folderAsset(slug, "portrait.jpg"),
+    folderAsset(slug, "portrait.jfif"),
   ];
   function next(index) {
     if (index >= candidates.length) return done(null);

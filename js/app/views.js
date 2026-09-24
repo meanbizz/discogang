@@ -3,7 +3,7 @@
 
 import { HISTORY_LIMIT, TURN_LIMIT } from "../config.js";
 import { dom } from "../dom.js";
-import { copyText, paintMarkup, paintThumb } from "../utils.js";
+import { copyText, paintMarkup, paintThumb, scrambleText } from "../utils.js";
 import * as sfx from "../audio/sfx.js";
 import { setNarrationExclusions } from "../audio/narration.js";
 import { paintVitalBar } from "../vitals.js";
@@ -297,9 +297,10 @@ export function renderTurn(entry) {
   line.appendChild(author);
   line.appendChild(document.createTextNode(" — "));
 
+  const isBlurred = blursFor(entry.author);
   const body = document.createElement("span");
   body.className = "turn-body";
-  paintMarkup(body, entry.text);
+  paintMarkup(body, isBlurred ? scrambleText(entry.text) : entry.text);
   line.appendChild(body);
 
   const wrapper = document.createElement("article");
@@ -308,7 +309,7 @@ export function renderTurn(entry) {
   if (entry.stale) wrapper.dataset.stale = "true";
   if (entry.roundEnd) wrapper.dataset.roundEnd = "true";
   /* Blurred at every seat but its author's, per the author's and viewer's modes. */
-  if (blursFor(entry.author)) wrapper.classList.add("is-blurred");
+  if (isBlurred) wrapper.classList.add("is-blurred");
   wrapper.appendChild(line);
 
   const pinned =

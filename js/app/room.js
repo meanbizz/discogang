@@ -28,7 +28,6 @@ import {
   setStatus,
 } from "./views.js";
 import {
-  refreshLoadButton,
   refreshPlanningLock,
   refreshSpeakLock,
 } from "./locks.js";
@@ -118,13 +117,11 @@ export function connect(room, name, portrait) {
   state.dialogueLive = false;
   /* A fresh join: the welcome that follows is this seat's first. */
   state.welcomed = false;
-  state.sessionRestored = false;
   dialogue.reset();
   /* Nothing another room was announcing belongs to this one. */
   overlays.reset();
   refreshPlanningLock();
   refreshSpeakLock();
-  refreshLoadButton();
 
   applyScene({ image: null });
   applyTime(null);
@@ -172,7 +169,6 @@ export function leave() {
   state.dialogueRounds = [];
   state.dialogueLive = false;
   state.welcomed = false;
-  state.sessionRestored = false;
 
   state.sheetState = null;
   state.stagedSheet = null;
@@ -225,6 +221,5 @@ export function leave() {
   setStatus("offline", "Offline");
   refreshPlanningLock();
   refreshSpeakLock();
-  refreshLoadButton();
   dom.nameInput.focus();
 }

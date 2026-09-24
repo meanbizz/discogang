@@ -21,7 +21,7 @@ import {
   replaceTurnLog,
   systemNote,
 } from "./views.js";
-import { refreshLoadButton, refreshPlanningLock } from "./locks.js";
+import { refreshPlanningLock } from "./locks.js";
 import { setSceneOverride } from "./scene.js";
 import { publishProgress, refreshLedger } from "./progress.js";
 import { checkPendingGoals, clearStalePendingGoals } from "./goals.js";
@@ -60,8 +60,6 @@ export function rememberRound(payload, roundId, at) {
   while (state.dialogueRounds.length > DIALOGUE_ROUND_LIMIT) {
     state.dialogueRounds.shift();
   }
-  /* The room has moved on; a save cannot be dropped over it now. */
-  refreshLoadButton();
   return round;
 }
 

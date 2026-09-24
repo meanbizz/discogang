@@ -106,6 +106,16 @@ export function cleanTime(value) {
   return /^([01]?\d|2[0-3]):[0-5]\d$/.test(trimmed) ? trimmed : null;
 }
 
+// Replaces alphanumeric characters with random letters/digits to mask blurred text.
+export function scrambleText(text) {
+  const chars = "abcdefghijklmnopqrstuvwxyz";
+  return String(text == null ? "" : text).replace(/[a-zA-Z0-9]/g, (c) => {
+    if (c >= "0" && c <= "9") return String(Math.floor(Math.random() * 10));
+    const rand = chars.charAt(Math.floor(Math.random() * chars.length));
+    return c === c.toUpperCase() ? rand.toUpperCase() : rand;
+  });
+}
+
 export function cleanNpc(raw) {
   if (!raw || typeof raw !== "object") return null;
   const name = cleanName(raw.name);

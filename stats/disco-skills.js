@@ -331,10 +331,15 @@
       var number = Math.round(Number(value));
       return isFinite(number) && number > 0 ? number : 0;
     };
+    var req = whole(incoming.required);
+    var cur = whole(incoming.current);
+    if (req > 0 && cur >= req) {
+      cur = cur % req;
+    }
     return {
       points: whole(incoming.points),
-      current: whole(incoming.current),
-      required: whole(incoming.required),
+      current: cur,
+      required: req,
       total: whole(incoming.total),
     };
   }
@@ -378,7 +383,7 @@
     this.onSpend =
       typeof options.onSpend === "function" ? options.onSpend : null;
     this.state = mergeState(options.state);
-    this.ledger = mergeLedger(options.ledger);
+    this.ledger = mergeLedger(options.ledger || (options.state && (options.state.ledger || options.state.xp)));
     this.modifiers = mergeModifiers(options.modifiers);
     this.uid = "des-" + ++uid;
     this.tooltip = null;
@@ -410,6 +415,9 @@
 
   DiscoSkillSheet.prototype.setState = function (next, silent) {
     this.state = mergeState(next);
+    if (next && (next.ledger || next.xp)) {
+      this.ledger = mergeLedger(next.ledger || next.xp);
+    }
     this.render();
     if (!silent) this._emit("change");
   };
@@ -648,8 +656,9 @@
     var progress = el("p", "des-ledger-xp");
     var written = [];
     if (this.ledger.required > 0) {
+      var curXp = this.ledger.current % this.ledger.required;
       written.push(
-        this.ledger.current +
+        curXp +
           " / " +
           this.ledger.required +
           " XP towards the next",

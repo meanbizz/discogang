@@ -1,4 +1,4 @@
-/* What is available right now: the two composers, and the Load button. */
+/* What is available right now: the two composers. */
 
 import { dom } from "../dom.js";
 import * as dialogue from "../dialogue/dialogue.js";
@@ -84,27 +84,4 @@ export function refreshSpeakLock() {
   dom.composerLock.textContent = tally.players
     ? `Waiting on the players — ${tally.readied} of ${tally.players} ready.`
     : "Waiting for players to join.";
-}
-
-/* Load is a first move, not a command: a save replaces the room wholesale and
-   holds no record of who had read what, so it only ever lands in a room that
-   has not started. Leaving and rejoining is what reopens it. */
-export function loadAllowed() {
-  return (
-    state.isAdmin && !state.sessionRestored && !state.dialogueRounds.length
-  );
-}
-
-export function refreshLoadButton() {
-  if (!dom.sessionLoad) return;
-
-  const allowed = loadAllowed();
-  dom.sessionLoad.disabled = !allowed;
-  dom.sessionLoad.dataset.locked = allowed ? "false" : "true";
-  dom.sessionLoad.setAttribute("aria-disabled", allowed ? "false" : "true");
-  dom.sessionLoad.title = allowed
-    ? "Restore a session from a .json save"
-    : state.sessionRestored
-      ? "A save has already been read this session."
-      : "The room has started — a save only loads into an untouched room.";
 }

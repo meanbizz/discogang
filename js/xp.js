@@ -113,9 +113,9 @@ export function cleanXpLedger(raw) {
     points: amountOf(raw.points, MAX_POINTS),
     spent: amountOf(raw.spent, MAX_POINTS),
   };
-  /* A ledger claiming more progress than a point costs has already earned it,
-     which is the host's arithmetic and not ours to invent. */
-  if (out.current >= out.required) out.current = out.required - 1;
+  if (out.required > 0 && out.current >= out.required) {
+    out.current = out.current % out.required;
+  }
   return out;
 }
 

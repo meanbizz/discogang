@@ -50,3 +50,29 @@
 .blur-select:focus-visible {
   outline: 1px solid var(--option-hi);
 }
+
+.blur-exempt-col {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.blur-exempt-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+  color: var(--text-old);
+  cursor: pointer;
+  user-select: none;
+}
+
+.blur-exempt-label:hover {
+  color: var(--text-now);
+}
+
+.blur-exempt-check {
+  accent-color: var(--option);
+  cursor: pointer;
+}

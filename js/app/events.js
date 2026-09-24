@@ -23,7 +23,6 @@ import {
   shareTurn,
 } from "./actions.js";
 import { exportSession, loadSession, noteSession } from "./save.js";
-import { loadAllowed, refreshLoadButton } from "./locks.js";
 import { adoptSheet, spendSkillPoint } from "./progress.js";
 import {
   currentSceneImage,
@@ -113,11 +112,6 @@ function bindSaveFiles() {
   if (!dom.sessionLoad || !dom.sessionFile) return;
 
   dom.sessionLoad.addEventListener("click", () => {
-    if (!loadAllowed()) {
-      refreshLoadButton();
-      noteSession("A save only loads into an untouched room.");
-      return;
-    }
     /* Clearing the value first is what lets the same file be picked twice. */
     dom.sessionFile.value = "";
     dom.sessionFile.click();
