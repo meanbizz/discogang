@@ -156,7 +156,8 @@ export function notice(plate) {
 /* delta is the change to this seat's purse, positive or negative. Nothing
    moving is not news. */
 export function money(delta) {
-  const amount = Math.round(Number(delta) || 0);
+  const raw = Number(delta) || 0;
+  const amount = Math.round(raw * 100) / 100;
   if (!amount) return;
   const gained = amount > 0;
 

@@ -1,17 +1,13 @@
 /* js/app/actions.js */
 
-/* What the two seats can actually do: ready up, speak, plan, lift the plans,
-   the items and the table's skills to the clipboard, and — for a player — take
-   their own character away in a file. */
+/* What the two seats can actually do: ready up, speak, plan, and lift the plans,
+   items, and table skills to the clipboard. */
 
 import { TURN_MIN_LENGTH } from "../config.js";
 import { dom } from "../dom.js";
 import { cleanText, copyText, uid } from "../utils.js";
 import * as dialogue from "../dialogue/dialogue.js";
 import * as sfx from "../audio/sfx.js";
-import { vitals } from "../vitals.js";
-import * as character from "../export/character.js";
-import { download } from "../export/file.js";
 import { state, everyoneReady, isSelfDown, rosterPayload } from "./state.js";
 import { network, broadcast, sendUpstream } from "./net.js";
 import {
@@ -246,28 +242,4 @@ export function exportTurns() {
   copyText(parts.join("\n\n"), (ok) => {
     flashImport(ok ? "Copied ✓" : "Copy failed");
   });
-}
-
-/* A player's own character, written to a file they keep: the attributes and
-   skills their sheet holds, what they are carrying, what they are after, and
-   where their two bars stand. Local from start to finish — nothing about this
-   leaves the seat, and the file is written in the shape the join form reads
-   back. */
-export function exportCharacter() {
-  if (state.isAdmin) return;
-
-  const snap = character.snapshot({
-    name: state.profile.name,
-    sheetState: state.sheetState,
-    items: selfItems(),
-    goals: selfGoals(),
-    modifiers: state.activeModifiers,
-    vitals,
-  });
-
-  systemNote(
-    download(snap, character.fileName(snap))
-      ? "Your character was written to a file."
-      : "That character file could not be written.",
-  );
 }

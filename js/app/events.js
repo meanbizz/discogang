@@ -16,7 +16,6 @@ import { state } from "./state.js";
 import { network } from "./net.js";
 import {
   clearTurnLog,
-  exportCharacter,
   exportTurns,
   setSelfReady,
   shareText,
@@ -608,12 +607,6 @@ export function bindSession() {
   bindItemForm();
   bindBlur();
   bindStageSide();
-
-  /* Player only: the button lives in the panel foot, which is detached for
-     the administrateur. */
-  if (dom.sheetExport) {
-    dom.sheetExport.addEventListener("click", exportCharacter);
-  }
 
   dom.leaveButton.addEventListener("click", leave);
   window.addEventListener("beforeunload", () => network.disconnect());

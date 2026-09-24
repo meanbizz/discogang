@@ -59,9 +59,6 @@ export const dom = {
   modifierList: document.getElementById("modifier-list"),
   modifierEmpty: document.getElementById("modifier-empty"),
 
-  // The player's own character, written to a file they keep
-  sheetExport: document.getElementById("sheet-export"),
-
   deck: document.getElementById("deck"),
   adminTools: document.getElementById("admin-tools"),
   trackUrl: document.getElementById("track-url"),

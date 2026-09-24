@@ -113,9 +113,11 @@ export function currencyItem() {
   };
 }
 
-function tally(value, fallback) {
-  const number = Math.round(Number(value));
-  if (!isFinite(number)) return fallback;
+function tally(value, fallback, currency) {
+  const raw = Number(value);
+  if (!isFinite(raw)) return fallback;
+  if (currency) return Math.max(0, Math.round(raw * 100) / 100);
+  const number = Math.round(raw);
   return Math.max(0, Math.min(MAX_COUNT, number));
 }
 
@@ -196,11 +198,12 @@ export function cleanInventories(raw) {
     let held = 0;
     for (let j = 0; j < names.length && held < MAX_ITEMS; j += 1) {
       const name = itemName(names[j]);
-      const count = tally(bag[names[j]], 0);
+      const currency = isCurrency(name);
+      const count = tally(bag[names[j]], 0, currency);
       if (!name || !count) continue;
       const key = name.toLowerCase();
       if (has(under, key)) {
-        kepts[under[key]] = tally(kepts[under[key]] + count, MAX_COUNT);
+        kepts[under[key]] = tally(kepts[under[key]] + count, MAX_COUNT, currency);
         continue;
       }
       under[key] = name;
@@ -218,7 +221,8 @@ function order(raw) {
   const source = typeof raw === "string" ? { name: raw } : raw;
   const item = cleanItem(source);
   if (!item) return null;
-  item.count = source.count == null ? null : tally(source.count, 1);
+  const currency = isCurrency(item.name);
+  item.count = source.count == null ? null : tally(source.count, 1, currency);
   return item;
 }
 
@@ -305,8 +309,13 @@ function give(bag, asked) {
   const held = heldName(bag, asked.name);
   const step = asked.count == null ? 1 : asked.count;
   if (!step) return;
-  if (held) bag[held] = Math.min(MAX_COUNT, bag[held] + step);
-  else bag[asked.name] = step;
+  const currency = isCurrency(asked.name);
+  if (held) {
+    const nextVal = bag[held] + step;
+    bag[held] = currency ? Math.max(0, Math.round(nextVal * 100) / 100) : Math.min(MAX_COUNT, Math.round(nextVal));
+  } else {
+    bag[asked.name] = currency ? Math.max(0, Math.round(step * 100) / 100) : step;
+  }
 }
 
 function set(bag, asked) {
@@ -319,8 +328,10 @@ function set(bag, asked) {
     if (held) delete bag[held];
     return;
   }
-  if (held) bag[held] = asked.count;
-  else bag[asked.name] = asked.count;
+  const currency = isCurrency(asked.name);
+  const val = currency ? Math.max(0, Math.round(asked.count * 100) / 100) : asked.count;
+  if (held) bag[held] = val;
+  else bag[asked.name] = val;
 }
 
 function take(bag, asked) {
@@ -331,7 +342,9 @@ function take(bag, asked) {
     return;
   }
   const left = bag[held] - asked.count;
-  if (left > 0) bag[held] = left;
+  const currency = isCurrency(asked.name);
+  const cleanLeft = currency ? Math.round(left * 100) / 100 : left;
+  if (cleanLeft > 0) bag[held] = cleanLeft;
   else delete bag[held];
 }
 
