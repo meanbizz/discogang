@@ -36,7 +36,7 @@
 
 .stage-time {
   position: absolute;
-  top: 17.5rem;
+  bottom: 1rem;
   left: 0;
   width: var(--side-width);
   text-align: center;
