@@ -22,8 +22,9 @@
 
 .modifier-list {
   display: flex;
+  flex-direction: column;
   flex-wrap: wrap;
-  align-items: stretch;
+  align-items: center;
   justify-content: center;
   gap: 0.35rem 0.5rem;
 }

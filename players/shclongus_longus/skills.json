@@ -1,0 +1,6 @@
+{
+  "attributes": { "intellect": 3, "psyche": 2, "physique": 3, "motorics": 4 },
+  "skills": {
+    "endurance": { "points": 0, "signature": true }
+  }
+}

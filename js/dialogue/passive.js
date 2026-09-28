@@ -81,8 +81,8 @@ export function passes(check) {
   return score >= DIFFICULTY_TARGET[check.difficulty];
 }
 
-/* A node this reader never notices: stepped over by the live reader, and left
-   out of a transcript for the same reason. */
+/* Passives are no longer stepped over: every reader sees them, and passes()
+   decides whether the line reads as a success or a failure instead. */
 export function blocksNode(node) {
-  return Boolean(node && node.skillCheck && !passes(node.skillCheck));
+  return false;
 }

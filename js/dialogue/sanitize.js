@@ -215,10 +215,10 @@ function vitalStep(value) {
 function cleanVitals(raw) {
   if (!raw || typeof raw !== "object") return null;
   const out = {};
-  ["vitality", "morale"].forEach((field) => {
-    const step = vitalStep(raw[field]);
-    if (step) out[field] = step;
-  });
+  const healthStep = vitalStep(raw.vitality != null ? raw.vitality : raw.health);
+  if (healthStep) out.vitality = healthStep;
+  const moraleStep = vitalStep(raw.morale);
+  if (moraleStep) out.morale = moraleStep;
   return Object.keys(out).length ? out : null;
 }
 
@@ -255,15 +255,16 @@ function cleanNode(raw, id) {
   const options = cleanOptions(raw.options);
   const check = cleanCheck(raw.skillCheck);
   const xpGained = cleanXp(raw.xpGained != null ? raw.xpGained : raw.xp);
-  /* A node that only hands over experience is still worth walking through. */
-  if (!dialogue && !options.length && !check && !xpGained) return null;
+  const vitals = cleanVitals(raw.vitals);
+  /* Nodes providing vitals or experience without dialogue remain valid. */
+  if (!dialogue && !options.length && !check && !xpGained && !vitals) return null;
 
   return {
     id,
     speaker: line(raw.speaker, SPEAKER_MAX),
     dialogue,
     next: typeof raw.next === "string" ? line(raw.next, KEY_MAX) : null,
-    vitals: cleanVitals(raw.vitals),
+    vitals,
     skillCheck: check,
     xpGained,
     options,

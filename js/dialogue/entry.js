@@ -13,6 +13,7 @@ import { DIFFICULTY_TARGET, checkModifierTotal } from "./sanitize.js";
 import {
   PASSIVE_BONUS,
   modifierValue,
+  passes,
   passiveScore,
   skillValue,
 } from "./passive.js";
@@ -231,8 +232,16 @@ export function buildEntry(node, voice, speakKey) {
   const article = document.createElement("article");
   article.className = "entry dialogue";
   article.dataset.node = node.id;
-  if (node.skillCheck && node.skillCheck.result) {
-    article.dataset.result = node.skillCheck.result;
+  /* A passive is shown to everyone now; its verdict is this reader's own,
+     success or failure, rather than the success the payload always wrote. */
+  const check =
+    node.skillCheck && node.skillCheck.passive
+      ? Object.assign({}, node.skillCheck, {
+          result: passes(node.skillCheck) ? "success" : "failure",
+        })
+      : node.skillCheck;
+  if (check && check.result) {
+    article.dataset.result = check.result;
   }
 
   const lead = document.createElement("p");
@@ -246,9 +255,9 @@ export function buildEntry(node, voice, speakKey) {
     lead.appendChild(speaker);
   }
 
-  if (node.skillCheck) {
+  if (check) {
     if (lead.childNodes.length) lead.appendChild(document.createTextNode(" "));
-    lead.appendChild(checkTag(node.skillCheck));
+    lead.appendChild(checkTag(check));
   }
 
   if (lead.childNodes.length && node.dialogue) {

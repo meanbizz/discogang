@@ -141,14 +141,11 @@ function skillEntry(raw) {
   return { skill: id, amount };
 }
 
-/* One consumed item's entry: a named attribute, how far it moves it, and the
-   item that did it. */
+/* One consumed item's entry: a named attribute or skill, how far it moves it,
+   and the item that did it. Exactly one of the two targets is ever set. */
 function temporaryEntry(raw) {
   const source = fields(raw);
   if (!source) return null;
-  const id = slug(
-    source.attribute || source.target || source.stat || source.name || "",
-  );
   const amount = amountOf(
     source.amount != null
       ? source.amount
@@ -156,10 +153,30 @@ function temporaryEntry(raw) {
         ? source.value
         : source.modifier,
   );
-  if (!id || !amount) return null;
-  if (!noBuild() && !knownAttribute(id)) return null;
+  if (!amount) return null;
+
+  const asSkill = slug(source.skill || "");
+  const asAttribute = slug(source.attribute || "");
+  const loose = slug(source.target || source.stat || source.name || "");
+
+  let skill = "";
+  let attribute = "";
+  if (asSkill) {
+    if (noBuild() || knownSkill(asSkill)) skill = asSkill;
+    else if (knownAttribute(asSkill)) attribute = asSkill;
+  } else if (asAttribute) {
+    if (noBuild() || knownAttribute(asAttribute)) attribute = asAttribute;
+    else if (knownSkill(asAttribute)) skill = asAttribute;
+  } else if (loose) {
+    if (knownAttribute(loose)) attribute = loose;
+    else if (knownSkill(loose)) skill = loose;
+    else if (noBuild()) attribute = loose;
+  }
+  if (!skill && !attribute) return null;
+
   return {
-    attribute: id,
+    attribute,
+    skill,
     amount,
     from: label(source.from || source.item || source.source || source.label),
   };
@@ -214,7 +231,9 @@ export function cleanTemporary(raw) {
         held && typeof held === "object" && !Array.isArray(held)
           ? Object.assign({}, held)
           : { amount: held };
-      if (!source.attribute && !source.target) source.attribute = keys[i];
+      if (!source.attribute && !source.target && !source.skill) {
+        source.target = keys[i];
+      }
       const kept = temporaryEntry(source);
       if (kept) out.push(kept);
     }
@@ -247,15 +266,22 @@ export function cleanTemporaryBooks(raw) {
 function removal(raw) {
   if (typeof raw === "string") {
     const id = slug(raw);
-    if (id && knownAttribute(id)) return { attribute: id, from: "" };
+    if (id && knownAttribute(id)) return { attribute: id, skill: "", from: "" };
+    if (id && knownSkill(id)) return { attribute: "", skill: id, from: "" };
     const from = label(raw);
-    return from ? { attribute: "", from } : null;
+    return from ? { attribute: "", skill: "", from } : null;
   }
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
-  const id = slug(raw.attribute || raw.target || raw.stat || "");
+  const loose = slug(raw.attribute || raw.target || raw.stat || "");
+  let skill = slug(raw.skill || "");
+  let attribute = "";
+  if (loose) {
+    if (!knownAttribute(loose) && knownSkill(loose)) skill = loose;
+    else attribute = loose;
+  }
   const from = label(raw.from || raw.item || raw.source || raw.label);
-  if (!id && !from) return null;
-  return { attribute: id, from };
+  if (!attribute && !skill && !from) return null;
+  return { attribute, skill, from };
 }
 
 function removals(raw) {
@@ -363,6 +389,7 @@ export function applyTemporaryOps(books, ops, everyone) {
             !asked.remove.some(
               (cut) =>
                 (!cut.attribute || cut.attribute === entry.attribute) &&
+                (!cut.skill || cut.skill === entry.skill) &&
                 (!cut.from || sameLabel(cut.from, entry.from)),
             ),
         );
@@ -395,7 +422,20 @@ export function activeSet(held, temporary) {
   });
 
   (Array.isArray(temporary) ? temporary : []).forEach((entry) => {
-    if (!entry || !entry.attribute || !entry.amount) return;
+    if (!entry || !entry.amount) return;
+    /* A consumed item may name a single skill as well as a whole attribute. */
+    if (entry.skill) {
+      skills[entry.skill] = sum(skills[entry.skill], entry.amount);
+      sources.push({
+        kind: "skill",
+        target: entry.skill,
+        amount: entry.amount,
+        from: entry.from || "",
+        temporary: true,
+      });
+      return;
+    }
+    if (!entry.attribute) return;
     attributes[entry.attribute] = sum(attributes[entry.attribute], entry.amount);
     sources.push({
       kind: "attribute",
