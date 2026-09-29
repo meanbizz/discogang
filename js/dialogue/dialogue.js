@@ -15,7 +15,13 @@ import { findSkill } from "./skills.js";
 import * as cues from "./cues.js";
 import * as narration from "../audio/narration.js";
 import { grantXp } from "../xp.js";
-import { appendToLog, buildEntry, vitalsNote, voiceOf } from "./entry.js";
+import {
+  appendToLog,
+  buildEntry,
+  scrollLogToFoot,
+  vitalsNote,
+  voiceOf,
+} from "./entry.js";
 import { walk as walkTree } from "./transcript.js";
 import * as modals from "../modals.js";
 import { oddsFor } from "./odds.js";
@@ -175,11 +181,17 @@ function renderContinue(host, nextId) {
 
   /* The paper drifts a notch each time the reader presses on, tiled so the
      shift never opens a gap under the log. */
+  // Slides by the height of the line that just landed, starting at once.
   const drift = () => {
     if (!dom.log) return;
-    const next = (Number(dom.log.dataset.drift || 0) + 24) % 480;
+    const latest = dom.log.querySelector(".entry.current");
+    const text = latest ? latest.querySelector(".entry-line") || latest : null;
+    const step = text ? Math.round(text.getBoundingClientRect().height) : 24;
+    const next = Number(dom.log.dataset.drift || 0) + Math.max(1, step);
     dom.log.dataset.drift = String(next);
     dom.log.style.backgroundRepeat = "repeat-y";
+    dom.log.style.transition = "background-position-y 150ms linear 0s";
+    void dom.log.offsetWidth;
     dom.log.style.backgroundPositionY = "-" + next + "px";
   };
 
@@ -188,9 +200,9 @@ function renderContinue(host, nextId) {
     if (host.dataset.spent === "true") return;
     host.dataset.spent = "true";
     cues.playChoice();
-    drift();
     host.remove();
     renderNode(nextId);
+    drift();
   });
   host.appendChild(button);
 
@@ -297,5 +309,5 @@ function renderNode(id) {
     finish();
   }
 
-  dom.log.scrollTop = dom.log.scrollHeight;
+  scrollLogToFoot();
 }

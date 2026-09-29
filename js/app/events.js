@@ -216,7 +216,7 @@ function bindSound() {
 function bindModals() {
   if (dom.sceneThumb) {
     dom.sceneThumb.addEventListener("click", () =>
-      modals.openImage("Scene", currentSceneImage(), ""),
+      modals.openImage(state.sceneSpeaker || "Scene", currentSceneImage(), ""),
     );
   }
 

@@ -39,6 +39,7 @@ function npcPortrait(speaker) {
    lends their own face, the narrator and names nobody wrote lend none. */
 export function setSceneOverride(url, speaker) {
   state.sceneOverride = url || npcPortrait(speaker);
+  state.sceneSpeaker = speaker || null;
   renderScene();
 }
 

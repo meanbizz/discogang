@@ -22,13 +22,42 @@ import { findSkill, skillLabel } from "./skills.js";
 
 const VITAL_OF = { vitality: "health", morale: "morale" };
 
+const SCROLL_MS = 100;
+let scrollFrame = null;
+
+/* Slides the log to its foot over a beat. A rolling tape jumps instead. */
+export function scrollLogToFoot() {
+  const log = dom.log;
+  if (!log) return;
+  if (scrollFrame) cancelAnimationFrame(scrollFrame);
+  scrollFrame = null;
+
+  const target = log.scrollHeight - log.clientHeight;
+  if (target <= 0) return;
+  if (log.classList.contains("is-rolling")) {
+    log.scrollTop = target;
+    return;
+  }
+
+  const from = log.scrollTop;
+  const span = target - from;
+  if (!span) return;
+  const started = performance.now();
+  const step = (now) => {
+    const part = Math.min(1, (now - started) / SCROLL_MS);
+    log.scrollTop = from + span * part;
+    scrollFrame = part < 1 ? requestAnimationFrame(step) : null;
+  };
+  scrollFrame = requestAnimationFrame(step);
+}
+
 export function appendToLog(node) {
   const placeholder = dom.log.querySelector(".log-empty");
   if (placeholder) placeholder.remove();
   const previous = dom.log.querySelector(".entry.current");
   if (previous) previous.classList.remove("current");
   dom.log.appendChild(node);
-  dom.log.scrollTop = dom.log.scrollHeight;
+  scrollLogToFoot();
 }
 
 function capitalize(value) {

@@ -45,6 +45,8 @@ export const state = {
   time: null,
   /* Skill art shown while a dialogue node is speaking. */
   sceneOverride: null,
+  /* Who is speaking that art, for the scene portrait's name. */
+  sceneSpeaker: null,
   stagedPortrait: null,
   stagedSheet: null,
   sheetState: null,

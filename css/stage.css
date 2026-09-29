@@ -50,9 +50,7 @@
   display: none;
 }
 
-.stage:not(:has(.scene-thumb:not([hidden]))) .stage-time {
-  top: 1rem;
-}
+
 
 .log {
   flex: 1 1 auto;
