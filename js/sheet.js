@@ -38,6 +38,18 @@ export function orderedSkillIds() {
   return out;
 }
 
+// Returns the attribute id that owns the given skill id.
+export function attributeOfSkill(skillId) {
+  const groups = skillGroups();
+  for (let i = 0; i < groups.length; i += 1) {
+    const list = groups[i].skills || [];
+    for (let j = 0; j < list.length; j += 1) {
+      if (list[j].id === skillId) return groups[i].id;
+    }
+  }
+  return null;
+}
+
 function titleCase(name) {
   return String(name == null ? "" : name)
     .toLowerCase()

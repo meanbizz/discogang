@@ -182,6 +182,32 @@ export const dom = {
   itemViewImage: document.getElementById("item-view-image"),
   itemViewName: document.getElementById("item-view-name"),
   itemViewText: document.getElementById("item-view-text"),
+
+  // Player edit modal — administrateur only
+  playerModal: document.getElementById("player-modal"),
+  playerModalClose: document.getElementById("player-modal-close"),
+  playerModalName: document.getElementById("player-modal-name"),
+  playerForm: document.getElementById("player-form"),
+  playerEditId: document.getElementById("player-edit-id"),
+  playerHealthVal: document.getElementById("player-health-val"),
+  playerHealthMax: document.getElementById("player-health-max"),
+  playerMoraleVal: document.getElementById("player-morale-val"),
+  playerMoraleMax: document.getElementById("player-morale-max"),
+  playerXpCur: document.getElementById("player-xp-cur"),
+  playerXpTotal: document.getElementById("player-xp-total"),
+  playerPoints: document.getElementById("player-points"),
+  playerSkillsContainer: document.getElementById("player-skills-container"),
+  playerItemsContainer: document.getElementById("player-items-container"),
+  playerItemName: document.getElementById("player-item-name"),
+  playerItemCount: document.getElementById("player-item-count"),
+  playerItemAdd: document.getElementById("player-item-add"),
+  playerModifiersContainer: document.getElementById("player-modifiers-container"),
+  playerModTarget: document.getElementById("player-mod-target"),
+  playerModAmount: document.getElementById("player-mod-amount"),
+  playerModSource: document.getElementById("player-mod-source"),
+  playerModAdd: document.getElementById("player-mod-add"),
+  playerCancelButton: document.getElementById("player-cancel-button"),
+  playerFormError: document.getElementById("player-form-error"),
 };
 
 export const anchors = {

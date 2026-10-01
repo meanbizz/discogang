@@ -2,7 +2,7 @@
 
 /* What the two seats can actually do: ready up, speak, plan, and lift the plans,
    items, and table skills to the clipboard. */
-
+import { refreshModifiers } from "./modifiers.js";
 import { TURN_MIN_LENGTH } from "../config.js";
 import { dom } from "../dom.js";
 import { cleanText, copyText, uid } from "../utils.js";
@@ -27,6 +27,70 @@ import { goalLines, publishGoalOps, selfGoals } from "./goals.js";
 import { publishStatusOps } from "./status.js";
 import { modifierLines, publishModifierOps } from "./modifiers.js";
 import { skillLines } from "./progress.js";
+import { inventoryPayload } from "./inventory.js";
+
+export function kickPlayer(peerId, name) {
+  if (!state.isAdmin) return;
+  const sure = window.confirm(`Kick ${name} from the room?`);
+  if (!sure) return;
+
+  if (network.isHost) {
+    const conn = network.downstream.get(peerId);
+    if (conn) {
+      try { conn.send({ type: "kicked" }); } catch (e) {}
+      try { conn.close(); } catch (e) {}
+      network.downstream.delete(peerId);
+    }
+    state.roster.delete(peerId);
+    renderRoster();
+    broadcast(rosterPayload());
+    systemNote(`${name} was kicked from the room.`);
+    return;
+  }
+  sendUpstream({ type: "kick-peer", targetId: peerId, targetName: name });
+}
+
+export function savePlayerEdit(personId, data) {
+  if (!state.isAdmin) return;
+  const person = state.roster.get(personId);
+  if (!person) return;
+
+  person.vitals = data.vitals;
+  person.xp = data.xp;
+  person.skills = data.skills;
+  person.baseSkills = data.skills;
+  if (!state.inventories) state.inventories = {};
+  state.inventories[person.name] = data.items;
+  if (data.modifiers) {
+    state.temporaryModifiers[person.name] = data.modifiers;
+    refreshModifiers();
+  }
+
+  renderRoster();
+  broadcast(rosterPayload());
+
+  if (network.isHost) {
+    const conn = network.downstream.get(personId);
+    if (conn && conn.open) {
+      conn.send({
+        type: "player-override",
+        vitals: data.vitals,
+        xp: data.xp,
+        skills: data.skills,
+      });
+    }
+    broadcast(inventoryPayload());
+    if (data.modifiers) broadcast({ type: "modifiers", modifiers: state.temporaryModifiers });
+    return;
+  }
+
+  sendUpstream({
+    type: "admin-player-update",
+    personId,
+    personName: person.name,
+    data,
+  });
+}
 
 export function setSelfReady(next) {
   if (state.isAdmin) return;

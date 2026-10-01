@@ -13,7 +13,7 @@ const NAME_MAX = 24;
 const KEY_MAX = 120;
 const LABEL_MAX = 240;
 const MAX_READERS = 32;
-const MAX_PER_READER = 240;
+const MAX_PER_READER = Infinity;
 
 export function cleanChoice(raw) {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;

@@ -71,7 +71,12 @@ import {
 } from "./status.js";
 import { commitModifierOps, setTemporaryModifiers } from "./modifiers.js";
 import { commitTimer, setTimer } from "./timer.js";
-import { adoptProgress, publishProgress } from "./progress.js";
+import { adoptProgress, publishProgress, refreshLedger } from "./progress.js";
+import * as vitals from "../vitals.js";
+import { setXp } from "../xp.js";
+import { leave } from "./room.js";
+import * as modals from "../modals.js";
+import { attributeOfSkill } from "../sheet.js";
 import {
   acceptChoice,
   applyDialogue,
@@ -238,6 +243,57 @@ function onHostReceiveData(connection, data) {
     /* Not taken, not relayed: a repeat must not be sent to the table. */
     if (!commitTurn(planned)) return;
     broadcast({ type: "turn", turn: planned });
+    return;
+  }
+
+  if (data.type === "kick-peer") {
+    if (!person?.admin) return;
+    const targetConn = network.downstream.get(data.targetId);
+    if (targetConn) {
+      try { targetConn.send({ type: "kicked" }); } catch (e) {}
+      try { targetConn.close(); } catch (e) {}
+      network.downstream.delete(data.targetId);
+    }
+    state.roster.delete(data.targetId);
+    renderRoster();
+    broadcast(rosterPayload());
+    systemNote(`${data.targetName || "Player"} was kicked from the room.`);
+    return;
+  }
+
+  if (data.type === "admin-player-update") {
+    if (!person?.admin) return;
+    const target = state.roster.get(data.personId);
+    if (!target) return;
+    const d = data.data;
+    if (d.vitals) target.vitals = d.vitals;
+    if (d.xp) target.xp = d.xp;
+    if (d.skills) {
+      target.skills = d.skills;
+      target.baseSkills = d.skills;
+    }
+    if (d.items) {
+      state.inventories[target.name] = d.items;
+    }
+    if (d.modifiers) {
+      state.temporaryModifiers[target.name] = d.modifiers;
+      refreshModifiers();
+    }
+    renderRoster();
+    const targetConn = network.downstream.get(data.personId);
+    if (targetConn && targetConn.open) {
+      targetConn.send({
+        type: "player-override",
+        vitals: d.vitals,
+        xp: d.xp,
+        skills: d.skills,
+      });
+    } else if (data.personId === network.selfId) {
+      applyPlayerOverride(d);
+    }
+    broadcast(rosterPayload());
+    broadcast(inventoryPayload());
+    if (d.modifiers) broadcast({ type: "modifiers", modifiers: state.temporaryModifiers });
     return;
   }
 
@@ -599,10 +655,52 @@ function onWelcome(data) {
   );
 }
 
+// Adopts player overrides sent by administrator, offsetting attribute base.
+function applyPlayerOverride(data) {
+  if (state.isAdmin || !data) return;
+  if (data.vitals) {
+    vitals.vitals.health.value = data.vitals.health.value;
+    vitals.vitals.health.max = data.vitals.health.max;
+    vitals.vitals.morale.value = data.vitals.morale.value;
+    vitals.vitals.morale.max = data.vitals.morale.max;
+    vitals.renderVitals();
+  }
+  if (data.xp) {
+    setXp(data.xp);
+    refreshLedger();
+  }
+  if (data.skills && state.sheetState) {
+    Object.keys(data.skills).forEach((id) => {
+      if (state.sheetState.skills[id]) {
+        const attrId = attributeOfSkill(id);
+        const attrVal = attrId && state.sheetState.attributes[attrId]
+          ? Number(state.sheetState.attributes[attrId])
+          : 1;
+        const sig = state.sheetState.skills[id].signature ? 1 : 0;
+        state.sheetState.skills[id].points = Math.max(0, data.skills[id] - attrVal - sig);
+      }
+    });
+    const sheet = modals.getSheetInstance();
+    if (sheet) sheet.setState(state.sheetState, true);
+  }
+  publishProgress();
+}
+
 function onGuestReceiveData(data) {
   if (seen(data)) return;
   if (data.type === "welcome") {
     onWelcome(data);
+    return;
+  }
+
+  if (data.type === "kicked") {
+    leave();
+    alert("You have been kicked from the room.");
+    return;
+  }
+
+  if (data.type === "player-override") {
+    applyPlayerOverride(data);
     return;
   }
 

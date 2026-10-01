@@ -17,6 +17,8 @@ import { network } from "./net.js";
 import {
   clearTurnLog,
   exportTurns,
+  kickPlayer,
+  savePlayerEdit,
   setSelfReady,
   shareText,
   shareTurn,
@@ -221,16 +223,73 @@ function bindModals() {
   }
 
   dom.roster.addEventListener("click", (event) => {
+    const kickBtn = event.target.closest(".roster-kick");
+    if (kickBtn && state.isAdmin) {
+      const person = state.roster.get(kickBtn.dataset.personId);
+      if (person) kickPlayer(person.id, person.name);
+      return;
+    }
+
     const target = event.target.closest(".roster-person");
     if (!target?.dataset.personId) return;
     const person = state.roster.get(target.dataset.personId);
     if (!person) return;
+
+    if (state.isAdmin && !person.admin) {
+      const items = (state.inventories && state.inventories[person.name]) || {};
+      const mods = (state.temporaryModifiers && state.temporaryModifiers[person.name]) || [];
+      modals.openPlayerModal(person, items, mods, (updated) => {
+        savePlayerEdit(person.id, updated);
+      });
+      return;
+    }
+
     modals.openImage(
       person.name,
       person.portrait,
       person.admin ? "Administrateur" : "",
     );
   });
+
+  if (dom.playerModalClose) {
+    dom.playerModalClose.addEventListener("click", modals.closePlayerModal);
+  }
+  if (dom.playerCancelButton) {
+    dom.playerCancelButton.addEventListener("click", modals.closePlayerModal);
+  }
+  if (dom.playerModal) {
+    dom.playerModal.addEventListener("click", (event) => {
+      if (event.target.dataset.close === "true") modals.closePlayerModal();
+    });
+  }
+  if (dom.playerForm) {
+    dom.playerForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      modals.submitPlayerForm();
+    });
+  }
+  if (dom.playerItemAdd && dom.playerItemName) {
+    dom.playerItemAdd.addEventListener("click", () => {
+      const name = cleanName(dom.playerItemName.value);
+      const count = Math.max(1, Number(dom.playerItemCount?.value) || 1);
+      if (name) {
+        modals.addStagedPlayerItem(name, count);
+        dom.playerItemName.value = "";
+      }
+    });
+  }
+  if (dom.playerModAdd && dom.playerModTarget) {
+    dom.playerModAdd.addEventListener("click", () => {
+      const target = dom.playerModTarget.value.trim();
+      const amount = Number(dom.playerModAmount?.value) || 0;
+      const source = dom.playerModSource?.value.trim() || "";
+      if (target && amount) {
+        modals.addStagedPlayerModifier(target, amount, source);
+        dom.playerModTarget.value = "";
+        dom.playerModSource.value = "";
+      }
+    });
+  }
 
   dom.modalClose.addEventListener("click", modals.closePortrait);
   dom.modal.addEventListener("click", (event) => {
@@ -268,6 +327,10 @@ function bindModals() {
     if (event.key !== "Escape") return;
     if (dom.itemViewModal && !dom.itemViewModal.hidden) {
       modals.closeItemView();
+      return;
+    }
+    if (dom.playerModal && !dom.playerModal.hidden) {
+      modals.closePlayerModal();
       return;
     }
     modals.closePsyche();

@@ -161,6 +161,7 @@ export function leave() {
   modals.closeGoals();
   modals.closeBlur();
   modals.closeSound();
+  modals.closePlayerModal();
 
   dialogue.reset();
   overlays.reset();

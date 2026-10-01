@@ -57,8 +57,10 @@ export function rememberRound(payload, roundId, at) {
 
   const round = { id, at: Number(at) || Date.now(), payload, choices: {} };
   state.dialogueRounds.push(round);
-  while (state.dialogueRounds.length > DIALOGUE_ROUND_LIMIT) {
-    state.dialogueRounds.shift();
+  if (isFinite(DIALOGUE_ROUND_LIMIT)) {
+    while (state.dialogueRounds.length > DIALOGUE_ROUND_LIMIT) {
+      state.dialogueRounds.shift();
+    }
   }
   return round;
 }

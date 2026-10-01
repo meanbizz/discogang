@@ -406,6 +406,113 @@
         <div id="yt-player" class="yt-frame" aria-hidden="true"></div>
       </section>
 
+      <!-- Player Edit Modal — administrateur only -->
+      <div id="player-modal" class="modal" hidden>
+        <div class="modal-backdrop" data-close="true"></div>
+        <div
+          class="modal-card modal-card-wide"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="player-modal-name"
+        >
+          <button
+            type="button"
+            id="player-modal-close"
+            class="modal-close"
+            aria-label="Close player editor"
+          >
+            ×
+          </button>
+          <h2 id="player-modal-name" class="modal-name">Edit Player</h2>
+          <form id="player-form" class="npc-form" style="padding-right:0;border:0;display:grid;gap:1rem;" autocomplete="off">
+            <input type="hidden" id="player-edit-id" value="" />
+            <div style="display:flex;gap:1rem;flex-wrap:wrap;">
+              <fieldset style="flex:1;min-width:14rem;border:var(--hairline);padding:0.75rem;">
+                <legend style="color:var(--text-old);font-size:0.8rem;text-transform:uppercase;">Vitals</legend>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;">
+                  <div class="field">
+                    <label for="player-health-val">Health</label>
+                    <input id="player-health-val" type="number" min="0" max="41" />
+                  </div>
+                  <div class="field">
+                    <label for="player-health-max">Max Health</label>
+                    <input id="player-health-max" type="number" min="1" max="41" />
+                  </div>
+                  <div class="field">
+                    <label for="player-morale-val">Morale</label>
+                    <input id="player-morale-val" type="number" min="0" max="41" />
+                  </div>
+                  <div class="field">
+                    <label for="player-morale-max">Max Morale</label>
+                    <input id="player-morale-max" type="number" min="1" max="41" />
+                  </div>
+                </div>
+              </fieldset>
+              <fieldset style="flex:1;min-width:14rem;border:var(--hairline);padding:0.75rem;">
+                <legend style="color:var(--text-old);font-size:0.8rem;text-transform:uppercase;">Experience & Points</legend>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;">
+                  <div class="field">
+                    <label for="player-xp-cur">Current XP</label>
+                    <input id="player-xp-cur" type="number" min="0" />
+                  </div>
+                  <div class="field">
+                    <label for="player-xp-total">Total XP</label>
+                    <input id="player-xp-total" type="number" min="0" />
+                  </div>
+                  <div class="field" style="grid-column:span 2;">
+                    <label for="player-points">Skill Points</label>
+                    <input id="player-points" type="number" min="0" max="999" />
+                  </div>
+                </div>
+              </fieldset>
+            </div>
+            <fieldset style="border:var(--hairline);padding:0.75rem;">
+              <legend style="color:var(--text-old);font-size:0.8rem;text-transform:uppercase;">Skills</legend>
+              <div id="player-skills-container" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(11rem,1fr));gap:0.4rem;max-height:14rem;overflow-y:auto;padding-right:0.25rem;"></div>
+            </fieldset>
+            <fieldset style="border:var(--hairline);padding:0.75rem;">
+              <legend style="color:var(--text-old);font-size:0.8rem;text-transform:uppercase;">Temporary Modifiers</legend>
+              <div id="player-modifiers-container" style="display:grid;gap:0.4rem;max-height:8rem;overflow-y:auto;margin-bottom:0.6rem;"></div>
+              <div style="display:flex;gap:0.5rem;align-items:flex-end;flex-wrap:wrap;">
+                <div class="field" style="flex:2;min-width:8rem;">
+                  <label for="player-mod-target">Target (Attr / Skill)</label>
+                  <input id="player-mod-target" type="text" placeholder="e.g. logic or physique" />
+                </div>
+                <div class="field" style="width:4.5rem;">
+                  <label for="player-mod-amount">Amount</label>
+                  <input id="player-mod-amount" type="number" value="1" min="-20" max="20" />
+                </div>
+                <div class="field" style="flex:2;min-width:6rem;">
+                  <label for="player-mod-source">Source [Item]</label>
+                  <input id="player-mod-source" type="text" placeholder="e.g. Speed" />
+                </div>
+                <button type="button" id="player-mod-add" class="option" style="padding:0.6rem 0.8rem;">Add</button>
+              </div>
+            </fieldset>
+            <fieldset style="border:var(--hairline);padding:0.75rem;">
+              <legend style="color:var(--text-old);font-size:0.8rem;text-transform:uppercase;">Items</legend>
+              <div id="player-items-container" style="display:grid;gap:0.4rem;max-height:10rem;overflow-y:auto;margin-bottom:0.6rem;"></div>
+              <div style="display:flex;gap:0.5rem;align-items:flex-end;">
+                <div class="field" style="flex:1;">
+                  <label for="player-item-name">Add Item</label>
+                  <input id="player-item-name" type="text" placeholder="Item name" />
+                </div>
+                <div class="field" style="width:5rem;">
+                  <label for="player-item-count">Count</label>
+                  <input id="player-item-count" type="number" min="1" value="1" />
+                </div>
+                <button type="button" id="player-item-add" class="option" style="padding:0.6rem 0.8rem;">Add</button>
+              </div>
+            </fieldset>
+            <div class="npc-form-actions">
+              <button type="submit" id="player-save-button" class="option">Save Changes</button>
+              <button type="button" id="player-cancel-button" class="npc-cancel-btn">Cancel</button>
+            </div>
+            <p id="player-form-error" class="error" role="alert" aria-live="assertive"></p>
+          </form>
+        </div>
+      </div>
+
       <!-- Portrait Modal -->
       <div id="portrait-modal" class="modal" hidden>
         <div class="modal-backdrop" data-close="true"></div>

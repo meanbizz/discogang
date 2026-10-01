@@ -27,7 +27,9 @@
 import { dom } from "./dom.js";
 import { paintThumb, clearThumb, cleanName } from "./utils.js";
 import { isCurrency, CURRENCY_MARK } from "./inventory/items.js";
+import { orderedSkillIds, skillTitle } from "./sheet.js";
 import {
+  cleanTemporary,
   describeModifierList,
   describeSource,
   parseModifierLines,
@@ -1098,5 +1100,217 @@ document.addEventListener("keydown", (event) => {
     sendTimer();
   }
 });
+
+let playerReturnFocus = null;
+let playerSaveHandler = null;
+let stagedPlayerItems = {};
+let stagedPlayerModifiers = [];
+
+// Renders temporary modifiers list in the player modal.
+export function renderPlayerModifiers() {
+  if (!dom.playerModifiersContainer) return;
+  dom.playerModifiersContainer.textContent = "";
+  if (!stagedPlayerModifiers.length) {
+    const empty = document.createElement("p");
+    empty.className = "npc-empty";
+    empty.style.margin = "0.2rem 0";
+    empty.textContent = "No temporary modifiers active.";
+    dom.playerModifiersContainer.appendChild(empty);
+    return;
+  }
+  stagedPlayerModifiers.forEach((mod, idx) => {
+    const row = document.createElement("div");
+    row.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:0.5rem;padding:0.25rem 0.5rem;background:var(--bg);border:var(--hairline);";
+
+    const label = document.createElement("span");
+    label.style.fontSize = "0.85rem";
+    label.textContent = describeSource({
+      kind: mod.attribute ? "attribute" : "skill",
+      target: mod.attribute || mod.skill,
+      amount: mod.amount,
+      from: mod.from,
+      temporary: true,
+    });
+
+    const del = document.createElement("button");
+    del.type = "button";
+    del.textContent = "×";
+    del.style.cssText = "padding:0.1rem 0.4rem;";
+    del.addEventListener("click", () => {
+      stagedPlayerModifiers.splice(idx, 1);
+      renderPlayerModifiers();
+    });
+
+    row.appendChild(label);
+    row.appendChild(del);
+    dom.playerModifiersContainer.appendChild(row);
+  });
+}
+
+// Appends a temporary modifier to staged modal state.
+export function addStagedPlayerModifier(target, amount, from) {
+  const parsed = cleanTemporary([{ target, amount, from }]);
+  if (parsed && parsed.length) {
+    stagedPlayerModifiers.push(parsed[0]);
+    renderPlayerModifiers();
+  }
+}
+
+export function renderPlayerItems() {
+  if (!dom.playerItemsContainer) return;
+  dom.playerItemsContainer.textContent = "";
+  const names = Object.keys(stagedPlayerItems);
+  if (!names.length) {
+    const empty = document.createElement("p");
+    empty.className = "npc-empty";
+    empty.style.margin = "0.2rem 0";
+    empty.textContent = "No items held.";
+    dom.playerItemsContainer.appendChild(empty);
+    return;
+  }
+  names.forEach((name) => {
+    const row = document.createElement("div");
+    row.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:0.5rem;padding:0.25rem 0.5rem;background:var(--bg);border:var(--hairline);";
+
+    const label = document.createElement("span");
+    label.style.fontSize = "0.85rem";
+    label.textContent = name;
+
+    const wrap = document.createElement("div");
+    wrap.style.cssText = "display:flex;gap:0.35rem;align-items:center;";
+
+    const input = document.createElement("input");
+    input.type = "number";
+    input.min = "0";
+    input.style.cssText = "width:4rem;padding:0.2rem 0.3rem;";
+    input.value = stagedPlayerItems[name];
+    input.addEventListener("input", () => {
+      const val = Number(input.value);
+      if (val <= 0) delete stagedPlayerItems[name];
+      else stagedPlayerItems[name] = val;
+    });
+
+    const del = document.createElement("button");
+    del.type = "button";
+    del.textContent = "×";
+    del.style.cssText = "padding:0.1rem 0.4rem;";
+    del.addEventListener("click", () => {
+      delete stagedPlayerItems[name];
+      renderPlayerItems();
+    });
+
+    wrap.appendChild(input);
+    wrap.appendChild(del);
+    row.appendChild(label);
+    row.appendChild(wrap);
+    dom.playerItemsContainer.appendChild(row);
+  });
+}
+
+export function addStagedPlayerItem(name, count) {
+  if (!name) return;
+  stagedPlayerItems[name] = (stagedPlayerItems[name] || 0) + count;
+  renderPlayerItems();
+}
+
+export function openPlayerModal(person, items, modifiers, onSave) {
+  if (!dom.playerModal || !person) return;
+  playerSaveHandler = onSave || null;
+  stagedPlayerItems = Object.assign({}, items || {});
+  stagedPlayerModifiers = Array.isArray(modifiers) ? modifiers.slice() : [];
+
+  dom.playerEditId.value = person.id;
+  dom.playerModalName.textContent = `Edit ${person.name}`;
+
+  const v = person.vitals || { health: { value: 3, max: 3 }, morale: { value: 3, max: 3 } };
+  dom.playerHealthVal.value = v.health?.value ?? 3;
+  dom.playerHealthMax.value = v.health?.max ?? 3;
+  dom.playerMoraleVal.value = v.morale?.value ?? 3;
+  dom.playerMoraleMax.value = v.morale?.max ?? 3;
+
+  const x = person.xp || { current: 0, total: 0, points: 0 };
+  dom.playerXpCur.value = x.current ?? 0;
+  dom.playerXpTotal.value = x.total ?? 0;
+  dom.playerPoints.value = x.points ?? 0;
+
+  if (dom.playerSkillsContainer) {
+    dom.playerSkillsContainer.textContent = "";
+    orderedSkillIds().forEach((id) => {
+      const row = document.createElement("div");
+      row.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:0.4rem;padding:0.2rem 0.4rem;background:var(--bg);border:var(--hairline);";
+
+      const title = document.createElement("span");
+      title.style.fontSize = "0.75rem";
+      title.textContent = skillTitle(id);
+
+      const input = document.createElement("input");
+      input.type = "number";
+      input.min = "0";
+      input.max = "40";
+      input.dataset.skillId = id;
+      input.style.cssText = "width:3.2rem;padding:0.2rem 0.3rem;";
+      input.value = person.skills && person.skills[id] != null ? person.skills[id] : 1;
+
+      row.appendChild(title);
+      row.appendChild(input);
+      dom.playerSkillsContainer.appendChild(row);
+    });
+  }
+
+  renderPlayerItems();
+  renderPlayerModifiers();
+  if (dom.playerItemName) dom.playerItemName.value = "";
+  if (dom.playerModTarget) dom.playerModTarget.value = "";
+  if (dom.playerModSource) dom.playerModSource.value = "";
+  if (dom.playerFormError) dom.playerFormError.textContent = "";
+
+  playerReturnFocus = activeFocus();
+  dom.playerModal.hidden = false;
+  sfx.playModal();
+  dom.playerModalClose.focus();
+}
+
+export function closePlayerModal() {
+  if (!dom.playerModal || dom.playerModal.hidden) return;
+  dom.playerModal.hidden = true;
+  stagedPlayerItems = {};
+  stagedPlayerModifiers = [];
+  playerSaveHandler = null;
+  sfx.playCancel();
+  if (playerReturnFocus && document.contains(playerReturnFocus)) {
+    playerReturnFocus.focus();
+  }
+  playerReturnFocus = null;
+}
+
+export function submitPlayerForm() {
+  if (!playerSaveHandler) return;
+  const hMax = Math.max(1, Number(dom.playerHealthMax.value) || 1);
+  const mMax = Math.max(1, Number(dom.playerMoraleMax.value) || 1);
+  const vitals = {
+    health: { value: Math.max(0, Math.min(hMax, Number(dom.playerHealthVal.value) || 0)), max: hMax },
+    morale: { value: Math.max(0, Math.min(mMax, Number(dom.playerMoraleVal.value) || 0)), max: mMax },
+  };
+  const xp = {
+    current: Math.max(0, Number(dom.playerXpCur.value) || 0),
+    total: Math.max(0, Number(dom.playerXpTotal.value) || 0),
+    points: Math.max(0, Number(dom.playerPoints.value) || 0),
+    required: 100,
+  };
+  const skills = {};
+  if (dom.playerSkillsContainer) {
+    dom.playerSkillsContainer.querySelectorAll("input[data-skill-id]").forEach((inp) => {
+      skills[inp.dataset.skillId] = Math.max(0, Number(inp.value) || 0);
+    });
+  }
+  playerSaveHandler({
+    vitals,
+    xp,
+    skills,
+    items: stagedPlayerItems,
+    modifiers: stagedPlayerModifiers,
+  });
+  closePlayerModal();
+}
 
 export { cleanName };

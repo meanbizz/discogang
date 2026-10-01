@@ -161,6 +161,16 @@ export function renderRoster() {
       plate.setAttribute("aria-hidden", "true");
       seat.appendChild(plate);
     }
+    if (state.isAdmin && !person.admin) {
+      const kickBtn = document.createElement("button");
+      kickBtn.type = "button";
+      kickBtn.className = "roster-kick";
+      kickBtn.dataset.personId = person.id;
+      kickBtn.textContent = "Kick";
+      kickBtn.title = `Kick ${person.name}`;
+      kickBtn.setAttribute("aria-label", `Kick ${person.name}`);
+      seat.appendChild(kickBtn);
+    }
     dom.roster.appendChild(seat);
   });
 
@@ -260,12 +270,14 @@ export function renderEntry(entry) {
 
 export function commit(entry) {
   state.logEntries.push(entry);
-  if (state.logEntries.length > HISTORY_LIMIT) state.logEntries.shift();
+  if (isFinite(HISTORY_LIMIT) && state.logEntries.length > HISTORY_LIMIT) {
+    state.logEntries.shift();
+  }
   renderEntry(entry);
 }
 
 export function replaceLog(entries) {
-  state.logEntries = entries.slice(-HISTORY_LIMIT);
+  state.logEntries = isFinite(HISTORY_LIMIT) ? entries.slice(-HISTORY_LIMIT) : entries.slice();
   /* Dead: what is on the screen stays exactly as death left it. */
   if (isSelfKia()) return;
   dom.log.textContent = "";
@@ -337,13 +349,15 @@ function alreadyPlanned(entry) {
 export function commitTurn(entry) {
   if (alreadyPlanned(entry)) return false;
   state.turnEntries.push(entry);
-  if (state.turnEntries.length > TURN_LIMIT) state.turnEntries.shift();
+  if (isFinite(TURN_LIMIT) && state.turnEntries.length > TURN_LIMIT) {
+    state.turnEntries.shift();
+  }
   renderTurn(entry);
   return true;
 }
 
 export function replaceTurnLog(entries) {
-  state.turnEntries = entries.slice(-TURN_LIMIT);
+  state.turnEntries = isFinite(TURN_LIMIT) ? entries.slice(-TURN_LIMIT) : entries.slice();
   if (isSelfKia()) return;
   dom.turnLog.textContent = "";
   state.turnEntries.forEach(renderTurn);

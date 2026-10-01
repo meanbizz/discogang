@@ -6,13 +6,12 @@ export const ROOM_PREFIX = "de-salon-";
 export const ADMIN_NAME = "administrateur";
 export const MAX_MESSAGE_LENGTH = 4000;
 export const MAX_NAME_LENGTH = 24;
-export const HISTORY_LIMIT = 200;
-export const TURN_LIMIT = 120;
+export const HISTORY_LIMIT = Infinity;
+export const TURN_LIMIT = Infinity;
 export const TURN_MIN_LENGTH = 3;
 export const PLAYER_SLOTS = 8;
-/* Rounds held for the save: oldest dropped first. Each round carries every
-   character's tree, so this is the table's whole dialogue history. */
-export const DIALOGUE_ROUND_LIMIT = 64;
+// Retain all dialogue rounds without limitation across saves and sessions.
+export const DIALOGUE_ROUND_LIMIT = Infinity;
 
 export const ROOM_CODE_LENGTH = 8;
 export const ROOM_CODE_ALPHABET = "abcdefghijkmnpqrstuvwxyz23456789";

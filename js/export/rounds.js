@@ -35,7 +35,7 @@ export function cleanRounds(raw, fallback) {
   const out = [];
   if (Array.isArray(raw)) {
     const source =
-      raw.length > DIALOGUE_ROUND_LIMIT
+      isFinite(DIALOGUE_ROUND_LIMIT) && raw.length > DIALOGUE_ROUND_LIMIT
         ? raw.slice(-DIALOGUE_ROUND_LIMIT)
         : raw;
     for (let i = 0; i < source.length; i += 1) {

@@ -6,7 +6,28 @@
 .roster-seat {
   position: relative;
   display: flex;
+  flex-direction: column;
+  align-items: stretch;
   flex: 0 0 auto;
+}
+
+.roster-kick {
+  position: relative;
+  z-index: 2;
+  margin-top: 0.25rem;
+  padding: 0.15rem 0.4rem;
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--danger);
+  border: 1px solid var(--danger);
+  background: rgba(179, 88, 60, 0.15);
+  cursor: pointer;
+}
+
+.roster-kick:hover {
+  background: var(--danger);
+  color: #fff;
 }
 
 .roster-plate {
