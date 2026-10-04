@@ -12,6 +12,7 @@
    news, and a seat coming back from a dropped wire should not be paid twice
    in its own eyes. */
 
+import { cleanName } from "../utils.js";
 import { dom } from "../dom.js";
 import { holdImage } from "../assets.js";
 import * as modals from "../modals.js";
@@ -182,10 +183,17 @@ function announceMoney(before, after) {
   overlays.money(after - before);
 }
 
+function announceItem(name, gained) {
+  if (state.isAdmin) return;
+  overlays.item(name, gained);
+}
+
 /* announce is for the live paths only: the host committing a payload's orders,
    and a guest being told what came of them. */
 export function setInventory(rawItems, rawInventories, announce) {
-  const before = announce ? selfMoney() : 0;
+  const beforeMoney = announce ? selfMoney() : 0;
+  const selfName = state.profile.name;
+  const bagBefore = announce ? Object.assign({}, state.inventories[selfName] || {}) : {};
 
   state.items = cleanItems(rawItems);
   state.inventories = cleanInventories(rawInventories);
@@ -195,7 +203,20 @@ export function setInventory(rawItems, rawInventories, announce) {
   /* A bag that moved is a set of modifiers that moved with it. */
   refreshModifiers();
 
-  if (announce) announceMoney(before, selfMoney());
+  if (announce) {
+    announceMoney(beforeMoney, selfMoney());
+    const bagAfter = state.inventories[selfName] || {};
+    Object.keys(bagAfter).forEach(name => {
+      if (!isCurrency(name) && (bagAfter[name] || 0) > (bagBefore[name] || 0)) {
+        announceItem(name, true);
+      }
+    });
+    Object.keys(bagBefore).forEach(name => {
+      if (!isCurrency(name) && (bagAfter[name] || 0) < (bagBefore[name] || 0)) {
+        announceItem(name, false);
+      }
+    });
+  }
 }
 
 export function inventoryPayload() {
@@ -207,24 +228,108 @@ export function inventoryPayload() {
 }
 
 /* Host only: the orders land, then the table is told what came of them. */
-export function commitOps(ops) {
-  const next = applyOps(
-    { items: state.items, inventories: state.inventories },
-    ops,
-    holderNames(),
+export function commitOps(ops, roundId) {
+  const { immediate, pending } = partitionInventoryOps(ops, roundId);
+  if (pending.length) {
+    state.pendingInventory = (state.pendingInventory || []).concat(pending);
+  }
+  if (immediate) {
+    const before = { items: state.items, inventories: state.inventories };
+    const next = applyOps(before, immediate, holderNames());
+    setInventory(next.items, next.inventories, true);
+    broadcast(inventoryPayload());
+  }
+}
+
+export function partitionInventoryOps(ops, roundId) {
+  if (!ops) return { immediate: null, pending: [] };
+  const pending = [];
+
+  function strip(o) {
+    const c = Object.assign({}, o);
+    delete c.at; delete c.target;
+    return c;
+  }
+
+  const immObj = {};
+  let hasImm = false;
+
+  Object.keys(ops).forEach(k => {
+    const asked = ops[k];
+    const addList = [];
+    const updList = [];
+    const remList = [];
+
+    const processItem = (item, actionType, outList) => {
+      if (item.at) {
+        const t = item.target || k;
+        const targets = t === "*" ? holderNames() : [t];
+        targets.forEach(h => {
+          const single = {};
+          single[h] = { add: [], update: [], remove: [] };
+          single[h][actionType].push(strip(item));
+          pending.push({
+            holder: cleanName(h).toLowerCase(),
+            node: item.at,
+            op: single,
+            roundId: roundId || null
+          });
+        });
+      } else {
+        outList.push(strip(item));
+      }
+    };
+
+    asked.add.forEach(i => processItem(i, "add", addList));
+    asked.update.forEach(i => processItem(i, "update", updList));
+    asked.remove.forEach(i => processItem(i, "remove", remList));
+
+    if (addList.length || updList.length || remList.length) {
+      immObj[k] = { add: addList, update: updList, remove: remList };
+      hasImm = true;
+    }
+  });
+
+  return { immediate: hasImm ? immObj : null, pending };
+}
+
+export function checkPendingInventory(name, roundId, nodeId) {
+  if (!network.isHost || !name || !nodeId) return;
+  const wanted = cleanName(name).toLowerCase();
+  const wantedNode = String(nodeId).trim();
+  const remain = [];
+  const trig = [];
+  (state.pendingInventory || []).forEach(p => {
+    if (p.holder === wanted && p.node === wantedNode && (!p.roundId || !roundId || p.roundId === roundId)) {
+      trig.push(p);
+    } else {
+      remain.push(p);
+    }
+  });
+  if (!trig.length) return;
+  state.pendingInventory = remain;
+  trig.forEach(p => commitOps(p.op));
+}
+
+export function clearStalePendingInventory(currentRoundId) {
+  if (!state.pendingInventory || !state.pendingInventory.length) return;
+  if (!currentRoundId) {
+    state.pendingInventory = [];
+    return;
+  }
+  state.pendingInventory = state.pendingInventory.filter(
+    p => !p.roundId || p.roundId === currentRoundId
   );
-  setInventory(next.items, next.inventories, true);
-  broadcast(inventoryPayload());
 }
 
 /* Administrateur only: whoever holds the room applies it. */
-export function publishOps(ops) {
+export function publishOps(ops, roundId) {
   if (!ops) return false;
   if (network.isHost) {
-    commitOps(ops);
+    commitOps(ops, roundId);
     return true;
   }
-  return sendUpstream({ type: "inventory-ops", ops });
+  return sendUpstream({ type: "inventory-ops", ops, roundId });
 }
 
 /* Administrateur only: the catalogue was edited here, so the whole thing

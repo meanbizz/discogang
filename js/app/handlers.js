@@ -60,7 +60,7 @@ import {
 import { refreshPlanningLock } from "./locks.js";
 import { applyScene, applyTime, commitTime, setNpcs } from "./scene.js";
 import { applySession } from "./save.js";
-import { commitOps, inventoryPayload, setInventory } from "./inventory.js";
+import { commitOps, inventoryPayload, setInventory, checkPendingInventory } from "./inventory.js";
 import { blurPayload, setBlurred } from "./blur.js";
 import { checkPendingGoals, commitGoalOps, setGoals } from "./goals.js";
 import {
@@ -373,7 +373,7 @@ function onHostReceiveData(connection, data) {
     if (!person?.admin) return;
     const ops = cleanOps(data.ops);
     if (!ops) return;
-    commitOps(ops);
+    commitOps(ops, data.roundId);
     return;
   }
 
@@ -389,6 +389,7 @@ function onHostReceiveData(connection, data) {
   if (data.type === "node-reached") {
     if (!person || person.admin) return;
     checkPendingGoals(person.name, data.roundId, data.nodeId);
+    checkPendingInventory(person.name, data.roundId, data.nodeId);
     return;
   }
 

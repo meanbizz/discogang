@@ -125,13 +125,18 @@ export function cleanItem(raw) {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
   const name = itemName(raw.name);
   if (!name) return null;
-  return {
+  const out = {
     name,
     image: cleanImageUrl(raw.image),
     description: body(raw.description, DESC_MAX),
     /* What carrying it does to a score, for as long as it is carried. */
     modifiers: cleanModifiers(raw.modifiers),
   };
+  const cond = raw.at || raw.node || raw.nodeId;
+  if (cond) out.at = String(cond).trim().slice(0, 120);
+  const target = raw.holder || raw.to || raw.target;
+  if (target) out.target = String(target).trim().slice(0, 48);
+  return out;
 }
 
 /* The money, put where it belongs: first, described, and present whether the

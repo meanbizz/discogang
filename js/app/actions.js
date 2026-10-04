@@ -133,9 +133,9 @@ export function shareText(text) {
   ) {
     /* Rolls first: a seat this payload puts down reads no tree inside it. */
     if (attempt.status) publishStatusOps(attempt.status);
-    if (attempt.inventory) publishOps(attempt.inventory);
     /* What was consumed, before any tree is read against the scores it moves. */
     const roundId = attempt.payload ? uid() : null;
+    if (attempt.inventory) publishOps(attempt.inventory, roundId);
     if (attempt.modifiers) publishModifierOps(attempt.modifiers);
     if (attempt.goals) publishGoalOps(attempt.goals, roundId);
     if (attempt.time) publishTime(attempt.time);

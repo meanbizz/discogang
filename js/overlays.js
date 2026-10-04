@@ -177,13 +177,27 @@ export function money(delta) {
   });
 }
 
+export function item(name, gained) {
+  const title = gained ? "ITEM GAINED" : "ITEM LOST";
+  notice({
+    kind: gained ? "item-gain" : "item-loss",
+    art: "/images/item.png",
+    alt: title,
+    way: gained ? "gain" : "loss",
+    title: title,
+    amount: name,
+    sound: () => sfx.playItem(gained),
+  });
+}
+
 /* One step of health or morale: vitals.js moved the bar and this is the announcement.
    Queued like every other plate, firing its cue as the plate goes up. */
-export function vital(kind, gained, amount) {
+export function vital(kind, gained, amount, currentVal) {
   if (!Object.prototype.hasOwnProperty.call(VITAL_ART, kind)) return;
   const way = gained ? "gain" : "loss";
   const qty = Math.abs(Math.round(Number(amount))) || 1;
   const name = kind === "health" ? "HEALTH" : "MORALE";
+  const isCritical = (!gained && currentVal === 1);
 
   notice({
     kind: kind + "-" + way,
@@ -191,7 +205,7 @@ export function vital(kind, gained, amount) {
     alt: VITAL_ALT[kind][way],
     way,
     amount: (gained ? "+" : "−") + qty + " " + name,
-    sound: () => sfx.playVital(kind, gained),
+    sound: () => sfx.playVital(kind, gained, isCritical),
   });
 }
 
@@ -211,7 +225,10 @@ export function goal(name, gained, granted) {
     way: "gain",
     title: "GOAL COMPLETED",
     amount: title.toUpperCase() + (gained ? " — +" + gained + " XP" : ""),
-    sound: cue ? () => cue(null) : null,
+    sound: () => {
+      sfx.playGoal(false);
+      if (cue) cue(null);
+    },
   });
 }
 
@@ -270,7 +287,7 @@ function runGoal(name, timers, done) {
 
   /* Something gained rather than spent: the cue a new skill point answers
      with, since a goal is the same kind of news. */
-  sfx.playPoint(null);
+  sfx.playGoal(true);
 
   timers.after(TIMING.xp.inMs + TIMING.xp.holdMs, () => {
     host.classList.remove("is-in");

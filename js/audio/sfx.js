@@ -51,15 +51,29 @@ export const MONEY_SRC = {
   lost: "sounds/money-lost.wav",
 };
 
-/* Health and morale, in each direction. */
+/* Items, in each direction. */
+export const ITEM_SRC = {
+  gain: "sounds/item-take.wav",
+  loss: "sounds/item-lost.wav",
+};
+
+/* Goals, new and completed. */
+export const GOAL_SRC = {
+  new: "sounds/goal-new.wav",
+  complete: "sounds/goal-complete.wav",
+};
+
+/* Health and morale, in each direction, plus critical. */
 export const VITAL_SRC = {
   health: {
     gain: "sounds/health-healed.wav",
     loss: "sounds/health-damaged.wav",
+    critical: "sounds/health-critical.wav",
   },
   morale: {
     gain: "sounds/morale-healed.wav",
     loss: "sounds/morale-damaged.wav",
+    critical: "sounds/morale-critical.wav",
   },
 };
 
@@ -85,13 +99,15 @@ const channels = {
   vital: { voice: null, timers: [] },
   ui: { voice: null, timers: [] },
   skill: { voice: null, timers: [] },
+  item: { voice: null, timers: [] },
+  goal: { voice: null, timers: [] },
 };
 
 /* The round's own voices, and the plates that keep their place through a
    reset. The blips belong to neither: a click the player made is still a
    click the player made. */
 const SCENE_VOICES = ["jingle", "roll", "point", "xp"];
-const NOTICE_VOICES = ["money", "vital"];
+const NOTICE_VOICES = ["money", "vital", "item", "goal"];
 
 function own(map, key) {
   return (
@@ -139,9 +155,12 @@ export function preloadAll() {
   Object.keys(JINGLE_SRC).forEach((key) => clip(JINGLE_SRC[key]));
   Object.keys(ROLL_SRC).forEach((key) => clip(ROLL_SRC[key]));
   Object.keys(MONEY_SRC).forEach((key) => clip(MONEY_SRC[key]));
+  Object.keys(ITEM_SRC).forEach((key) => clip(ITEM_SRC[key]));
+  Object.keys(GOAL_SRC).forEach((key) => clip(GOAL_SRC[key]));
   Object.keys(VITAL_SRC).forEach((kind) => {
     clip(VITAL_SRC[kind].gain);
     clip(VITAL_SRC[kind].loss);
+    clip(VITAL_SRC[kind].critical);
   });
   Object.keys(UI_SRC).forEach((key) => clip(UI_SRC[key]));
   clip(POINT_SRC);
@@ -299,15 +318,24 @@ export function playTableReady() {
   run(channels.money, MONEY_SRC.gained, { onEnd: null });
 }
 
+export function playItem(gained, onEnd) {
+  run(channels.item, gained ? ITEM_SRC.gain : ITEM_SRC.loss, { onEnd: onEnd || null });
+}
+
+export function playGoal(isNew, onEnd) {
+  run(channels.goal, isNew ? GOAL_SRC.new : GOAL_SRC.complete, { onEnd: onEnd || null });
+}
+
 /* One step of health or morale, fired the same way and for the same reason:
    the plate is what the sound belongs to, not the arithmetic. */
-export function playVital(kind, gained, onEnd) {
+export function playVital(kind, gained, critical, onEnd) {
   if (!own(VITAL_SRC, kind)) {
     if (onEnd) onEnd();
     return;
   }
   const pair = VITAL_SRC[kind];
-  run(channels.vital, gained ? pair.gain : pair.loss, { onEnd: onEnd || null });
+  const src = gained ? pair.gain : (critical ? pair.critical : pair.loss);
+  run(channels.vital, src, { onEnd: onEnd || null });
 }
 
 /* ---------------- The interface ---------------- */

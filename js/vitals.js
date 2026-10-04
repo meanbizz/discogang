@@ -196,7 +196,7 @@ export function changeVital(kind, direction) {
   renderVitals();
   if (state.value !== before) {
     flash(kind);
-    overlays.vital(kind, state.value > before, Math.abs(delta));
+    overlays.vital(kind, state.value > before, Math.abs(delta), state.value);
     /* Emptied: the app puts this seat on the floor and tells the table. */
     if (state.value === 0 && hooks.onEmpty) hooks.onEmpty(kind);
     /* A step back onto an empty bar, with the other above water too: the app

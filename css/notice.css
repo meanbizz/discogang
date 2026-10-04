@@ -81,6 +81,11 @@
   max-width: 130px;
 }
 
+/* item art needs to be reduced by 66% (which makes it ~34% of original size) */
+.notice-art[src*="item.png"] {
+  width: clamp(2.3rem, 10.5vw, 8rem);
+}
+
 .notice-art[hidden] {
   display: none;
 }

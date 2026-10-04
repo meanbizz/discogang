@@ -25,6 +25,7 @@ import { refreshPlanningLock } from "./locks.js";
 import { setSceneOverride } from "./scene.js";
 import { publishProgress, refreshLedger } from "./progress.js";
 import { checkPendingGoals, clearStalePendingGoals } from "./goals.js";
+import { checkPendingInventory, clearStalePendingInventory } from "./inventory.js";
 
 dialogue.setHooks({
   onFinish: () => {
@@ -126,6 +127,7 @@ export function reportNodeReached(nodeId) {
   const roundId = round ? round.id : null;
   if (network.isHost) {
     checkPendingGoals(state.profile.name, roundId, nodeId);
+    checkPendingInventory(state.profile.name, roundId, nodeId);
     return;
   }
   sendUpstream({ type: "node-reached", roundId, nodeId });
@@ -261,6 +263,7 @@ function ageTurnLog() {
 export function openDialogueRound(payload, roundId, at) {
   const round = rememberRound(payload, roundId, at);
   clearStalePendingGoals(round ? round.id : null);
+  clearStalePendingInventory(round ? round.id : null);
 
   state.roster.forEach((person) => {
     if (person.admin) return;

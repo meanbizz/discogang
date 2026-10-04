@@ -28,6 +28,8 @@ export const state = {
   goals: {},
   /* Goals waiting for a specific node to be reached: [ { holder, node, op, roundId } ]. */
   pendingGoals: [],
+  /* Pending inventory items */
+  pendingInventory: [],
   /* What a consumed item is doing to somebody: name -> [ modifier ]. */
   temporaryModifiers: {},
   /* This seat's own standing, recomputed whenever a bag or an order moves. */

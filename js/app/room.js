@@ -100,6 +100,7 @@ export function connect(room, name, portrait) {
   setInventory([], {});
   /* No goals until a payload or a save hands this seat some. */
   state.pendingGoals = [];
+  state.pendingInventory = [];
   setGoals({});
   /* Nobody is on the floor in a room that has not started. */
   setStatusRolls({});
@@ -190,6 +191,7 @@ export function leave() {
   state.isAdmin = false;
   state.selfId = null;
   state.pendingGoals = [];
+  state.pendingInventory = [];
   setInventory([], {});
   setGoals({});
   setStatusRolls({});
