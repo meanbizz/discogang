@@ -197,6 +197,7 @@ export const dom = {
   playerXpTotal: document.getElementById("player-xp-total"),
   playerPoints: document.getElementById("player-points"),
   playerSkillsContainer: document.getElementById("player-skills-container"),
+  playerSkillsImport: document.getElementById("player-skills-import"),
   playerItemsContainer: document.getElementById("player-items-container"),
   playerItemName: document.getElementById("player-item-name"),
   playerItemCount: document.getElementById("player-item-count"),

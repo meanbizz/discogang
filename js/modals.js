@@ -27,7 +27,8 @@
 import { dom } from "./dom.js";
 import { paintThumb, clearThumb, cleanName } from "./utils.js";
 import { isCurrency, CURRENCY_MARK } from "./inventory/items.js";
-import { orderedSkillIds, skillTitle } from "./sheet.js";
+import { describeSkills, orderedSkillIds, skillTitle } from "./sheet.js";
+import { copyText } from "./utils.js";
 import {
   cleanTemporary,
   describeModifierList,
@@ -36,6 +37,7 @@ import {
   writeModifierLines,
 } from "./modifiers/modifiers.js";
 import { refreshVitals } from "./vitals.js";
+import { findSkill } from "./dialogue/skills.js";
 import * as sfx from "./audio/sfx.js";
 import * as volume from "./audio/volume.js";
 import * as narration from "./audio/narration.js";
@@ -1281,6 +1283,26 @@ export function closePlayerModal() {
     playerReturnFocus.focus();
   }
   playerReturnFocus = null;
+}
+
+export function copyPlayerSkillsToClipboard(personName) {
+  const skills = {};
+  if (dom.playerSkillsContainer) {
+    dom.playerSkillsContainer.querySelectorAll("input[data-skill-id]").forEach((inp) => {
+      skills[inp.dataset.skillId] = Math.max(0, Number(inp.value) || 0);
+    });
+  }
+  const name = personName || dom.playerModalName?.textContent?.replace(/^Edit\s+/, "") || "Player";
+  const text = `# Players skills\n${name}:${describeSkills(skills)}`;
+  copyText(text, (ok) => {
+    if (dom.playerSkillsImport) {
+      const original = "Import Skills";
+      dom.playerSkillsImport.textContent = ok ? "Copied ✓" : "Copy failed";
+      setTimeout(() => {
+        if (dom.playerSkillsImport) dom.playerSkillsImport.textContent = original;
+      }, 1600);
+    }
+  });
 }
 
 export function submitPlayerForm() {

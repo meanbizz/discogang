@@ -467,7 +467,10 @@
               </fieldset>
             </div>
             <fieldset style="border:var(--hairline);padding:0.75rem;">
-              <legend style="color:var(--text-old);font-size:0.8rem;text-transform:uppercase;">Skills</legend>
+              <legend style="color:var(--text-old);font-size:0.8rem;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center;">
+                <span>Skills</span>
+                <button type="button" id="player-skills-import" class="option" style="padding:0.2rem 0.5rem;font-size:0.75rem;">Import Skills</button>
+              </legend>
               <div id="player-skills-container" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(11rem,1fr));gap:0.4rem;max-height:14rem;overflow-y:auto;padding-right:0.25rem;"></div>
             </fieldset>
             <fieldset style="border:var(--hairline);padding:0.75rem;">

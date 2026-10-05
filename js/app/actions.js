@@ -26,7 +26,6 @@ import { publishOps, selfItems, usedItemLines } from "./inventory.js";
 import { goalLines, publishGoalOps, selfGoals } from "./goals.js";
 import { publishStatusOps } from "./status.js";
 import { modifierLines, publishModifierOps } from "./modifiers.js";
-import { skillLines } from "./progress.js";
 import { inventoryPayload } from "./inventory.js";
 
 export function kickPlayer(peerId, name) {
@@ -262,7 +261,6 @@ export function exportTurns() {
 
   const fresh = state.turnEntries.filter((entry) => !entry.stale);
   const used = usedItemLines(fresh.map((entry) => entry.text));
-  const skills = skillLines();
   const mods = modifierLines();
   const goals = goalLines();
   const readings = vitalsLines();
@@ -278,9 +276,6 @@ export function exportTurns() {
       "# Actions planned by players:\n" +
         fresh.map((entry) => `${entry.author} — ${entry.text}`).join("\n"),
     );
-  }
-  if (skills.length) {
-    parts.push("# Players skills\n" + skills.join("\n"));
   }
   // Modifiers active on players are listed separately from base skills.
   if (mods.length) {

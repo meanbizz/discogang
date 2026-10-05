@@ -268,6 +268,12 @@ function bindModals() {
       modals.submitPlayerForm();
     });
   }
+  if (dom.playerSkillsImport) {
+    dom.playerSkillsImport.addEventListener("click", () => {
+      const name = dom.playerModalName?.textContent?.replace(/^Edit\s+/, "") || "";
+      modals.copyPlayerSkillsToClipboard(name);
+    });
+  }
   if (dom.playerItemAdd && dom.playerItemName) {
     dom.playerItemAdd.addEventListener("click", () => {
       const name = cleanName(dom.playerItemName.value);
