@@ -190,6 +190,7 @@
             aria-live="polite"
             aria-label="Planned turns"
           ></div>
+          <div id="typing-indicators" class="typing-indicators" role="status" aria-live="polite" aria-label="Players typing"></div>
           <p class="turn-legend">
             <span class="mark-quote">"Goodbye."</span> = Verbal ●
             <span class="mark-aside">(runs)</span> = Non Verbal ●
@@ -305,6 +306,7 @@
         </div>
 
         <div id="admin-tools" class="admin-tools" hidden>
+          <button type="button" id="line-end-button" class="option" hidden aria-pressed="false" title="Mark cutoff for incoming plans">LINE END</button>
           <button
             type="button"
             id="import-button"

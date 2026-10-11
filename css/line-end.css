@@ -1,0 +1,12 @@
+.turn-line-end {
+  border-top: 2px solid #e53935;
+  margin: 0.6rem 0;
+  padding: 0.35rem 0;
+  text-align: center;
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.turn-line-end.is-admin {
+  opacity: 0.95;
+}

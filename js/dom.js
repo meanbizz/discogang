@@ -28,6 +28,7 @@ export const dom = {
   composerLock: document.getElementById("composer-lock"),
 
   turnLog: document.getElementById("turn-builder-log"),
+  typingIndicators: document.getElementById("typing-indicators"),
   turnClear: document.getElementById("turn-clear"),
   turnComposer: document.getElementById("turn-composer"),
   turnInput: document.getElementById("turn-input"),
@@ -40,6 +41,7 @@ export const dom = {
   turnLock: document.getElementById("turn-lock"),
 
   readyBanner: document.getElementById("ready-banner"),
+  lineEndButton: document.getElementById("line-end-button"),
   importButton: document.getElementById("import-button"),
 
   stageSide: document.getElementById("stage-side"),

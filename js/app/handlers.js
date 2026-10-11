@@ -86,6 +86,8 @@ import {
   reportDialogueDone,
   showDialogueHistory,
 } from "./rounds.js";
+import { setLineEnd } from "./lineEnd.js";
+import { handleTyping, clearTyping, syncReadyClear } from "./typing.js";
 
 /* Host side: a name already at the table on a wire that is no longer there.
    A ghost holds a slot and, worse, keeps a round open by never finishing its
@@ -310,7 +312,10 @@ function onHostReceiveData(connection, data) {
     /* A seat on the floor cannot reach the switch, whatever it sends. */
     if (isFloored(person.name)) return;
     person.ready = Boolean(data.ready);
+    if(person.ready) clearTyping(person.name);
     renderRoster();
+    // do not touch line-end on ready toggle
+    import("./lineEnd.js").then(m=>m.ensureLineEnd && m.ensureLineEnd());
     broadcast(rosterPayload());
     return;
   }
@@ -428,6 +433,22 @@ function onHostReceiveData(connection, data) {
   }
 
   /* The administrateur's blur roll: adopted here, then told to the rest. */
+  if (data.type === "line-end") {
+    if (!person || !person.admin) return;
+    setLineEnd(!!data.active);
+    broadcast({ type: "line-end", active: !!data.active }, connection.peer);
+    return;
+  }
+
+  if (data.type === "typing") {
+    if (!person || person.admin) return;
+    const words = Math.max(0, Number(data.words) || 0);
+    const author = person.name;
+    handleTyping(author, words);
+    broadcast({ type: "typing", author, words }, connection.peer);
+    return;
+  }
+
   if (data.type === "blur-set") {
     if (!person?.admin) return;
     setBlurred(data.states || data.names);
@@ -735,6 +756,7 @@ function onGuestReceiveData(data) {
       if (!person.admin) rememberSeat(person);
     });
     renderRoster();
+    syncReadyClear();
     const me = state.roster.get(network.selfId);
     if (me && !state.isAdmin && Boolean(me.ready) !== state.selfReady) {
       state.selfReady = Boolean(me.ready);
@@ -825,6 +847,16 @@ function onGuestReceiveData(data) {
   }
 
   /* The live path: the administrateur just moved the blur roll. */
+  if (data.type === "line-end" && typeof data.active === "boolean") {
+    setLineEnd(!!data.active);
+    return;
+  }
+
+  if (data.type === "typing" && typeof data.author === "string") {
+    handleTyping(data.author, data.words);
+    return;
+  }
+
   if (data.type === "blur") {
     setBlurred(data.states || data.names);
     return;

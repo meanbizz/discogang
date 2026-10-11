@@ -25,7 +25,10 @@ import { refreshPlanningLock } from "./locks.js";
 import { setSceneOverride } from "./scene.js";
 import { publishProgress, refreshLedger } from "./progress.js";
 import { checkPendingGoals, clearStalePendingGoals } from "./goals.js";
-import { checkPendingInventory, clearStalePendingInventory } from "./inventory.js";
+import {
+  checkPendingInventory,
+  clearStalePendingInventory,
+} from "./inventory.js";
 
 dialogue.setHooks({
   onFinish: () => {
@@ -212,7 +215,6 @@ export function applyDialogue(payload) {
     refreshPlanningLock();
     return;
   }
-  
 
   const mine = dialogue.pickTree(
     state.dialoguePayload,
@@ -261,6 +263,7 @@ function ageTurnLog() {
    finished flags drop, and everybody gets the trees. Choices stay on the
    rounds they were made in. */
 export function openDialogueRound(payload, roundId, at) {
+  import("./lineEnd.js").then((m) => m.clearLineEnd());
   const round = rememberRound(payload, roundId, at);
   clearStalePendingGoals(round ? round.id : null);
   clearStalePendingInventory(round ? round.id : null);

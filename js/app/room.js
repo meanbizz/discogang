@@ -40,6 +40,7 @@ import { resetTimer } from "./timer.js";
 
 function seat(isAdmin) {
   dom.roleLabel.hidden = !isAdmin;
+  if (dom.lineEndButton) dom.lineEndButton.hidden = !isAdmin;
   if (dom.turnClear) dom.turnClear.hidden = !isAdmin;
   setPresent(anchors.deck, dom.deck, isAdmin);
   setPresent(anchors.adminTools, dom.adminTools, isAdmin);
@@ -204,6 +205,7 @@ export function leave() {
   dom.turnLog.textContent = "";
   dom.turnInput.value = "";
   dom.turnError.textContent = "";
+  import("./typing.js").then((m) => m.clearTyping());
 
   state.selfReady = false;
   paintReadyButton();

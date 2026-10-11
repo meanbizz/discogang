@@ -1,0 +1,14 @@
+.typing-indicators {
+  margin-top: 0.35rem;
+  display: grid;
+  gap: 0.25rem;
+}
+.typing-indicators:empty {
+  display: none;
+}
+.typing-indicator {
+  color: var(--slot, var(--text-old));
+  font-size: 0.85rem;
+  font-style: italic;
+  opacity: 0.85;
+}

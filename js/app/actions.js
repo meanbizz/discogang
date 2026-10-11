@@ -36,8 +36,12 @@ export function kickPlayer(peerId, name) {
   if (network.isHost) {
     const conn = network.downstream.get(peerId);
     if (conn) {
-      try { conn.send({ type: "kicked" }); } catch (e) {}
-      try { conn.close(); } catch (e) {}
+      try {
+        conn.send({ type: "kicked" });
+      } catch (e) {}
+      try {
+        conn.close();
+      } catch (e) {}
       network.downstream.delete(peerId);
     }
     state.roster.delete(peerId);
@@ -79,7 +83,8 @@ export function savePlayerEdit(personId, data) {
       });
     }
     broadcast(inventoryPayload());
-    if (data.modifiers) broadcast({ type: "modifiers", modifiers: state.temporaryModifiers });
+    if (data.modifiers)
+      broadcast({ type: "modifiers", modifiers: state.temporaryModifiers });
     return;
   }
 
@@ -140,6 +145,7 @@ export function shareText(text) {
     if (attempt.time) publishTime(attempt.time);
     if (attempt.payload) publishDialogue(attempt.payload, attempt.raw, roundId);
     else renderEntry({ text: attempt.raw, at: Date.now(), raw: true });
+    import("./lineEnd.js").then((m) => m.clearLineEnd());
     return;
   }
   if (attempt.error) {

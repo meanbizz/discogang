@@ -76,6 +76,10 @@ function bindComposers() {
 
   dom.turnInput.addEventListener("input", () => {
     dom.turnError.textContent = "";
+    import("./typing.js").then((m) => m.notifyTyping());
+  });
+  dom.turnInput.addEventListener("blur", () => {
+    import("./typing.js").then((m) => m.notifyTyping());
   });
 
   dom.turnInput.addEventListener("keydown", (event) => {
@@ -99,6 +103,11 @@ function bindComposers() {
 
   dom.turnReady.addEventListener("click", () => setSelfReady(!state.selfReady));
   dom.importButton.addEventListener("click", exportTurns);
+  if (dom.lineEndButton) {
+    dom.lineEndButton.addEventListener("click", () =>
+      import("./lineEnd.js").then((m) => m.toggleLineEnd()),
+    );
+  }
   if (dom.turnClear) {
     dom.turnClear.addEventListener("click", clearTurnLog);
   }
@@ -237,7 +246,9 @@ function bindModals() {
 
     if (state.isAdmin && !person.admin) {
       const items = (state.inventories && state.inventories[person.name]) || {};
-      const mods = (state.temporaryModifiers && state.temporaryModifiers[person.name]) || [];
+      const mods =
+        (state.temporaryModifiers && state.temporaryModifiers[person.name]) ||
+        [];
       modals.openPlayerModal(person, items, mods, (updated) => {
         savePlayerEdit(person.id, updated);
       });
@@ -270,7 +281,8 @@ function bindModals() {
   }
   if (dom.playerSkillsImport) {
     dom.playerSkillsImport.addEventListener("click", () => {
-      const name = dom.playerModalName?.textContent?.replace(/^Edit\s+/, "") || "";
+      const name =
+        dom.playerModalName?.textContent?.replace(/^Edit\s+/, "") || "";
       modals.copyPlayerSkillsToClipboard(name);
     });
   }
