@@ -51,6 +51,7 @@ import {
   RESUME_MAX_DELAY_MS,
   MAX_RECLAIM_ATTEMPTS,
   RECLAIM_DELAY_MS,
+  ICE_SERVERS,
 } from "./config.js";
 
 /* Ours, and never handed up to the app. */
@@ -264,8 +265,8 @@ export class NetworkManager {
     const hostId = ROOM_PREFIX + roomId;
     const instance = new window.Peer(hostId, {
       debug: 1,
-      /* Explicit, because the default outlives a throttled tab's timers. */
       pingInterval: PEER_PING_MS,
+      config: { iceServers: ICE_SERVERS },
     });
     this.peer = instance;
 
@@ -338,6 +339,7 @@ export class NetworkManager {
     const instance = new window.Peer(hostId, {
       debug: 1,
       pingInterval: PEER_PING_MS,
+      config: { iceServers: ICE_SERVERS },
     });
     this.peer = instance;
 
@@ -448,6 +450,7 @@ export class NetworkManager {
     const instance = new window.Peer({
       debug: 1,
       pingInterval: PEER_PING_MS,
+      config: { iceServers: ICE_SERVERS },
     });
     this.peer = instance;
 
