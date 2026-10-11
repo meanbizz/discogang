@@ -99,12 +99,15 @@ export function cleanScene(raw) {
   return { image: cleanImageUrl(raw.image) };
 }
 
-// Clean and validate "hh:mm" time string.
+// Clean and validate "hh:mm" or "hh:mm DAY" time string.
 export function cleanTime(value) {
   if (typeof value !== "string") return null;
-  const trimmed = value.trim();
-  return /^([01]?\d|2[0-3]):[0-5]\d$/.test(trimmed) ? trimmed : null;
+  const trimmed = value.trim().replace(/\s+/g, " ");
+  return /^([01]?\d|2[0-3]):[0-5]\d(?:\s+[a-zA-Z]{3})?$/i.test(trimmed)
+    ? trimmed.toUpperCase()
+    : null;
 }
+
 
 // Replaces alphanumeric characters with random letters/digits to mask blurred text.
 export function scrambleText(text) {

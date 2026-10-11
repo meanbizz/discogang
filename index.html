@@ -11,7 +11,10 @@
       href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400..700;1,400..700&display=swap"
       rel="stylesheet"
     />
-    <link href="https://db.onlinewebfonts.com/c/4be0b0cf61f9fd467f635e6cdc1daed6?family=Core+Sans+ES+W15+35+Light" rel="stylesheet">
+    <link
+      href="https://db.onlinewebfonts.com/c/4be0b0cf61f9fd467f635e6cdc1daed6?family=Core+Sans+ES+W15+35+Light"
+      rel="stylesheet"
+    />
 
     <link rel="stylesheet" href="styles.css" />
     <link rel="stylesheet" href="./stats/disco-skills.css" />
@@ -93,66 +96,69 @@
       <section id="session-panel" class="panel" hidden>
         <!-- Bar, strip and stage are held to one screen on a phone. -->
         <div class="stage-fit">
-        <div class="session-bar">
-          <div class="session-meta">
-            <span id="role-label" class="badge" data-role="admin" hidden
-              >Administrateur</span
-            >
-          </div>
-          <div class="session-status">
-            <span
-              id="status-dot"
-              class="dot"
-              data-state="offline"
-              aria-hidden="true"
-            ></span>
-            <span id="status-text" aria-live="polite">Offline</span>
-          </div>
-          <div class="session-actions">
-            <!-- Any seat can have autoplay refused, so this lives outside the
+          <div class="session-bar">
+            <div class="session-meta">
+              <span id="role-label" class="badge" data-role="admin" hidden
+                >Administrateur</span
+              >
+            </div>
+            <div class="session-status">
+              <span
+                id="status-dot"
+                class="dot"
+                data-state="offline"
+                aria-hidden="true"
+              ></span>
+              <span id="status-text" aria-live="polite">Offline</span>
+            </div>
+            <div class="session-actions">
+              <!-- Any seat can have autoplay refused, so this lives outside the
                  administrateur's deck. -->
-            <button type="button" id="audio-unlock" class="option" hidden>
-              Enable audio
-            </button>
-            <button type="button" id="leave-button">Leave</button>
+              <button type="button" id="audio-unlock" class="option" hidden>
+                Enable audio
+              </button>
+              <button type="button" id="leave-button">Leave</button>
+            </div>
           </div>
-        </div>
 
-        <div id="roster" class="roster" aria-label="Characters"></div>
+          <div id="roster" class="roster" aria-label="Characters"></div>
 
-        <div class="stage" data-side="folded">
-          <!-- Phone only: folds the scene away so the log keeps the screen. -->
-          <button
-            type="button"
-            id="stage-side-toggle"
-            class="stage-side-toggle"
-            aria-controls="stage-side"
-            aria-expanded="false"
-            aria-label="Show the scene image"
-          >
-            ➤
-          </button>
-          <div id="stage-time" class="stage-time" hidden></div>
+          <div class="stage" data-side="folded">
+            <!-- Phone only: folds the scene away so the log keeps the screen. -->
+            <div style="display: flex; gap: 8px; align-self: flex-start">
+              Portrait
+              <button
+                type="button"
+                id="stage-side-toggle"
+                class="stage-side-toggle"
+                aria-controls="stage-side"
+                aria-expanded="false"
+                aria-label="Show the scene image"
+              >
+                ➤
+              </button>
+            </div>
+            <div id="stage-time" class="stage-time" hidden></div>
 
-          <aside id="stage-side" class="stage-side">
-            <button
-              type="button"
-              id="scene-thumb"
-              class="portrait thumb scene-thumb"
-              data-size="scene"
-              data-empty="true"
-              aria-label="Open the scene image"
-            ></button>
-          </aside>
+            <aside id="stage-side" class="stage-side">
+              <button
+                type="button"
+                id="scene-thumb"
+                class="portrait thumb scene-thumb"
+                data-size="scene"
+                data-empty="true"
+                aria-label="Open the scene image"
+              ></button>
+            </aside>
 
-          <div
-            id="log"
-            class="log"
-            role="log"
-            aria-live="polite"
-            aria-label="Session log"
-          ></div>
-        </div>
+            <div
+              id="log"
+              class="log"
+              role="log"
+              aria-live="polite"
+              aria-label="Session log"
+            ></div>
+          </div>
         </div>
 
         <!-- Turn Builder -->
@@ -190,7 +196,13 @@
             aria-live="polite"
             aria-label="Planned turns"
           ></div>
-          <div id="typing-indicators" class="typing-indicators" role="status" aria-live="polite" aria-label="Players typing"></div>
+          <div
+            id="typing-indicators"
+            class="typing-indicators"
+            role="status"
+            aria-live="polite"
+            aria-label="Players typing"
+          ></div>
           <p class="turn-legend">
             <span class="mark-quote">"Goodbye."</span> = Verbal ●
             <span class="mark-aside">(runs)</span> = Non Verbal ●
@@ -218,42 +230,49 @@
               />
               <button type="submit" id="turn-send" class="option">➤</button>
             </div>
-            <div style="width: 100%; display: flex; align-items: center; justify-content: space-between;">
-            <button
-              type="button"
-              id="turn-ready"
-              class="option ready-toggle"
-              aria-pressed="false"
+            <div
+              style="
+                width: 100%;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+              "
             >
-              Ready
-            </button>
-            <!-- The three pairs, written with the caret left between them -->
-            <div class="turn-marks" role="group" aria-label="Insert markup">
               <button
                 type="button"
-                id="mark-quote"
-                class="option turn-mark"
-                title="Verbal — something said aloud"
+                id="turn-ready"
+                class="option ready-toggle"
+                aria-pressed="false"
               >
-                Vb.
+                Ready
               </button>
-              <button
-                type="button"
-                id="mark-aside"
-                class="option turn-mark"
-                title="Non verbal — something done"
-              >
-                Non Vb.
-              </button>
-              <button
-                type="button"
-                id="mark-style"
-                class="option turn-mark"
-                title="Style — how it is done"
-              >
-                Style
-              </button>
-            </div>
+              <!-- The three pairs, written with the caret left between them -->
+              <div class="turn-marks" role="group" aria-label="Insert markup">
+                <button
+                  type="button"
+                  id="mark-quote"
+                  class="option turn-mark"
+                  title="Verbal — something said aloud"
+                >
+                  Vb.
+                </button>
+                <button
+                  type="button"
+                  id="mark-aside"
+                  class="option turn-mark"
+                  title="Non verbal — something done"
+                >
+                  Non Vb.
+                </button>
+                <button
+                  type="button"
+                  id="mark-style"
+                  class="option turn-mark"
+                  title="Style — how it is done"
+                >
+                  Style
+                </button>
+              </div>
             </div>
             <p
               id="turn-error"
@@ -306,7 +325,16 @@
         </div>
 
         <div id="admin-tools" class="admin-tools" hidden>
-          <button type="button" id="line-end-button" class="option" hidden aria-pressed="false" title="Mark cutoff for incoming plans">LINE END</button>
+          <button
+            type="button"
+            id="line-end-button"
+            class="option"
+            hidden
+            aria-pressed="false"
+            title="Mark cutoff for incoming plans"
+          >
+            LINE END
+          </button>
           <button
             type="button"
             id="import-button"
@@ -426,33 +454,100 @@
             ×
           </button>
           <h2 id="player-modal-name" class="modal-name">Edit Player</h2>
-          <form id="player-form" class="npc-form" style="padding-right:0;border:0;display:grid;gap:1rem;" autocomplete="off">
+          <form
+            id="player-form"
+            class="npc-form"
+            style="padding-right: 0; border: 0; display: grid; gap: 1rem"
+            autocomplete="off"
+          >
             <input type="hidden" id="player-edit-id" value="" />
-            <div style="display:flex;gap:1rem;flex-wrap:wrap;">
-              <fieldset style="flex:1;min-width:14rem;border:var(--hairline);padding:0.75rem;">
-                <legend style="color:var(--text-old);font-size:0.8rem;text-transform:uppercase;">Vitals</legend>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;">
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap">
+              <fieldset
+                style="
+                  flex: 1;
+                  min-width: 14rem;
+                  border: var(--hairline);
+                  padding: 0.75rem;
+                "
+              >
+                <legend
+                  style="
+                    color: var(--text-old);
+                    font-size: 0.8rem;
+                    text-transform: uppercase;
+                  "
+                >
+                  Vitals
+                </legend>
+                <div
+                  style="
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 0.5rem;
+                  "
+                >
                   <div class="field">
                     <label for="player-health-val">Health</label>
-                    <input id="player-health-val" type="number" min="0" max="41" />
+                    <input
+                      id="player-health-val"
+                      type="number"
+                      min="0"
+                      max="41"
+                    />
                   </div>
                   <div class="field">
                     <label for="player-health-max">Max Health</label>
-                    <input id="player-health-max" type="number" min="1" max="41" />
+                    <input
+                      id="player-health-max"
+                      type="number"
+                      min="1"
+                      max="41"
+                    />
                   </div>
                   <div class="field">
                     <label for="player-morale-val">Morale</label>
-                    <input id="player-morale-val" type="number" min="0" max="41" />
+                    <input
+                      id="player-morale-val"
+                      type="number"
+                      min="0"
+                      max="41"
+                    />
                   </div>
                   <div class="field">
                     <label for="player-morale-max">Max Morale</label>
-                    <input id="player-morale-max" type="number" min="1" max="41" />
+                    <input
+                      id="player-morale-max"
+                      type="number"
+                      min="1"
+                      max="41"
+                    />
                   </div>
                 </div>
               </fieldset>
-              <fieldset style="flex:1;min-width:14rem;border:var(--hairline);padding:0.75rem;">
-                <legend style="color:var(--text-old);font-size:0.8rem;text-transform:uppercase;">Experience & Points</legend>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;">
+              <fieldset
+                style="
+                  flex: 1;
+                  min-width: 14rem;
+                  border: var(--hairline);
+                  padding: 0.75rem;
+                "
+              >
+                <legend
+                  style="
+                    color: var(--text-old);
+                    font-size: 0.8rem;
+                    text-transform: uppercase;
+                  "
+                >
+                  Experience & Points
+                </legend>
+                <div
+                  style="
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 0.5rem;
+                  "
+                >
                   <div class="field">
                     <label for="player-xp-cur">Current XP</label>
                     <input id="player-xp-cur" type="number" min="0" />
@@ -461,59 +556,176 @@
                     <label for="player-xp-total">Total XP</label>
                     <input id="player-xp-total" type="number" min="0" />
                   </div>
-                  <div class="field" style="grid-column:span 2;">
+                  <div class="field" style="grid-column: span 2">
                     <label for="player-points">Skill Points</label>
                     <input id="player-points" type="number" min="0" max="999" />
                   </div>
                 </div>
               </fieldset>
             </div>
-            <fieldset style="border:var(--hairline);padding:0.75rem;">
-              <legend style="color:var(--text-old);font-size:0.8rem;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center;">
+            <fieldset style="border: var(--hairline); padding: 0.75rem">
+              <legend
+                style="
+                  color: var(--text-old);
+                  font-size: 0.8rem;
+                  text-transform: uppercase;
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                "
+              >
                 <span>Skills</span>
-                <button type="button" id="player-skills-import" class="option" style="padding:0.2rem 0.5rem;font-size:0.75rem;">Import Skills</button>
+                <button
+                  type="button"
+                  id="player-skills-import"
+                  class="option"
+                  style="padding: 0.2rem 0.5rem; font-size: 0.75rem"
+                >
+                  Import Skills
+                </button>
               </legend>
-              <div id="player-skills-container" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(11rem,1fr));gap:0.4rem;max-height:14rem;overflow-y:auto;padding-right:0.25rem;"></div>
+              <div
+                id="player-skills-container"
+                style="
+                  display: grid;
+                  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+                  gap: 0.4rem;
+                  max-height: 14rem;
+                  overflow-y: auto;
+                  padding-right: 0.25rem;
+                "
+              ></div>
             </fieldset>
-            <fieldset style="border:var(--hairline);padding:0.75rem;">
-              <legend style="color:var(--text-old);font-size:0.8rem;text-transform:uppercase;">Temporary Modifiers</legend>
-              <div id="player-modifiers-container" style="display:grid;gap:0.4rem;max-height:8rem;overflow-y:auto;margin-bottom:0.6rem;"></div>
-              <div style="display:flex;gap:0.5rem;align-items:flex-end;flex-wrap:wrap;">
-                <div class="field" style="flex:2;min-width:8rem;">
+            <fieldset style="border: var(--hairline); padding: 0.75rem">
+              <legend
+                style="
+                  color: var(--text-old);
+                  font-size: 0.8rem;
+                  text-transform: uppercase;
+                "
+              >
+                Temporary Modifiers
+              </legend>
+              <div
+                id="player-modifiers-container"
+                style="
+                  display: grid;
+                  gap: 0.4rem;
+                  max-height: 8rem;
+                  overflow-y: auto;
+                  margin-bottom: 0.6rem;
+                "
+              ></div>
+              <div
+                style="
+                  display: flex;
+                  gap: 0.5rem;
+                  align-items: flex-end;
+                  flex-wrap: wrap;
+                "
+              >
+                <div class="field" style="flex: 2; min-width: 8rem">
                   <label for="player-mod-target">Target (Attr / Skill)</label>
-                  <input id="player-mod-target" type="text" placeholder="e.g. logic or physique" />
+                  <input
+                    id="player-mod-target"
+                    type="text"
+                    placeholder="e.g. logic or physique"
+                  />
                 </div>
-                <div class="field" style="width:4.5rem;">
+                <div class="field" style="width: 4.5rem">
                   <label for="player-mod-amount">Amount</label>
-                  <input id="player-mod-amount" type="number" value="1" min="-20" max="20" />
+                  <input
+                    id="player-mod-amount"
+                    type="number"
+                    value="1"
+                    min="-20"
+                    max="20"
+                  />
                 </div>
-                <div class="field" style="flex:2;min-width:6rem;">
+                <div class="field" style="flex: 2; min-width: 6rem">
                   <label for="player-mod-source">Source [Item]</label>
-                  <input id="player-mod-source" type="text" placeholder="e.g. Speed" />
+                  <input
+                    id="player-mod-source"
+                    type="text"
+                    placeholder="e.g. Speed"
+                  />
                 </div>
-                <button type="button" id="player-mod-add" class="option" style="padding:0.6rem 0.8rem;">Add</button>
+                <button
+                  type="button"
+                  id="player-mod-add"
+                  class="option"
+                  style="padding: 0.6rem 0.8rem"
+                >
+                  Add
+                </button>
               </div>
             </fieldset>
-            <fieldset style="border:var(--hairline);padding:0.75rem;">
-              <legend style="color:var(--text-old);font-size:0.8rem;text-transform:uppercase;">Items</legend>
-              <div id="player-items-container" style="display:grid;gap:0.4rem;max-height:10rem;overflow-y:auto;margin-bottom:0.6rem;"></div>
-              <div style="display:flex;gap:0.5rem;align-items:flex-end;">
-                <div class="field" style="flex:1;">
+            <fieldset style="border: var(--hairline); padding: 0.75rem">
+              <legend
+                style="
+                  color: var(--text-old);
+                  font-size: 0.8rem;
+                  text-transform: uppercase;
+                "
+              >
+                Items
+              </legend>
+              <div
+                id="player-items-container"
+                style="
+                  display: grid;
+                  gap: 0.4rem;
+                  max-height: 10rem;
+                  overflow-y: auto;
+                  margin-bottom: 0.6rem;
+                "
+              ></div>
+              <div style="display: flex; gap: 0.5rem; align-items: flex-end">
+                <div class="field" style="flex: 1">
                   <label for="player-item-name">Add Item</label>
-                  <input id="player-item-name" type="text" placeholder="Item name" />
+                  <input
+                    id="player-item-name"
+                    type="text"
+                    placeholder="Item name"
+                  />
                 </div>
-                <div class="field" style="width:5rem;">
+                <div class="field" style="width: 5rem">
                   <label for="player-item-count">Count</label>
-                  <input id="player-item-count" type="number" min="1" value="1" />
+                  <input
+                    id="player-item-count"
+                    type="number"
+                    min="1"
+                    value="1"
+                  />
                 </div>
-                <button type="button" id="player-item-add" class="option" style="padding:0.6rem 0.8rem;">Add</button>
+                <button
+                  type="button"
+                  id="player-item-add"
+                  class="option"
+                  style="padding: 0.6rem 0.8rem"
+                >
+                  Add
+                </button>
               </div>
             </fieldset>
             <div class="npc-form-actions">
-              <button type="submit" id="player-save-button" class="option">Save Changes</button>
-              <button type="button" id="player-cancel-button" class="npc-cancel-btn">Cancel</button>
+              <button type="submit" id="player-save-button" class="option">
+                Save Changes
+              </button>
+              <button
+                type="button"
+                id="player-cancel-button"
+                class="npc-cancel-btn"
+              >
+                Cancel
+              </button>
             </div>
-            <p id="player-form-error" class="error" role="alert" aria-live="assertive"></p>
+            <p
+              id="player-form-error"
+              class="error"
+              role="alert"
+              aria-live="assertive"
+            ></p>
           </form>
         </div>
       </div>
@@ -835,7 +1047,9 @@
             <div class="npc-list-wrapper">
               <div class="npc-list-head">
                 <h3 class="npc-subheading">Current NPCs</h3>
-                <button type="button" id="npc-import-button" class="option">Import</button>
+                <button type="button" id="npc-import-button" class="option">
+                  Import
+                </button>
                 <input
                   id="npc-import-file"
                   class="visually-hidden"
@@ -950,7 +1164,9 @@
             <div class="npc-list-wrapper">
               <div class="npc-list-head">
                 <h3 class="npc-subheading">Items in play</h3>
-                <button type="button" id="item-import-button" class="option">Import</button>
+                <button type="button" id="item-import-button" class="option">
+                  Import
+                </button>
                 <input
                   id="item-import-file"
                   class="visually-hidden"
@@ -983,7 +1199,8 @@
           </button>
           <h2 id="blur-modal-title" class="modal-name">Blur plans</h2>
           <p class="blur-note">
-            Set player visibility: Present, Away, Hindered, or Concealed. Checked players are exempt.
+            Set player visibility: Present, Away, Hindered, or Concealed.
+            Checked players are exempt.
           </p>
           <div id="blur-list" class="blur-list" role="list"></div>
           <p id="blur-empty" class="inv-empty">Nobody to blur yet.</p>
@@ -1081,7 +1298,10 @@
     </div>
 
     <!-- Global external scripts -->
-        <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js" crossorigin="anonymous"></script>
+    <script
+      src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"
+      crossorigin="anonymous"
+    ></script>
     <script src="https://www.youtube.com/iframe_api"></script>
     <script src="./stats/disco-skills.js"></script>
 
