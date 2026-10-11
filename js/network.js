@@ -266,7 +266,7 @@ export class NetworkManager {
     const instance = new window.Peer(hostId, {
       debug: 1,
       pingInterval: PEER_PING_MS,
-      config: { iceServers: ICE_SERVERS },
+      config: { iceServers: ICE_SERVERS, sdpSemantics: "unified-plan", iceTransportPolicy: "all" },
     });
     this.peer = instance;
 
@@ -339,7 +339,7 @@ export class NetworkManager {
     const instance = new window.Peer(hostId, {
       debug: 1,
       pingInterval: PEER_PING_MS,
-      config: { iceServers: ICE_SERVERS },
+      config: { iceServers: ICE_SERVERS, sdpSemantics: "unified-plan", iceTransportPolicy: "all" },
     });
     this.peer = instance;
 
@@ -450,7 +450,7 @@ export class NetworkManager {
     const instance = new window.Peer({
       debug: 1,
       pingInterval: PEER_PING_MS,
-      config: { iceServers: ICE_SERVERS },
+      config: { iceServers: ICE_SERVERS, sdpSemantics: "unified-plan", iceTransportPolicy: "all" },
     });
     this.peer = instance;
 
