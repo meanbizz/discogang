@@ -26,6 +26,8 @@ export const state = {
   inventories: {},
   /* What each character is after: character name -> [ goal ]. */
   goals: {},
+  /* Available spots of interest for players. */
+  interests: [],
   /* Goals waiting for a specific node to be reached: [ { holder, node, op, roundId } ]. */
   pendingGoals: [],
   /* Pending inventory items */

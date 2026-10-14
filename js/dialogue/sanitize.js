@@ -313,6 +313,7 @@ export function cleanPayload(raw) {
     /* What a consumed item is doing to somebody, not a tree written for them. */
     if (isModifiersKey(key)) continue;
     if (normalizeKey(key) === "time") continue;
+    if (normalizeKey(key) === "interests") continue;
     const cleaned = cleanTree(raw[keys[i]]);
     if (!cleaned) continue;
     out[key] = cleaned;
@@ -347,6 +348,42 @@ export function cleanTimeOrder(raw) {
   const keys = Object.keys(raw);
   for (let i = 0; i < keys.length; i += 1) {
     if (normalizeKey(keys[i]) === "time") return cleanTime(raw[keys[i]]);
+  }
+  return null;
+}
+
+// Sanitizes spots of interest from payloads or saves.
+export function cleanInterests(raw) {
+  if (!Array.isArray(raw)) return [];
+  const out = [];
+  for (let i = 0; i < raw.length && out.length < 64; i += 1) {
+    const item = raw[i];
+    if (!item || typeof item !== "object" || Array.isArray(item)) continue;
+    const name = line(item.name || item.title || item.spot, 80);
+    if (!name) continue;
+    out.push({
+      name,
+      skill: line(item.skill, 64),
+      difficulty: line(item.difficulty != null ? String(item.difficulty) : "", 32),
+      repeatable: item.repeatable !== false,
+      discovered: item.discovered !== false,
+    });
+  }
+  return out;
+}
+
+export function cleanInterestsOrder(raw) {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const keys = Object.keys(raw);
+  for (let i = 0; i < keys.length; i += 1) {
+    if (normalizeKey(keys[i]) === "interests") {
+      const val = raw[keys[i]];
+      if (Array.isArray(val)) return cleanInterests(val);
+      if (val && typeof val === "object") {
+        const list = val.set || val.add || val.items || val.spots;
+        if (Array.isArray(list)) return cleanInterests(list);
+      }
+    }
   }
   return null;
 }
@@ -435,7 +472,8 @@ export function parsePayload(text) {
   const status = cleanStatusOrders(parsed);
   const modifiers = cleanModifierOrders(parsed);
   const time = cleanTimeOrder(parsed);
-  if (!payload && !inventory && !goals && !status && !modifiers && !time) {
+  const interests = cleanInterestsOrder(parsed);
+  if (!payload && !inventory && !goals && !status && !modifiers && !time && !interests) {
     return {
       payload: null,
       inventory: null,
@@ -443,6 +481,7 @@ export function parsePayload(text) {
       status: null,
       modifiers: null,
       time: null,
+      interests: null,
       error:
         "No usable dialogue trees, item orders, goals, rolls or modifiers in that payload.",
       raw,
@@ -455,6 +494,7 @@ export function parsePayload(text) {
     status,
     modifiers,
     time,
+    interests,
     error: null,
     raw,
   };

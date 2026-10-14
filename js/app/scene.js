@@ -10,6 +10,7 @@ import {
   uid,
 } from "../utils.js";
 import { normalizeKey } from "../dialogue/text.js";
+import { cleanInterests } from "../dialogue/sanitize.js";
 import * as modals from "../modals.js";
 import { holdImage } from "../assets.js";
 import { setNarrationExclusions } from "../audio/narration.js";
@@ -80,6 +81,32 @@ export function publishTime(time) {
     return;
   }
   sendUpstream({ type: "time-set", time });
+}
+
+// Updates spots of interest and highlights the Interests button when news arrives.
+export function setInterests(list, news) {
+  state.interests = cleanInterests(list);
+  modals.refreshInterests(state.interests);
+  if (news && !state.isAdmin && state.interests.length > 0 && dom.interestsButton) {
+    if (!dom.interestsModal || dom.interestsModal.hidden) {
+      dom.interestsButton.classList.add("has-points");
+    }
+  }
+}
+
+export function commitInterests(list, news = true) {
+  setInterests(list, news);
+  broadcast({ type: "interests", interests: state.interests, news });
+}
+
+export function publishInterests(list) {
+  if (!Array.isArray(list)) return;
+  if (network.isHost) {
+    commitInterests(list, true);
+    return;
+  }
+  setInterests(list, true);
+  sendUpstream({ type: "interests", interests: state.interests, news: true });
 }
 
 export function setNpcs(list) {

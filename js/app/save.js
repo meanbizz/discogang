@@ -27,7 +27,7 @@ import {
   refreshPlanningLock,
   refreshSpeakLock,
 } from "./locks.js";
-import { applyScene, setNpcs } from "./scene.js";
+import { applyScene, setInterests, setNpcs } from "./scene.js";
 import { setInventory } from "./inventory.js";
 import { setGoals } from "./goals.js";
 import { setStatusRolls } from "./status.js";
@@ -72,6 +72,7 @@ export function exportSession() {
     items: state.items,
     inventories: state.inventories,
     goals: state.goals,
+    interests: state.interests,
     down: state.down,
     kia: state.kia,
     modifiers: state.temporaryModifiers,
@@ -186,6 +187,7 @@ export function applySession(snap) {
   setNpcs(snap.npcs);
   setInventory(snap.items, snap.inventories);
   setGoals(snap.goals);
+  setInterests(snap.interests);
   /* Put back as written, and silently: a restore is not somebody being hit. */
   setStatusRolls(snap);
   /* Whatever the table had consumed, still working on them. */

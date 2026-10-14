@@ -18,7 +18,7 @@ import {
   cleanNpc,
   sanitizeRoomCode,
 } from "../utils.js";
-import { cleanPayload } from "../dialogue/sanitize.js";
+import { cleanInterests, cleanPayload } from "../dialogue/sanitize.js";
 import { cleanItems, cleanInventories } from "../inventory/items.js";
 import { cleanGoalBooks } from "../goals/goals.js";
 import { cleanStatus } from "../status/status.js";
@@ -130,6 +130,7 @@ export function snapshot(state) {
     items: cleanItems(source.items),
     inventories: cleanInventories(source.inventories),
     goals: cleanGoalBooks(source.goals),
+    interests: cleanInterests(source.interests),
     down: standing.down,
     kia: standing.kia,
     modifiers: cleanTemporaryBooks(source.modifiers),
@@ -162,6 +163,7 @@ export function clean(raw) {
     inventories: cleanInventories(raw.inventories),
     /* Empty for any save written before goals were kept. */
     goals: cleanGoalBooks(raw.goals),
+    interests: cleanInterests(raw.interests),
     /* Empty for any save written before anybody could be put on the floor. */
     down: standing.down,
     kia: standing.kia,

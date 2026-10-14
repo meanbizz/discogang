@@ -92,6 +92,9 @@
 }
 
 /* The fold is a phone affordance; a desktop column is always open. */
+.stage-side-toggle-parent {
+  display: none;
+}
 .stage-side-toggle {
   display: none;
 }
@@ -123,7 +126,7 @@
     flex: 0 0 auto;
     position: absolute;
     z-index: 1;
-    top: 46px;
+    top: 60px;
     left: 0;
   }
 

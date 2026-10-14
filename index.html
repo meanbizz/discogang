@@ -125,7 +125,7 @@
 
           <div class="stage" data-side="folded">
             <!-- Phone only: folds the scene away so the log keeps the screen. -->
-            <div style="display: flex; gap: 8px; align-self: flex-start">
+            <div class="stage-side-toggle-parent" style="display: flex; gap: 8px; align-self: flex-start">
               Portrait
               <button
                 type="button"
@@ -429,6 +429,14 @@
               title="What you are trying to do"
             >
               Goals
+            </button>
+            <button
+              type="button"
+              id="interests-button"
+              class="option psyche"
+              title="Spots of interest"
+            >
+              Interests
             </button>
           </div>
         </div>
@@ -859,6 +867,55 @@
           ></div>
           <p id="goals-empty" class="inv-empty goals-empty">
             Nothing is asked of you yet.
+          </p>
+        </div>
+      </div>
+
+      <!-- Interests Modal -->
+      <div id="interests-modal" class="modal" hidden>
+        <div class="modal-backdrop" data-close="true"></div>
+        <div
+          class="modal-card modal-card-wide interests-modal-card"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="interests-modal-title"
+        >
+          <button
+            type="button"
+            id="interests-modal-close"
+            class="modal-close"
+            aria-label="Close interests"
+          >
+            ×
+          </button>
+
+          <div class="interests-head">
+            <h2 id="interests-modal-title" class="modal-name">Spots of interest</h2>
+            <button
+              type="button"
+              id="interests-clear"
+              class="turn-clear"
+              hidden
+              title="Clear all spots of interest"
+            >
+              Clear
+            </button>
+          </div>
+
+          <div
+            id="interests-list"
+            class="interests-list"
+            role="list"
+            aria-label="Spots of interest"
+          ></div>
+          <p id="interests-empty" class="inv-empty interests-empty">
+            No spots of interest available.
+          </p>
+          <p>
+            Hover your mouse or press on a skill to see your current skill level.
+          </p>
+          <p>
+            Interests with a red frame can only be done once and never again.
           </p>
         </div>
       </div>

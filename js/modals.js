@@ -25,7 +25,7 @@
    cannot delete, so it is not offered the button. */
 
 import { dom } from "./dom.js";
-import { paintThumb, clearThumb, cleanName } from "./utils.js";
+import { paintThumb, clearThumb, cleanName, scrambleText } from "./utils.js";
 import { isCurrency, CURRENCY_MARK } from "./inventory/items.js";
 import { describeSkills, orderedSkillIds, skillTitle } from "./sheet.js";
 import { copyText } from "./utils.js";
@@ -36,7 +36,8 @@ import {
   parseModifierLines,
   writeModifierLines,
 } from "./modifiers/modifiers.js";
-import { refreshVitals } from "./vitals.js";
+import { refreshVitals, skillScore } from "./vitals.js";
+import { getSheet, getModifiers } from "./dialogue/passive.js";
 import { findSkill } from "./dialogue/skills.js";
 import * as sfx from "./audio/sfx.js";
 import * as volume from "./audio/volume.js";
@@ -48,6 +49,7 @@ let npcReturnFocus = null;
 let inventoryReturnFocus = null;
 let itemsReturnFocus = null;
 let goalsReturnFocus = null;
+let interestsReturnFocus = null;
 let soundReturnFocus = null;
 let sheetInstance = null;
 let stagedNpcPortrait = null;
@@ -587,6 +589,26 @@ export function openOddsTooltip(anchor, reading) {
   placeTooltip(tip, anchor);
 }
 
+// Displays a tooltip showing the player's current effective score in a skill.
+export function openSkillScoreTooltip(anchor, rawSkill) {
+  const tip = dom.oddsTooltip;
+  if (!tip || !anchor || !rawSkill) return;
+  const found = findSkill(rawSkill);
+  const label = found ? skillTitle(found.id) : skillTitle(rawSkill);
+  const score = found ? skillScore(getSheet(), found.id, getModifiers()) : 0;
+
+  tip.textContent = "";
+  const title = document.createElement("p");
+  title.className = "odds-tooltip-title";
+  title.textContent = label + ": " + score;
+  if (found && found.attribute) title.dataset.attribute = found.attribute;
+  tip.appendChild(title);
+
+  tip.setAttribute("aria-hidden", "false");
+  tip.classList.add("is-open");
+  placeTooltip(tip, anchor);
+}
+
 export function closeOddsTooltip() {
   const tip = dom.oddsTooltip;
   if (!tip) return;
@@ -685,6 +707,120 @@ export function closeGoals() {
 export function refreshGoals(list) {
   if (!dom.goalsModal || dom.goalsModal.hidden) return;
   renderGoalsList(list);
+}
+
+/* ---------------- Interests ---------------- */
+
+let interestsAdmin = false;
+let interestsRemoveHandler = null;
+
+// Renders the list of spots of interest into rows with name, skill, and difficulty.
+export function renderInterestsList(list, isAdmin = interestsAdmin, onRemove = interestsRemoveHandler) {
+  if (!dom.interestsList) return;
+  interestsAdmin = Boolean(isAdmin);
+  if (onRemove !== undefined) interestsRemoveHandler = onRemove;
+
+  const spots = Array.isArray(list) ? list : [];
+  dom.interestsList.textContent = "";
+  if (dom.interestsEmpty) dom.interestsEmpty.hidden = spots.length > 0;
+  if (dom.interestsClear) {
+    dom.interestsClear.hidden = !interestsAdmin || spots.length === 0;
+  }
+  if (!spots.length) return;
+
+  const head = document.createElement("div");
+  head.className = "interest-row is-head" + (interestsAdmin ? " is-admin" : "");
+  const cols = ["Name", "Skill", "Difficulty"];
+  if (interestsAdmin) cols.push("");
+  cols.forEach((col) => {
+    const span = document.createElement("span");
+    span.textContent = col;
+    head.appendChild(span);
+  });
+  dom.interestsList.appendChild(head);
+
+  spots.forEach((spot, index) => {
+    if (!spot || typeof spot !== "object") return;
+    const row = document.createElement("div");
+    row.className = "interest-row" + (interestsAdmin ? " is-admin" : "");
+    row.setAttribute("role", "listitem");
+
+    if (spot.repeatable === false) {
+      row.classList.add("is-non-repeatable");
+    }
+
+    const discovered = spot.discovered !== false;
+    if (!discovered) {
+      row.classList.add("is-undiscovered");
+    }
+
+    const rawName = String(spot.name || "");
+    const rawSkill = spot.skill ? skillTitle(spot.skill) : "";
+    const rawDiff = String(spot.difficulty != null ? spot.difficulty : "");
+
+    const nameEl = document.createElement("span");
+    nameEl.className = "interest-name";
+    nameEl.textContent = discovered ? rawName : scrambleText(rawName);
+
+    const skillEl = document.createElement("span");
+    skillEl.className = "interest-skill";
+    skillEl.textContent = discovered ? rawSkill : scrambleText(rawSkill);
+    if (!interestsAdmin && discovered && spot.skill) {
+      skillEl.style.cursor = "pointer";
+      skillEl.addEventListener("mouseenter", () => openSkillScoreTooltip(skillEl, spot.skill));
+      skillEl.addEventListener("mouseleave", closeOddsTooltip);
+      skillEl.addEventListener("click", (event) => {
+        event.stopPropagation();
+        openSkillScoreTooltip(skillEl, spot.skill);
+      });
+    }
+
+    const diffEl = document.createElement("span");
+    diffEl.className = "interest-difficulty";
+    diffEl.textContent = discovered ? rawDiff : scrambleText(rawDiff);
+
+    row.appendChild(nameEl);
+    row.appendChild(skillEl);
+    row.appendChild(diffEl);
+
+    if (interestsAdmin) {
+      const delBtn = document.createElement("button");
+      delBtn.type = "button";
+      delBtn.className = "interest-delete";
+      delBtn.textContent = "Delete";
+      delBtn.addEventListener("click", () => {
+        if (interestsRemoveHandler) interestsRemoveHandler(index);
+      });
+      row.appendChild(delBtn);
+    }
+
+    dom.interestsList.appendChild(row);
+  });
+}
+
+export function openInterests(list, isAdmin, onRemove) {
+  if (!dom.interestsModal) return;
+  renderInterestsList(list, isAdmin, onRemove);
+  interestsReturnFocus = activeFocus();
+  dom.interestsModal.hidden = false;
+  sfx.playModal();
+  dom.interestsModalClose?.focus();
+}
+
+export function closeInterests() {
+  if (!dom.interestsModal || dom.interestsModal.hidden) return;
+  closeOddsTooltip();
+  dom.interestsModal.hidden = true;
+  sfx.playCancel();
+  if (interestsReturnFocus && document.contains(interestsReturnFocus)) {
+    interestsReturnFocus.focus();
+  }
+  interestsReturnFocus = null;
+}
+
+export function refreshInterests(list) {
+  if (!dom.interestsModal || dom.interestsModal.hidden) return;
+  renderInterestsList(list, interestsAdmin, interestsRemoveHandler);
 }
 
 /* ---------------- Blur ---------------- */
@@ -997,7 +1133,7 @@ export function setStagedItemImage(url) {
 document.addEventListener("click", (event) => {
   const tip = dom.oddsTooltip;
   if (!tip || !tip.classList.contains("is-open")) return;
-  if (event.target?.closest?.(".choice.odds")) return;
+  if (event.target?.closest?.(".choice.odds, .interest-skill")) return;
   closeOddsTooltip();
 });
 

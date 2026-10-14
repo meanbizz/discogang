@@ -144,6 +144,14 @@ export const dom = {
   goalsList: document.getElementById("goals-list"),
   goalsEmpty: document.getElementById("goals-empty"),
 
+  // Interests — spots of interest for players and administrateur
+  interestsButton: document.getElementById("interests-button"),
+  interestsModal: document.getElementById("interests-modal"),
+  interestsModalClose: document.getElementById("interests-modal-close"),
+  interestsClear: document.getElementById("interests-clear"),
+  interestsList: document.getElementById("interests-list"),
+  interestsEmpty: document.getElementById("interests-empty"),
+
   // Inventory — the player's own pockets
   inventoryButton: document.getElementById("inventory-button"),
   inventoryModal: document.getElementById("inventory-modal"),

@@ -58,7 +58,7 @@ import {
   systemNote,
 } from "./views.js";
 import { refreshPlanningLock } from "./locks.js";
-import { applyScene, applyTime, commitTime, setNpcs } from "./scene.js";
+import { applyScene, applyTime, commitInterests, commitTime, setInterests, setNpcs } from "./scene.js";
 import { applySession } from "./save.js";
 import { commitOps, inventoryPayload, setInventory, checkPendingInventory } from "./inventory.js";
 import { blurPayload, setBlurred } from "./blur.js";
@@ -187,6 +187,7 @@ function onHostReceiveData(connection, data) {
       inventories: state.inventories,
       /* Every book at the table, read by the seat each one names. */
       goals: state.goals,
+      interests: state.interests,
       /* Who is on the floor and who is past picking up, so a joiner reads the
          same plates as everybody else. */
       down: state.down,
@@ -503,6 +504,12 @@ function onHostReceiveData(connection, data) {
     if (!person?.admin) return;
     setNpcs(data.npcs);
     broadcast({ type: "npcs", npcs: state.npcs }, connection.peer);
+    return;
+  }
+
+  if (data.type === "interests") {
+    if (!person?.admin) return;
+    commitInterests(data.interests, Boolean(data.news));
   }
 }
 
@@ -543,6 +550,7 @@ function firstWelcome(data, current, live) {
   if (Array.isArray(data.npcs)) setNpcs(data.npcs);
   setInventory(data.items, data.inventories);
   setGoals(data.goals);
+  setInterests(data.interests);
   setStatusRolls(data);
   setTemporaryModifiers(data.modifiers);
   setBlurred(data.blur);
@@ -620,6 +628,7 @@ function laterWelcome(data, current, live) {
   setInventory(data.items, data.inventories);
   /* A completion missed while the wire was down is still owed. */
   setGoals(data.goals, true);
+  setInterests(data.interests);
   /* Going down while the wire was gone is a state correction, like money: the
      plate is right either way, and there is no scene to announce it over. */
   setStatusRolls(data);
@@ -824,6 +833,11 @@ function onGuestReceiveData(data) {
 
   if (data.type === "goals") {
     setGoals(data.goals, true);
+    return;
+  }
+
+  if (data.type === "interests") {
+    setInterests(data.interests, Boolean(data.news));
     return;
   }
 

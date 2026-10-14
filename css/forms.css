@@ -103,6 +103,12 @@ button.option {
   width: fit-content;
 }
 
+@media (max-width: 40rem) {
+  button.option {
+    font-size: 12px;
+  }
+}
+
 button.option:hover {
   border-color: var(--option);
   background: var(--option);

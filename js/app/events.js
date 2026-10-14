@@ -357,6 +357,7 @@ function bindModals() {
     modals.closeInventory();
     modals.closeItemsModal();
     modals.closeGoals();
+    modals.closeInterests();
     modals.closeBlur();
     modals.closeSound();
     modals.closeOddsTooltip();
@@ -515,6 +516,47 @@ function bindGoals() {
   if (dom.goalsModal) {
     dom.goalsModal.addEventListener("click", (event) => {
       if (event.target.dataset.close === "true") modals.closeGoals();
+    });
+  }
+}
+
+// Synchronizes admin-removed/cleared interests across the session without triggering update highlights.
+function syncInterests(next) {
+  state.interests = next;
+  modals.refreshInterests(state.interests);
+  const msg = { type: "interests", interests: state.interests, news: false };
+  if (network.isHost) network.broadcast(msg);
+  else if (network.upstream?.open) network.upstream.send(msg);
+}
+
+// Binds the Interests button, admin delete/clear controls, and modal close handlers.
+function bindInterests() {
+  const removeInterest = (index) => {
+    if (!state.isAdmin || !Array.isArray(state.interests)) return;
+    const next = state.interests.slice();
+    next.splice(index, 1);
+    syncInterests(next);
+  };
+
+  if (dom.interestsButton) {
+    dom.interestsButton.addEventListener("click", () => {
+      dom.interestsButton.classList.remove("has-points");
+      const list = Array.isArray(state.interests) ? state.interests : [];
+      modals.openInterests(list, state.isAdmin, removeInterest);
+    });
+  }
+  if (dom.interestsClear) {
+    dom.interestsClear.addEventListener("click", () => {
+      if (!state.isAdmin) return;
+      syncInterests([]);
+    });
+  }
+  if (dom.interestsModalClose) {
+    dom.interestsModalClose.addEventListener("click", modals.closeInterests);
+  }
+  if (dom.interestsModal) {
+    dom.interestsModal.addEventListener("click", (event) => {
+      if (event.target.dataset.close === "true") modals.closeInterests();
     });
   }
 }
@@ -685,6 +727,7 @@ export function bindSession() {
   bindNpcForm();
   bindInventory();
   bindGoals();
+  bindInterests();
   bindItemForm();
   bindBlur();
   bindStageSide();

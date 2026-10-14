@@ -31,7 +31,7 @@ import {
   refreshPlanningLock,
   refreshSpeakLock,
 } from "./locks.js";
-import { applyScene, applyTime } from "./scene.js";
+import { applyScene, applyTime, setInterests } from "./scene.js";
 import { setInventory } from "./inventory.js";
 import { setGoals } from "./goals.js";
 import { setStatusRolls } from "./status.js";
@@ -49,7 +49,22 @@ function seat(isAdmin) {
   setPresent(anchors.turnComposer, dom.turnComposer, !isAdmin);
   setPresent(anchors.panelFoot, dom.panelFoot, !isAdmin);
   setPresent(anchors.readyBanner, dom.readyBanner, isAdmin);
+  seatInterestsButton(isAdmin);
   seatSoundButton(isAdmin);
+}
+
+// Places the Interests button in admin tools for administrateur or beside Goals for players.
+function seatInterestsButton(isAdmin) {
+  if (!dom.interestsButton) return;
+  const home = isAdmin
+    ? dom.adminTools
+    : dom.panelFoot && dom.panelFoot.querySelector(".panel-foot-actions");
+  if (!home) return;
+  if (isAdmin && dom.soundButton && dom.soundButton.parentNode === home) {
+    home.insertBefore(dom.interestsButton, dom.soundButton);
+  } else if (dom.interestsButton.parentNode !== home) {
+    home.appendChild(dom.interestsButton);
+  }
 }
 
 /* One button, two homes: beside Save on the administrateur's desk, in the
@@ -102,7 +117,10 @@ export function connect(room, name, portrait) {
   /* No goals until a payload or a save hands this seat some. */
   state.pendingGoals = [];
   state.pendingInventory = [];
+  if (dom.goalsButton) dom.goalsButton.classList.remove("has-points");
+  if (dom.interestsButton) dom.interestsButton.classList.remove("has-points");
   setGoals({});
+  setInterests([]);
   /* Nobody is on the floor in a room that has not started. */
   setStatusRolls({});
   /* Nothing is blurred in a room that has not started either. */
@@ -161,6 +179,7 @@ export function leave() {
   modals.closeInventory();
   modals.closeItemsModal();
   modals.closeGoals();
+  modals.closeInterests();
   modals.closeBlur();
   modals.closeSound();
   modals.closePlayerModal();
@@ -193,8 +212,11 @@ export function leave() {
   state.selfId = null;
   state.pendingGoals = [];
   state.pendingInventory = [];
+  if (dom.goalsButton) dom.goalsButton.classList.remove("has-points");
+  if (dom.interestsButton) dom.interestsButton.classList.remove("has-points");
   setInventory([], {});
   setGoals({});
+  setInterests([]);
   setStatusRolls({});
   state.blurred = {};
 

@@ -7,6 +7,7 @@
    administrateur's modal. The host holds every book, orders move them here and
    nowhere else, and each player only ever reads their own. */
 
+import { dom } from "../dom.js";
 import * as modals from "../modals.js";
 import * as overlays from "../overlays.js";
 import {
@@ -79,6 +80,9 @@ function greet(list) {
     fresh.push(goal);
   });
   forgetGreeted(list);
+  if (fresh.length && dom.goalsButton && (!dom.goalsModal || dom.goalsModal.hidden)) {
+    dom.goalsButton.classList.add("has-points");
+  }
   fresh.forEach((goal) => overlays.goalAdded(goal));
 }
 
@@ -278,6 +282,7 @@ export function clearStalePendingGoals(currentRoundId) {
 }
 
 export function openGoals() {
+  if (dom.goalsButton) dom.goalsButton.classList.remove("has-points");
   modals.openGoals(selfGoals());
 }
 

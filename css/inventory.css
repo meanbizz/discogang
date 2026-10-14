@@ -11,6 +11,12 @@
   width: min(96vw, 34rem);
 }
 
+@media (max-width: 40rem) {
+  .inventory-modal-card {
+    width: auto;
+  }
+}
+
 .inventory-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);

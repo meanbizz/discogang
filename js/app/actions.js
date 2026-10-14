@@ -21,7 +21,7 @@ import {
 } from "./views.js";
 import { planningUnlocked } from "./locks.js";
 import { publishDialogue } from "./rounds.js";
-import { publishTime } from "./scene.js";
+import { publishInterests, publishTime } from "./scene.js";
 import { publishOps, selfItems, usedItemLines } from "./inventory.js";
 import { goalLines, publishGoalOps, selfGoals } from "./goals.js";
 import { publishStatusOps } from "./status.js";
@@ -133,7 +133,8 @@ export function shareText(text) {
     attempt.goals ||
     attempt.status ||
     attempt.modifiers ||
-    attempt.time
+    attempt.time ||
+    attempt.interests
   ) {
     /* Rolls first: a seat this payload puts down reads no tree inside it. */
     if (attempt.status) publishStatusOps(attempt.status);
@@ -143,6 +144,7 @@ export function shareText(text) {
     if (attempt.modifiers) publishModifierOps(attempt.modifiers);
     if (attempt.goals) publishGoalOps(attempt.goals, roundId);
     if (attempt.time) publishTime(attempt.time);
+    if (attempt.interests) publishInterests(attempt.interests);
     if (attempt.payload) publishDialogue(attempt.payload, attempt.raw, roundId);
     else renderEntry({ text: attempt.raw, at: Date.now(), raw: true });
     import("./lineEnd.js").then((m) => m.clearLineEnd());
