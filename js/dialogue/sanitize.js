@@ -39,6 +39,8 @@ export const DIFFICULTY_TARGET = {
   impossible: 18,
 };
 
+export const ALL_KEY = "all";
+
 const RESULTS = { success: true, failure: true };
 
 /* Names a payload may use for a check that is never rolled. */
@@ -232,6 +234,21 @@ function cleanXp(raw) {
   return Math.min(XP_MAX_PER_NODE, number);
 }
 
+function cleanNext(raw) {
+  if (typeof raw === "string") return line(raw, KEY_MAX) || null;
+  if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+    const out = {};
+    const keys = Object.keys(raw);
+    for (let i = 0; i < keys.length; i += 1) {
+      const target = line(keys[i], KEY_MAX);
+      const val = typeof raw[keys[i]] === "string" ? line(raw[keys[i]], KEY_MAX) : null;
+      if (target && val) out[target] = val;
+    }
+    return Object.keys(out).length ? out : null;
+  }
+  return null;
+}
+
 function cleanOptions(raw) {
   if (!Array.isArray(raw)) return [];
   const out = [];
@@ -243,7 +260,7 @@ function cleanOptions(raw) {
     out.push({
       id: line(option.id, KEY_MAX) || "opt-" + out.length,
       label,
-      next: typeof option.next === "string" ? line(option.next, KEY_MAX) : null,
+      next: cleanNext(option.next),
     });
   }
   return out;
@@ -263,12 +280,33 @@ function cleanNode(raw, id) {
     id,
     speaker: line(raw.speaker, SPEAKER_MAX),
     dialogue,
-    next: typeof raw.next === "string" ? line(raw.next, KEY_MAX) : null,
+    next: cleanNext(raw.next),
     vitals,
     skillCheck: check,
     xpGained,
     options,
   };
+}
+
+function cleanAllTree(raw) {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const source =
+    raw.nodes && typeof raw.nodes === "object" && !Array.isArray(raw.nodes)
+      ? raw.nodes
+      : raw;
+  const nodes = {};
+  const ids = Object.keys(source);
+  let kept = 0;
+  for (let i = 0; i < ids.length && kept < MAX_NODES; i += 1) {
+    const id = line(ids[i], KEY_MAX);
+    if (!id || id === "root" || own(nodes, id)) continue;
+    const node = cleanNode(source[ids[i]], id);
+    if (!node) continue;
+    nodes[id] = node;
+    kept += 1;
+  }
+  if (!Object.keys(nodes).length) return null;
+  return { root: null, nodes };
 }
 
 function cleanTree(raw) {
@@ -302,9 +340,19 @@ export function cleanPayload(raw) {
   const out = {};
   const keys = Object.keys(raw);
   let kept = 0;
+  let allTree = null;
+
+  for (let i = 0; i < keys.length; i += 1) {
+    if (normalizeKey(keys[i]) === ALL_KEY) {
+      allTree = cleanAllTree(raw[keys[i]]);
+      break;
+    }
+  }
+
   for (let i = 0; i < keys.length && kept < MAX_TREES; i += 1) {
     const key = line(keys[i], KEY_MAX);
     if (!key || own(out, key)) continue;
+    if (normalizeKey(key) === ALL_KEY) continue;
     if (normalizeKey(key) === INVENTORY_KEY) continue;
     if (normalizeKey(key) === GOALS_KEY) continue;
     /* The rolls are orders about people, not trees written for them. */
@@ -319,6 +367,7 @@ export function cleanPayload(raw) {
     out[key] = cleaned;
     kept += 1;
   }
+  if (allTree) out["All"] = allTree;
   return kept ? out : null;
 }
 
@@ -500,18 +549,106 @@ export function parsePayload(text) {
   };
 }
 
+function resolveNext(next, selfId, name) {
+  if (!next) return null;
+  if (typeof next === "string") return line(next, KEY_MAX) || null;
+  if (typeof next === "object" && !Array.isArray(next)) {
+    if (selfId && own(next, selfId) && typeof next[selfId] === "string") {
+      return line(next[selfId], KEY_MAX) || null;
+    }
+    const wanted = normalizeKey(name);
+    if (wanted) {
+      const keys = Object.keys(next);
+      for (let i = 0; i < keys.length; i += 1) {
+        if (normalizeKey(keys[i]) === wanted && typeof next[keys[i]] === "string") {
+          return line(next[keys[i]], KEY_MAX) || null;
+        }
+      }
+    }
+    if (own(next, "*") && typeof next["*"] === "string") {
+      return line(next["*"], KEY_MAX) || null;
+    }
+    if (own(next, "all") && typeof next["all"] === "string") {
+      return line(next["all"], KEY_MAX) || null;
+    }
+  }
+  return null;
+}
+
+function resolveNodeForPlayer(node, selfId, name) {
+  if (!node) return null;
+  const resolvedNext = resolveNext(node.next, selfId, name);
+  let options = node.options;
+  if (Array.isArray(options)) {
+    options = options.map((opt) => ({
+      id: opt.id,
+      label: opt.label,
+      next: resolveNext(opt.next, selfId, name),
+    }));
+  }
+  return Object.assign({}, node, {
+    next: resolvedNext,
+    options: options || [],
+  });
+}
+
+function findAllTree(payload) {
+  if (!payload || typeof payload !== "object") return null;
+  const keys = Object.keys(payload);
+  for (let i = 0; i < keys.length; i += 1) {
+    if (normalizeKey(keys[i]) === ALL_KEY) return payload[keys[i]];
+  }
+  return null;
+}
+
 /* Keys are character names or PeerJS ids — the id is tried first. */
 export function pickTree(payload, selfId, name) {
   if (!payload) return null;
-  if (own(payload, selfId)) return payload[selfId];
+
+  let baseTree = null;
+  if (selfId && normalizeKey(selfId) !== ALL_KEY && own(payload, selfId)) {
+    baseTree = payload[selfId];
+  }
 
   const wanted = normalizeKey(name);
-  if (!wanted) return null;
-  const keys = Object.keys(payload);
-  for (let i = 0; i < keys.length; i += 1) {
-    if (normalizeKey(keys[i]) === wanted) return payload[keys[i]];
+  if (!baseTree && wanted && wanted !== ALL_KEY) {
+    const keys = Object.keys(payload);
+    for (let i = 0; i < keys.length; i += 1) {
+      if (normalizeKey(keys[i]) === ALL_KEY) continue;
+      if (normalizeKey(keys[i]) === wanted) {
+        baseTree = payload[keys[i]];
+        break;
+      }
+    }
   }
-  return null;
+
+  if (!baseTree || !baseTree.nodes) return null;
+
+  const allTree = findAllTree(payload);
+  const allNodes = allTree
+    ? allTree.nodes && typeof allTree.nodes === "object"
+      ? allTree.nodes
+      : allTree
+    : null;
+
+  const mergedNodes = {};
+  if (allNodes && typeof allNodes === "object") {
+    Object.keys(allNodes).forEach((id) => {
+      if (id === "root") return;
+      const resolved = resolveNodeForPlayer(allNodes[id], selfId, name);
+      if (resolved) mergedNodes[id] = resolved;
+    });
+  }
+
+  Object.keys(baseTree.nodes).forEach((id) => {
+    const resolved = resolveNodeForPlayer(baseTree.nodes[id], selfId, name);
+    if (resolved) mergedNodes[id] = resolved;
+  });
+
+  return {
+    root: baseTree.root,
+    nodes: mergedNodes,
+  };
 }
 
 export { pick };
