@@ -42,15 +42,13 @@
   text-align: center;
   color: var(--text-now);
   font-size: 1.5rem;
-  font-family: 'Core Sans ES W15 35 Light';
+  font-family: "Core Sans ES W15 35 Light";
   pointer-events: none;
 }
 
 .stage-time[hidden] {
   display: none;
 }
-
-
 
 .log {
   flex: 1 1 auto;
@@ -95,6 +93,15 @@
 .stage-side-toggle-parent {
   display: none;
 }
+
+@media (max-width: 40rem) {
+  .stage-side-toggle-parent {
+    display: flex;
+    gap: 8px;
+    align-self: flex-start;
+  }
+}
+
 .stage-side-toggle {
   display: none;
 }

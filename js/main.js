@@ -21,6 +21,7 @@ import {
   refreshSpeakLock,
 } from "./app/locks.js";
 import { renderScene } from "./app/scene.js";
+import { initCanvas } from "./canvas/index.js";
 
 (function bootstrap() {
   /* Timings first, so the stylesheet and the JS timers agree from the very
@@ -29,6 +30,7 @@ import { renderScene } from "./app/scene.js";
   /* Every picture and sound into memory now: nothing is fetched on demand. */
   assets.preloadAll();
 
+  initCanvas();
   bindJoin();
   bindSession();
 

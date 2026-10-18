@@ -1,0 +1,200 @@
+/* Full-viewport background Konva stage behind the UI shell. */
+.bg-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
+  pointer-events: auto;
+  overflow: hidden;
+  opacity: 0.5;
+  transition: opacity 0.25s ease;
+}
+
+/* Fullscreen puts the panel away, so the picture reads at full strength. */
+.bg-canvas.is-fullscreen {
+  opacity: 1;
+}
+
+.shell {
+  position: relative;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.shell > * {
+  pointer-events: auto;
+}
+
+.canvas-hud {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.canvas-hud[hidden] {
+  display: none;
+}
+
+.canvas-hud.is-fullscreen {
+  bottom: 1rem;
+  top: auto;
+}
+
+.canvas-hud-btn {
+  padding: 0.35rem 0.75rem;
+  font-size: 0.85rem;
+  background: rgba(15, 15, 15, 0.85);
+}
+
+.canvas-hud {
+  flex-direction: row;
+  align-items: center;
+}
+
+.canvas-pan-btn {
+  padding: 0;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  line-height: 1;
+}
+
+#canvas-center[hidden] {
+  display: none !important;
+}
+
+.canvas-sprite-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.35rem 0.5rem;
+  border: var(--hairline);
+}
+
+.canvas-sprite-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.canvas-sprite-thumb {
+  width: 2rem;
+  height: 2rem;
+  object-fit: cover;
+  flex: 0 0 2rem;
+  border: var(--hairline);
+}
+
+.canvas-sprite-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.85rem;
+}
+
+.canvas-sprite-actions {
+  display: flex;
+  gap: 0.35rem;
+}
+
+@media (min-width: 768px) {
+  .shell:has(> #session-panel[data-canvas-seat="player"]:not([hidden])) {
+    max-width: none;
+    width: calc(100% + 0.5rem);
+    margin-left: -0.25rem;
+    margin-right: -0.25rem;
+  }
+
+  #session-panel[data-canvas-seat="player"] {
+    width: min(var(--shell-max), calc(100% - 280px));
+    min-width: 0;
+    margin-left: auto;
+    margin-right: 140px;
+  }
+}
+
+/* Spots of interest: the picker inside the modal, the pins over the stage. */
+.canvas-interest-section {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: var(--hairline);
+}
+
+.canvas-interest-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.canvas-interest-pick {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.5rem;
+  border: var(--hairline);
+  text-align: left;
+  cursor: pointer;
+}
+
+.canvas-interest-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.interest-marker {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.15rem 0.5rem 0.15rem 0.15rem;
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+  cursor: grab;
+}
+
+.interest-marker.is-dragging {
+  cursor: grabbing;
+}
+
+.interest-marker-dot {
+  --interest-color: #8a8f98;
+  flex: 0 0 auto;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  border: 4px solid var(--interest-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.interest-marker-dot::after {
+  content: "";
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: #fff;
+  padding: 6px;
+}
+
+.interest-marker-text {
+  color: var(--text-now, #fff);
+  font-size: 0.8rem;
+  white-space: nowrap;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+}

@@ -88,6 +88,7 @@ import {
 } from "./rounds.js";
 import { setLineEnd } from "./lineEnd.js";
 import { handleTyping, clearTyping, syncReadyClear } from "./typing.js";
+import { getCanvasSync } from "../canvas/index.js";
 
 /* Host side: a name already at the table on a wire that is no longer there.
    A ghost holds a slot and, worse, keeps a round open by never finishing its
@@ -210,8 +211,16 @@ function onHostReceiveData(connection, data) {
       progress: resuming ? null : saved || null,
     });
 
+    const canvasSync = getCanvasSync();
+    if (canvasSync) canvasSync.sendFullStateTo(connection);
     connection.send(rosterPayload());
     broadcast(rosterPayload(), connection.peer);
+    return;
+  }
+
+  if (data.type === "canvas-yjs") {
+    const canvasSync = getCanvasSync();
+    if (canvasSync) canvasSync.applyRemoteUpdate(data.update, connection.peer);
     return;
   }
 
@@ -721,6 +730,12 @@ function onGuestReceiveData(data) {
   if (seen(data)) return;
   if (data.type === "welcome") {
     onWelcome(data);
+    return;
+  }
+
+  if (data.type === "canvas-yjs") {
+    const canvasSync = getCanvasSync();
+    if (canvasSync) canvasSync.applyRemoteUpdate(data.update);
     return;
   }
 
