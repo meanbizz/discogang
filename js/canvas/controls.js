@@ -198,13 +198,7 @@ export function initCanvasControls(stage) {
     else modal.appendChild(section);
   }
 
-  let interestLayer = document.getElementById("canvas-interest-layer");
-  if (!interestLayer) {
-    interestLayer = document.createElement("div");
-    interestLayer.id = "canvas-interest-layer";
-    interestLayer.className = "canvas-interest-layer";
-    document.body.appendChild(interestLayer);
-  }
+  document.getElementById("canvas-interest-layer")?.remove();
 
   const paintInterestDot = (dot, attribute) => {
     dot.className = "interest-marker-dot";
@@ -214,52 +208,30 @@ export function initCanvasControls(stage) {
     );
   };
 
-  const makeInterestDraggable = (node) => {
-    let dragging = false;
-    let grabX = 0;
-    let grabY = 0;
-    node.addEventListener("pointerdown", (e) => {
-      dragging = true;
-      try { node.setPointerCapture(e.pointerId); } catch (_) {}
-      const rect = node.getBoundingClientRect();
-      grabX = e.clientX - (rect.left + rect.width / 2);
-      grabY = e.clientY - (rect.top + rect.height / 2);
-      node.classList.add("is-dragging");
-      e.preventDefault();
-    });
-    node.addEventListener("pointermove", (e) => {
-      if (!dragging) return;
-      node.style.left = Math.round(e.clientX - grabX) + "px";
-      node.style.top = Math.round(e.clientY - grabY) + "px";
-    });
-    const release = (e) => {
-      if (!dragging) return;
-      dragging = false;
-      node.classList.remove("is-dragging");
-      try { node.releasePointerCapture(e.pointerId); } catch (_) {}
-    };
-    node.addEventListener("pointerup", release);
-    node.addEventListener("pointercancel", release);
+
+
+  const renderInterestMarkers = () => {
+    stage.renderInterestMarkers(
+      stage.interestMarkers || new Map(),
+      ATTRIBUTE_COLORS,
+    );
   };
 
+  stage.onChange(renderInterestMarkers);
+  renderInterestMarkers();
+
   const placeInterestMarker = (spot, attribute) => {
-    if (!interestLayer) return;
-    const marker = document.createElement("div");
-    marker.className = "interest-marker";
-    if (attribute) marker.dataset.attribute = attribute;
-    marker.style.left = Math.round(window.innerWidth / 2) + "px";
-    marker.style.top = Math.round(window.innerHeight / 2) + "px";
-
-    const dot = document.createElement("span");
-    paintInterestDot(dot, attribute);
-    const label = document.createElement("span");
-    label.className = "interest-marker-text";
-    label.textContent = spot.name || "Spot of interest";
-
-    marker.appendChild(dot);
-    marker.appendChild(label);
-    makeInterestDraggable(marker);
-    interestLayer.appendChild(marker);
+    if (!state.isAdmin || spot.discovered === false) return;
+    if (!stage.callbacks.onInterestChange) {
+      if (formError) formError.textContent = "Canvas synchronization is unavailable.";
+      return;
+    }
+    stage.callbacks.onInterestChange({
+      id: uid(),
+      name: spot.name || "Spot of interest",
+      attribute: attribute || "",
+      ...stage.viewportCenter(),
+    });
     if (modal) modal.hidden = true;
   };
 
@@ -386,8 +358,9 @@ export function initCanvasControls(stage) {
         const height = Math.max(16, Number(spriteH?.value) || 120);
         const name = spriteName?.value.trim() || "";
         const id = uid();
-        const cx = Math.round((window.innerWidth - width) / 2 - (stage.stage?.x() || 0));
-        const cy = Math.round((window.innerHeight - height) / 2 - (stage.stage?.y() || 0));
+        const center = stage.viewportCenter();
+        const cx = Math.round(center.x - width / 2);
+        const cy = Math.round(center.y - height / 2);
 
         await stage.upsertSprite(
           {

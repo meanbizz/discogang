@@ -10,6 +10,8 @@ export class CanvasSync {
     this.doc = new Y.Doc();
     this.metaMap = this.doc.getMap("meta");
     this.spritesMap = this.doc.getMap("sprites");
+    this.interestsMap = this.doc.getMap("canvas-interests");
+    this.stage.interestMarkers = new Map();
     this.bindStage();
     this.bindDoc();
   }
@@ -17,6 +19,10 @@ export class CanvasSync {
   bindStage() {
     if (!this.stage) return;
     this.stage.callbacks = {
+      onInterestChange: (marker) => {
+        if (!marker || !marker.id) return;
+        this.interestsMap.set(String(marker.id), marker);
+      },
       onBackgroundChange: (url) => {
         this.doc.transact(() => {
           this.metaMap.set("background", String(url || ""));
@@ -52,6 +58,15 @@ export class CanvasSync {
   }
 
   bindDoc() {
+    this.interestsMap.observe((event) => {
+      event.keysChanged.forEach((key) => {
+        const marker = this.interestsMap.get(key);
+        if (marker) this.stage.interestMarkers.set(key, marker);
+        else this.stage.interestMarkers.delete(key);
+      });
+      this.stage.notifyChange();
+    });
+
     this.doc.on("update", (update, origin) => {
       if (origin === ORIGIN_REMOTE) return;
       const msg = { type: "canvas-yjs", update: Array.from(update) };

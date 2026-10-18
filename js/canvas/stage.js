@@ -1,5 +1,7 @@
 // Konva 2D background stage and sprite manager.
 
+import { state } from "../app/state.js";
+
 export class CanvasStage {
   constructor(containerId = "bg-canvas", callbacks = {}) {
     this.container = document.getElementById(containerId);
@@ -11,6 +13,7 @@ export class CanvasStage {
     this.bgImage = null;
     this.bgUrl = "";
     this.sprites = new Map();
+    this.interestNodes = new Map();
     this.imageCache = new Map();
     this.transformer = null;
     this.selectedId = null;
@@ -166,6 +169,70 @@ export class CanvasStage {
     window.addEventListener("resize", () => this.resize());
   }
 
+  viewportCenter() {
+    if (!this.stage) return { x: 0, y: 0 };
+    return this.stage.getAbsoluteTransform().copy().invert().point({
+      x: this.stage.width() / 2,
+      y: this.stage.height() / 2,
+    });
+  }
+
+  renderInterestMarkers(markers, colors) {
+    if (!this.spriteLayer) return;
+    this.interestNodes.forEach((node, id) => {
+      if (!markers.has(id)) {
+        node.destroy();
+        this.interestNodes.delete(id);
+      }
+    });
+    markers.forEach((data, id) => {
+      if (!data || !Number.isFinite(data.x) || !Number.isFinite(data.y)) return;
+      let node = this.interestNodes.get(id);
+      if (!node) {
+        node = new window.Konva.Group({ draggable: true });
+        node.add(new window.Konva.Circle({ radius: 12 }));
+        node.add(new window.Konva.Circle({
+          radius: 4,
+          fill: "#fff",
+          listening: false,
+        }));
+        node.add(new window.Konva.Text({
+          x: 20,
+          y: -7,
+          fontSize: 14,
+          fill: "#fff",
+          shadowColor: "#000",
+          shadowBlur: 3,
+          listening: false,
+        }));
+        node.on("click tap", (event) => {
+          event.cancelBubble = true;
+        });
+        node.on("dragstart", () => {
+          if (!state.isAdmin) node.stopDrag();
+        });
+        node.on("dragmove dragend", () => {
+          if (!state.isAdmin) return;
+          const current = this.interestMarkers?.get(id);
+          if (current && this.callbacks.onInterestChange) {
+            this.callbacks.onInterestChange({
+              ...current,
+              x: node.x(),
+              y: node.y(),
+            });
+          }
+        });
+        this.interestNodes.set(id, node);
+        this.spriteLayer.add(node);
+      }
+      node.getChildren()[0].fill(colors[data.attribute] || "#8a8f98");
+      node.getChildren()[2].text(data.name || "Spot of interest");
+      if (!node.isDragging()) node.position({ x: data.x, y: data.y });
+    });
+    if (this.transformer) this.transformer.moveToTop();
+    this.spriteLayer.batchDraw();
+  }
+
   selectSprite(id) {
     if (!this.transformer) return;
     const key = id ? String(id) : null;
@@ -314,8 +381,8 @@ export class CanvasStage {
       const node = new window.Konva.Image({
         id,
         image: img,
-        x: Number(data.x) || 100,
-        y: Number(data.y) || 100,
+        x: Number.isFinite(Number(data.x)) ? Number(data.x) : 100,
+        y: Number.isFinite(Number(data.y)) ? Number(data.y) : 100,
         width: Number(data.width) || img.naturalWidth || 120,
         height: Number(data.height) || img.naturalHeight || 120,
         scaleX: Number(data.scaleX) || 1,
