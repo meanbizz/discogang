@@ -21,7 +21,15 @@ export class CanvasSync {
     this.stage.callbacks = {
       onInterestChange: (marker) => {
         if (!marker || !marker.id) return;
-        this.interestsMap.set(String(marker.id), marker);
+        this.doc.transact(() => {
+          this.interestsMap.set(String(marker.id), marker);
+        });
+      },
+      onInterestRemove: (id) => {
+        if (!id) return;
+        this.doc.transact(() => {
+          this.interestsMap.delete(String(id));
+        });
       },
       onBackgroundChange: (url) => {
         this.doc.transact(() => {
@@ -120,5 +128,28 @@ export class CanvasSync {
     try {
       connection.send({ type: "canvas-yjs", update: this.encodeFullState() });
     } catch (e) {}
+  }
+
+  replaceState(canvasData = {}, emit = true) {
+    const bg = typeof canvasData.background === "string" ? canvasData.background : "";
+    const sprites = canvasData.sprites && typeof canvasData.sprites === "object" ? canvasData.sprites : {};
+    const interests = canvasData.interests && typeof canvasData.interests === "object" ? canvasData.interests : {};
+    const origin = emit ? "session-load" : ORIGIN_REMOTE;
+    this.doc.transact(() => {
+      this.metaMap.set("background", bg);
+      Array.from(this.spritesMap.keys()).forEach((k) => {
+        if (!Object.prototype.hasOwnProperty.call(sprites, k)) this.spritesMap.delete(k);
+      });
+      Object.keys(sprites).forEach((k) => {
+        if (sprites[k]) this.spritesMap.set(String(k), sprites[k]);
+      });
+      Array.from(this.interestsMap.keys()).forEach((k) => {
+        if (!Object.prototype.hasOwnProperty.call(interests, k)) this.interestsMap.delete(k);
+      });
+      Object.keys(interests).forEach((k) => {
+        if (interests[k]) this.interestsMap.set(String(k), interests[k]);
+      });
+    }, origin);
+    if (this.stage) this.stage.importState({ background: bg, sprites, interests });
   }
 }

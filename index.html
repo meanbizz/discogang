@@ -353,14 +353,6 @@
           <button type="button" id="blur-button" class="option">Blur</button>
           <button
             type="button"
-            id="canvas-button"
-            class="option"
-            title="Manage background canvas and sprites"
-          >
-            Canvas
-          </button>
-          <button
-            type="button"
             id="sound-button"
             class="option"
             title="Sound levels"
@@ -1355,17 +1347,29 @@
                 </button>
               </div>
 
-              <h3 class="npc-subheading">Add Sprite</h3>
-              <div class="field">
-                <label for="canvas-sprite-name">Label</label>
-                <input
-                  id="canvas-sprite-name"
-                  type="text"
-                  placeholder="Token / Prop name"
-                  maxlength="48"
-                />
+              <div
+                style="
+                  display: flex;
+                  align-items: center;
+                  justify-content: space-between;
+                  gap: 0.5rem;
+                "
+              >
+                <h3 class="npc-subheading" style="margin: 0">Add Sprite</h3>
+                <label
+                  style="
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 0.35rem;
+                    font-size: 0.85rem;
+                    cursor: pointer;
+                  "
+                >
+                  <input type="checkbox" id="canvas-sprite-4angles" />
+                  4 angles
+                </label>
               </div>
-              <div class="field">
+              <div id="canvas-sprite-single-fields" class="field">
                 <input
                   id="canvas-sprite-file"
                   type="file"
@@ -1383,30 +1387,72 @@
                 />
               </div>
               <div
+                id="canvas-sprite-angles-fields"
                 style="
                   display: grid;
                   grid-template-columns: 1fr 1fr;
                   gap: 0.5rem;
                 "
+                hidden
               >
                 <div class="field">
-                  <label for="canvas-sprite-w">Width (px)</label>
+                  <label for="canvas-sprite-file-tl">Top Left</label>
                   <input
-                    id="canvas-sprite-w"
-                    type="number"
-                    min="16"
-                    max="2048"
-                    value="120"
+                    id="canvas-sprite-file-tl"
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/gif"
+                  />
+                  <input
+                    id="canvas-sprite-url-tl"
+                    type="url"
+                    inputmode="url"
+                    placeholder="https://…/tl.png"
+                    maxlength="2048"
                   />
                 </div>
                 <div class="field">
-                  <label for="canvas-sprite-h">Height (px)</label>
+                  <label for="canvas-sprite-file-tr">Top Right</label>
                   <input
-                    id="canvas-sprite-h"
-                    type="number"
-                    min="16"
-                    max="2048"
-                    value="120"
+                    id="canvas-sprite-file-tr"
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/gif"
+                  />
+                  <input
+                    id="canvas-sprite-url-tr"
+                    type="url"
+                    inputmode="url"
+                    placeholder="https://…/tr.png"
+                    maxlength="2048"
+                  />
+                </div>
+                <div class="field">
+                  <label for="canvas-sprite-file-bl">Bottom Left</label>
+                  <input
+                    id="canvas-sprite-file-bl"
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/gif"
+                  />
+                  <input
+                    id="canvas-sprite-url-bl"
+                    type="url"
+                    inputmode="url"
+                    placeholder="https://…/bl.png"
+                    maxlength="2048"
+                  />
+                </div>
+                <div class="field">
+                  <label for="canvas-sprite-file-br">Bottom Right</label>
+                  <input
+                    id="canvas-sprite-file-br"
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/gif"
+                  />
+                  <input
+                    id="canvas-sprite-url-br"
+                    type="url"
+                    inputmode="url"
+                    placeholder="https://…/br.png"
+                    maxlength="2048"
                   />
                 </div>
               </div>
@@ -1439,13 +1485,25 @@
                 Delete to remove it.
               </p>
               <div id="canvas-sprite-list" class="npc-list" role="list"></div>
-              <section id="canvas-interest-section" class="canvas-interest-section">
+              <section
+                id="canvas-interest-section"
+                class="canvas-interest-section"
+              >
                 <h3 class="npc-subheading">Spots of Interest</h3>
                 <div
                   id="canvas-interest-list"
                   class="canvas-interest-list"
                   role="list"
                   aria-label="Discovered interests to add to the canvas"
+                ></div>
+                <h4 class="sub-label" style="margin: 0.75rem 0 0.35rem">
+                  Active on Canvas
+                </h4>
+                <div
+                  id="canvas-interest-active-list"
+                  class="canvas-interest-list"
+                  role="list"
+                  aria-label="Active spots of interest on the canvas"
                 ></div>
               </section>
             </div>
@@ -1455,6 +1513,15 @@
 
       <!-- Floating HUD: toggle session panel and canvas controls -->
       <div id="canvas-hud" class="canvas-hud" hidden>
+        <button
+          type="button"
+          id="canvas-button"
+          class="option canvas-hud-btn"
+          hidden
+          title="Manage background canvas and sprites"
+        >
+          Canvas
+        </button>
         <button
           type="button"
           id="canvas-center"

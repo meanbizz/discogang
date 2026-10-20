@@ -31,7 +31,7 @@ export const SESSION_KIND = "salon-session";
 /* 7 added the temporary modifiers; 6 the down and K.I.A. rolls; 5 goals; 4 the
    experience ledger. Older saves still load: whatever they never recorded
    starts from nothing. */
-export const SESSION_VERSION = 7;
+export const SESSION_VERSION = 8;
 
 const MAX_PEOPLE = 32;
 const MAX_NPCS = 64;
@@ -112,12 +112,76 @@ function cleanNpcs(raw) {
   return out;
 }
 
+// Sanitizes canvas background, sprites, and interest markers for session saves.
+function cleanCanvas(raw) {
+  const src = raw && typeof raw === "object" ? raw : {};
+  const background = cleanImageUrl(src.background) || "";
+  const sprites = {};
+  if (src.sprites && typeof src.sprites === "object") {
+    Object.keys(src.sprites).forEach((key) => {
+      const s = src.sprites[key];
+      if (!s || typeof s !== "object") return;
+      const id = String(s.id || key).slice(0, 64);
+      const url = cleanImageUrl(s.url);
+      if (!id || !url) return;
+      let angles = null;
+      if (s.angles && typeof s.angles === "object") {
+        const tl = cleanImageUrl(s.angles.tl);
+        const tr = cleanImageUrl(s.angles.tr);
+        const bl = cleanImageUrl(s.angles.bl);
+        const br = cleanImageUrl(s.angles.br);
+        if (tl && tr && bl && br) angles = { tl, tr, bl, br };
+      }
+      sprites[id] = {
+        id,
+        name: cleanName(s.name),
+        url,
+        angles,
+        x: Math.round(Number(s.x)) || 0,
+        y: Math.round(Number(s.y)) || 0,
+        width: Math.max(1, Math.round(Number(s.width)) || 120),
+        height: Math.max(1, Math.round(Number(s.height)) || 120),
+        scaleX: Number(s.scaleX) || 1,
+        scaleY: Number(s.scaleY) || 1,
+        rotation: Math.round(Number(s.rotation)) || 0,
+        draggable: s.draggable !== false,
+      };
+    });
+  }
+  const interests = {};
+  if (src.interests && typeof src.interests === "object") {
+    Object.keys(src.interests).forEach((key) => {
+      const m = src.interests[key];
+      if (!m || typeof m !== "object") return;
+      const id = String(m.id || key).slice(0, 64);
+      const x = Number(m.x);
+      const y = Number(m.y);
+      if (!id || !Number.isFinite(x) || !Number.isFinite(y)) return;
+      interests[id] = {
+        id,
+        name: cleanName(m.name) || "Spot of interest",
+        attribute: typeof m.attribute === "string" ? m.attribute.slice(0, 32) : "",
+        x: Math.round(x),
+        y: Math.round(y),
+      };
+    });
+  }
+  return { background, sprites, interests };
+}
+
 /* Everything the app holds, put through the same sieve a loaded file goes
    through, so a save can never carry a shape the reader would refuse. */
 export function snapshot(state) {
   const source = state || {};
   const rounds = cleanRounds(source.rounds, source.dialogue);
   const standing = cleanStatus(source);
+  const canvas = cleanCanvas(
+    source.canvas || {
+      background: source.background,
+      sprites: source.sprites,
+      interests: source.canvasInterests,
+    },
+  );
   return {
     kind: SESSION_KIND,
     version: SESSION_VERSION,
@@ -131,6 +195,9 @@ export function snapshot(state) {
     inventories: cleanInventories(source.inventories),
     goals: cleanGoalBooks(source.goals),
     interests: cleanInterests(source.interests),
+    background: canvas.background,
+    sprites: canvas.sprites,
+    canvas,
     down: standing.down,
     kia: standing.kia,
     modifiers: cleanTemporaryBooks(source.modifiers),
@@ -148,6 +215,13 @@ export function clean(raw) {
 
   const rounds = cleanRounds(raw.rounds, raw.dialogue);
   const standing = cleanStatus(raw);
+  const canvas = cleanCanvas(
+    raw.canvas || {
+      background: raw.background,
+      sprites: raw.sprites,
+      interests: raw.canvasInterests,
+    },
+  );
   return {
     kind: SESSION_KIND,
     version: Number(raw.version) || SESSION_VERSION,
@@ -164,6 +238,9 @@ export function clean(raw) {
     /* Empty for any save written before goals were kept. */
     goals: cleanGoalBooks(raw.goals),
     interests: cleanInterests(raw.interests),
+    background: canvas.background,
+    sprites: canvas.sprites,
+    canvas,
     /* Empty for any save written before anybody could be put on the floor. */
     down: standing.down,
     kia: standing.kia,

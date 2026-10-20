@@ -34,6 +34,7 @@ import { setStatusRolls } from "./status.js";
 import { setTemporaryModifiers } from "./modifiers.js";
 import { adoptProgress } from "./progress.js";
 import { replaceRounds, showDialogueHistory } from "./rounds.js";
+import { getCanvas, getCanvasSync } from "../canvas/index.js";
 
 let noteTimer = null;
 
@@ -63,6 +64,8 @@ export function exportSession() {
   });
   const people = Array.from(peopleMap.values());
 
+  const canvasState = getCanvas() ? getCanvas().exportState() : null;
+
   const snap = session.snapshot({
     room: state.roomId,
     people,
@@ -73,6 +76,7 @@ export function exportSession() {
     inventories: state.inventories,
     goals: state.goals,
     interests: state.interests,
+    canvas: canvasState,
     down: state.down,
     kia: state.kia,
     modifiers: state.temporaryModifiers,
@@ -193,6 +197,12 @@ export function applySession(snap) {
   /* Whatever the table had consumed, still working on them. */
   setTemporaryModifiers(snap.modifiers);
   applyScene(snap.scene);
+
+  if (snap.canvas) {
+    const sync = getCanvasSync();
+    if (sync) sync.replaceState(snap.canvas, state.isAdmin);
+    else if (getCanvas()) getCanvas().importState(snap.canvas);
+  }
 
   showDialogueHistory(state.dialogueRounds);
   state.sessionRestored = true;

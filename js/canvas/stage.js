@@ -16,6 +16,7 @@ export class CanvasStage {
     this.interestNodes = new Map();
     this.imageCache = new Map();
     this.transformer = null;
+    this.angleControls = null;
     this.selectedId = null;
     this.listeners = new Set();
     this.panEnabled = false;
@@ -24,12 +25,24 @@ export class CanvasStage {
     this._lastClientY = 0;
     this.zoom = 1;
     this.minZoom = 0.25;
-    this.maxZoom = 1;
+    this.maxZoom = 2;
     this._pinchDist = 0;
 
     if (this.container && window.Konva) {
       this.init();
     }
+  }
+
+  setInteractive(enabled) {
+    this.panEnabled = Boolean(enabled);
+    if (!this.panEnabled) this.selectSprite(null);
+    this.sprites.forEach((node) => {
+      node.draggable(this.panEnabled && node.getAttr("spriteDraggable") !== false);
+    });
+    this.interestNodes.forEach((node) => {
+      node.draggable(this.panEnabled && Boolean(state.isAdmin));
+    });
+    if (this.spriteLayer) this.spriteLayer.batchDraw();
   }
 
   onChange(fn) {
@@ -63,22 +76,53 @@ export class CanvasStage {
     });
 
     this.transformer = new window.Konva.Transformer({
-      keepRatio: false,
+      keepRatio: true,
       rotateEnabled: true,
       enabledAnchors: [
         "top-left",
         "top-right",
         "bottom-left",
         "bottom-right",
-        "middle-left",
-        "middle-right",
-        "top-center",
-        "bottom-center",
       ],
+    });
+
+    this.angleControls = new window.Konva.Group({ visible: false });
+    const corners = [
+      { key: "tl", label: "↖" },
+      { key: "tr", label: "↗" },
+      { key: "bl", label: "↙" },
+      { key: "br", label: "↘" },
+    ];
+    corners.forEach(({ key, label }) => {
+      const btn = new window.Konva.Group({ name: `angle-${key}` });
+      btn.add(
+        new window.Konva.Circle({
+          radius: 11,
+          fill: "rgba(20, 20, 24, 0.85)",
+          stroke: "#d9a441",
+          strokeWidth: 1.5,
+        }),
+      );
+      btn.add(
+        new window.Konva.Text({
+          text: label,
+          fontSize: 13,
+          fill: "#fff",
+          x: -6,
+          y: -6,
+          listening: false,
+        }),
+      );
+      btn.on("click tap", (e) => {
+        e.cancelBubble = true;
+        this.switchSelectedSpriteAngle(key);
+      });
+      this.angleControls.add(btn);
     });
 
     this.bgLayer.add(this.bgNode);
     this.spriteLayer.add(this.transformer);
+    this.spriteLayer.add(this.angleControls);
     this.stage.add(this.bgLayer);
     this.stage.add(this.spriteLayer);
 
@@ -189,7 +233,7 @@ export class CanvasStage {
       if (!data || !Number.isFinite(data.x) || !Number.isFinite(data.y)) return;
       let node = this.interestNodes.get(id);
       if (!node) {
-        node = new window.Konva.Group({ draggable: true });
+        node = new window.Konva.Group({ draggable: this.panEnabled && Boolean(state.isAdmin) });
         node.add(new window.Konva.Circle({ radius: 12 }));
         node.add(new window.Konva.Circle({
           radius: 4,
@@ -209,7 +253,7 @@ export class CanvasStage {
           event.cancelBubble = true;
         });
         node.on("dragstart", () => {
-          if (!state.isAdmin) node.stopDrag();
+          if (!state.isAdmin || !this.panEnabled) node.stopDrag();
         });
         node.on("dragmove dragend", () => {
           if (!state.isAdmin) return;
@@ -233,13 +277,68 @@ export class CanvasStage {
     this.spriteLayer.batchDraw();
   }
 
+  updateAngleControls() {
+    if (!this.angleControls) return;
+    const node = this.selectedId ? this.sprites.get(this.selectedId) : null;
+    const angles = node ? node.getAttr("spriteAngles") : null;
+    if (!node || !angles || typeof angles !== "object") {
+      this.angleControls.visible(false);
+      return;
+    }
+    const tr = node.getTransform();
+    const w = node.width();
+    const h = node.height();
+    const offset = 22;
+    const pts = {
+      tl: tr.point({ x: 0, y: 0 }),
+      tr: tr.point({ x: w, y: 0 }),
+      bl: tr.point({ x: 0, y: h }),
+      br: tr.point({ x: w, y: h }),
+    };
+    const center = tr.point({ x: w / 2, y: h / 2 });
+    ["tl", "tr", "bl", "br"].forEach((k) => {
+      const btn = this.angleControls.findOne(`.angle-${k}`);
+      if (!btn) return;
+      const dx = pts[k].x - center.x;
+      const dy = pts[k].y - center.y;
+      const len = Math.hypot(dx, dy) || 1;
+      btn.position({
+        x: pts[k].x + (dx / len) * offset,
+        y: pts[k].y + (dy / len) * offset,
+      });
+    });
+    this.angleControls.visible(true);
+    this.angleControls.moveToTop();
+  }
+
+  switchSelectedSpriteAngle(cornerKey) {
+    const node = this.selectedId ? this.sprites.get(this.selectedId) : null;
+    if (!node) return;
+    const angles = node.getAttr("spriteAngles");
+    const nextUrl = angles && angles[cornerKey];
+    if (!nextUrl || nextUrl === node.getAttr("spriteUrl")) return;
+    node.setAttr("spriteUrl", nextUrl);
+    this.loadImage(nextUrl)
+      .then((img) => {
+        node.image(img);
+        this.spriteLayer.batchDraw();
+        if (this.callbacks.onSpriteChange) {
+          this.callbacks.onSpriteChange(this.serializeSprite(node));
+        }
+        this.notifyChange();
+      })
+      .catch(() => {});
+  }
+
   selectSprite(id) {
     if (!this.transformer) return;
+    if (!this.panEnabled && id) return;
     const key = id ? String(id) : null;
     const node = key ? this.sprites.get(key) : null;
     this.selectedId = node ? key : null;
     this.transformer.nodes(node ? [node] : []);
     if (node) this.transformer.moveToTop();
+    this.updateAngleControls();
     this.spriteLayer.batchDraw();
   }
 
@@ -378,36 +477,53 @@ export class CanvasStage {
         return;
       }
 
+      const nw = img.naturalWidth || img.width || 120;
+      const nh = img.naturalHeight || img.height || 120;
+      const baseSize = 120;
+      const ratio = nw / nh;
+      const defaultW = ratio >= 1 ? baseSize : Math.round(baseSize * ratio);
+      const defaultH = ratio >= 1 ? Math.round(baseSize / ratio) : baseSize;
+
+      const canDrag = data.draggable !== false;
       const node = new window.Konva.Image({
         id,
         image: img,
         x: Number.isFinite(Number(data.x)) ? Number(data.x) : 100,
         y: Number.isFinite(Number(data.y)) ? Number(data.y) : 100,
-        width: Number(data.width) || img.naturalWidth || 120,
-        height: Number(data.height) || img.naturalHeight || 120,
+        width: Number(data.width) || defaultW,
+        height: Number(data.height) || defaultH,
         scaleX: Number(data.scaleX) || 1,
         scaleY: Number(data.scaleY) || 1,
         rotation: Number(data.rotation) || 0,
-        draggable: data.draggable !== false,
+        draggable: this.panEnabled && canDrag,
       });
 
+      node.setAttr("spriteDraggable", canDrag);
       node.setAttr("spriteUrl", data.url);
       node.setAttr("spriteName", data.name || "");
+      node.setAttr("spriteAngles", data.angles || null);
       node.setAttr("zIndexOrder", Number(data.zIndex) || 0);
 
       node.on("click tap", (e) => {
+        if (!this.panEnabled) return;
         e.cancelBubble = true;
         this.selectSprite(id);
       });
 
       node.on("dragstart", () => {
+        if (!this.panEnabled) {
+          node.stopDrag();
+          return;
+        }
         node.moveToTop();
         if (this.transformer) this.transformer.moveToTop();
+        if (this.angleControls) this.angleControls.moveToTop();
         this.spriteLayer.batchDraw();
       });
 
-      node.on("dragmove", () => {
-        if (this.callbacks.onSpriteMove) {
+      node.on("dragmove transform", () => {
+        if (this.selectedId === id) this.updateAngleControls();
+        if (node.isDragging() && this.callbacks.onSpriteMove) {
           this.callbacks.onSpriteMove({
             id,
             x: Math.round(node.x()),
@@ -417,6 +533,7 @@ export class CanvasStage {
       });
 
       node.on("dragend transformend", () => {
+        if (this.selectedId === id) this.updateAngleControls();
         if (this.callbacks.onSpriteChange) {
           this.callbacks.onSpriteChange(this.serializeSprite(node));
         }
@@ -443,8 +560,13 @@ export class CanvasStage {
     if (data.scaleX !== undefined) node.scaleX(Number(data.scaleX) || 1);
     if (data.scaleY !== undefined) node.scaleY(Number(data.scaleY) || 1);
     if (data.rotation !== undefined) node.rotation(Number(data.rotation) || 0);
-    if (data.draggable !== undefined) node.draggable(Boolean(data.draggable));
+    if (data.draggable !== undefined) {
+      const canDrag = Boolean(data.draggable);
+      node.setAttr("spriteDraggable", canDrag);
+      node.draggable(this.panEnabled && canDrag);
+    }
     if (data.name !== undefined) node.setAttr("spriteName", String(data.name || ""));
+    if (data.angles !== undefined) node.setAttr("spriteAngles", data.angles || null);
     if (data.url && data.url !== node.getAttr("spriteUrl")) {
       node.setAttr("spriteUrl", data.url);
       this.loadImage(data.url)
@@ -454,6 +576,7 @@ export class CanvasStage {
         })
         .catch(() => {});
     }
+    if (this.selectedId === node.id()) this.updateAngleControls();
     this.spriteLayer.batchDraw();
     this.notifyChange();
   }
@@ -498,6 +621,7 @@ export class CanvasStage {
       id: node.id(),
       name: node.getAttr("spriteName") || "",
       url: node.getAttr("spriteUrl") || "",
+      angles: node.getAttr("spriteAngles") || null,
       x: Math.round(node.x()),
       y: Math.round(node.y()),
       width: Math.round(node.width()),
@@ -505,7 +629,7 @@ export class CanvasStage {
       scaleX: Number(node.scaleX().toFixed(3)),
       scaleY: Number(node.scaleY().toFixed(3)),
       rotation: Math.round(node.rotation()),
-      draggable: node.draggable(),
+      draggable: node.getAttr("spriteDraggable") !== false,
     };
   }
 
@@ -514,9 +638,16 @@ export class CanvasStage {
     this.sprites.forEach((node, id) => {
       sprites[id] = this.serializeSprite(node);
     });
+    const interests = {};
+    if (this.interestMarkers) {
+      this.interestMarkers.forEach((marker, id) => {
+        if (marker) interests[id] = Object.assign({}, marker);
+      });
+    }
     return {
       background: this.bgUrl,
       sprites,
+      interests,
     };
   }
 
@@ -533,5 +664,15 @@ export class CanvasStage {
     for (let i = 0; i < entries.length; i += 1) {
       await this.upsertSprite(entries[i], false);
     }
+
+    if (this.interestMarkers) {
+      this.interestMarkers.clear();
+      const incomingInterests = state.interests && typeof state.interests === "object" ? state.interests : {};
+      Object.keys(incomingInterests).forEach((id) => {
+        const m = incomingInterests[id];
+        if (m) this.interestMarkers.set(String(id), Object.assign({}, m));
+      });
+    }
+    this.notifyChange();
   }
 }

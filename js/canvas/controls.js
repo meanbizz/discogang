@@ -46,15 +46,29 @@ export function initCanvasControls(stage) {
   const bgApply = document.getElementById("canvas-bg-apply");
   const bgClear = document.getElementById("canvas-bg-clear");
 
-  const spriteName = document.getElementById("canvas-sprite-name");
   const spriteFile = document.getElementById("canvas-sprite-file");
   const spriteUrl = document.getElementById("canvas-sprite-url");
-  const spriteW = document.getElementById("canvas-sprite-w");
-  const spriteH = document.getElementById("canvas-sprite-h");
+  const sprite4Angles = document.getElementById("canvas-sprite-4angles");
+  const spriteSingleFields = document.getElementById("canvas-sprite-single-fields");
+  const spriteAnglesFields = document.getElementById("canvas-sprite-angles-fields");
+  const angleInputs = {
+    tl: { file: document.getElementById("canvas-sprite-file-tl"), url: document.getElementById("canvas-sprite-url-tl") },
+    tr: { file: document.getElementById("canvas-sprite-file-tr"), url: document.getElementById("canvas-sprite-url-tr") },
+    bl: { file: document.getElementById("canvas-sprite-file-bl"), url: document.getElementById("canvas-sprite-url-bl") },
+    br: { file: document.getElementById("canvas-sprite-file-br"), url: document.getElementById("canvas-sprite-url-br") },
+  };
   const spriteAdd = document.getElementById("canvas-sprite-add");
   const spritesClear = document.getElementById("canvas-sprites-clear");
   const spriteList = document.getElementById("canvas-sprite-list");
   const formError = document.getElementById("canvas-form-error");
+
+  if (sprite4Angles) {
+    sprite4Angles.addEventListener("change", () => {
+      const multi = sprite4Angles.checked;
+      if (spriteSingleFields) spriteSingleFields.hidden = multi;
+      if (spriteAnglesFields) spriteAnglesFields.hidden = !multi;
+    });
+  }
 
   let userHiddenSession = false;
   const centerBtn = document.getElementById("canvas-center");
@@ -64,7 +78,7 @@ export function initCanvasControls(stage) {
     if (centerBtn) centerBtn.hidden = !userHiddenSession;
     if (hud) hud.classList.toggle("is-fullscreen", userHiddenSession);
     if (bgCanvas) bgCanvas.classList.toggle("is-fullscreen", userHiddenSession);
-    stage.panEnabled = Boolean(userHiddenSession);
+    stage.setInteractive(Boolean(userHiddenSession));
   };
 
   const setSessionHidden = (hidden) => {
@@ -85,9 +99,17 @@ export function initCanvasControls(stage) {
     if (!hud || !joinPanel) return;
     const inSession = joinPanel.hidden;
     hud.hidden = !inSession;
+    if (openModalBtn) openModalBtn.hidden = !(inSession && state.isAdmin);
     if (!inSession && userHiddenSession) setSessionHidden(false);
     updatePanVisibility();
   };
+
+  if (sessionPanel) {
+    const roleEl = document.getElementById("role-label");
+    if (roleEl) {
+      new MutationObserver(syncHudVisibility).observe(roleEl, { attributes: true, attributeFilter: ["hidden"] });
+    }
+  }
 
   if (joinPanel) {
     const obs = new MutationObserver(syncHudVisibility);
@@ -188,8 +210,19 @@ export function initCanvasControls(stage) {
     list.id = "canvas-interest-list";
     list.className = "canvas-interest-list";
 
+    const activeHeading = document.createElement("h4");
+    activeHeading.className = "sub-label";
+    activeHeading.style.margin = "0.75rem 0 0.35rem";
+    activeHeading.textContent = "Active on Canvas";
+
+    const activeList = document.createElement("div");
+    activeList.id = "canvas-interest-active-list";
+    activeList.className = "canvas-interest-list";
+
     section.appendChild(heading);
     section.appendChild(list);
+    section.appendChild(activeHeading);
+    section.appendChild(activeList);
 
     /* The canvas modal has a two-column layout: the form stays on the left,
        the interest picker joins the right-hand list column. */
@@ -210,11 +243,107 @@ export function initCanvasControls(stage) {
 
 
 
+  const renderInterestPicker = () => {
+    const section = document.getElementById("canvas-interest-section");
+    if (section) section.hidden = !state.isAdmin;
+    if (!state.isAdmin) return;
+    const list = document.getElementById("canvas-interest-list");
+    const activeList = document.getElementById("canvas-interest-active-list");
+    if (list) {
+      list.textContent = "";
+      const spots = Array.isArray(state.interests) ? state.interests : [];
+      const discovered = spots.filter(
+        (spot) => spot && spot.name && spot.discovered !== false,
+      );
+      if (!discovered.length) {
+        const empty = document.createElement("p");
+        empty.className = "inv-empty";
+        empty.textContent = "No discovered spots of interest.";
+        list.appendChild(empty);
+      } else {
+        discovered.forEach((spot) => {
+          const found = spot.skill ? findSkill(spot.skill) : null;
+          const attribute = found && found.attribute ? found.attribute : "";
+          const row = document.createElement("div");
+          row.className = "canvas-sprite-item";
+          row.setAttribute("role", "listitem");
+
+          const meta = document.createElement("div");
+          meta.className = "canvas-sprite-meta";
+          const dot = document.createElement("span");
+          paintInterestDot(dot, attribute);
+          const text = document.createElement("span");
+          text.className = "canvas-sprite-label";
+          text.textContent = spot.name;
+          meta.appendChild(dot);
+          meta.appendChild(text);
+
+          const actions = document.createElement("div");
+          actions.className = "canvas-sprite-actions";
+          const addBtn = document.createElement("button");
+          addBtn.type = "button";
+          addBtn.className = "option";
+          addBtn.textContent = "Add";
+          addBtn.addEventListener("click", () => placeInterestMarker(spot, attribute));
+          actions.appendChild(addBtn);
+
+          row.appendChild(meta);
+          row.appendChild(actions);
+          list.appendChild(row);
+        });
+      }
+    }
+
+    if (activeList) {
+      activeList.textContent = "";
+      const markers = stage.interestMarkers || new Map();
+      markers.forEach((marker, id) => {
+        if (!marker) return;
+        const row = document.createElement("div");
+        row.className = "canvas-sprite-item";
+        row.setAttribute("role", "listitem");
+
+        const meta = document.createElement("div");
+        meta.className = "canvas-sprite-meta";
+        const dot = document.createElement("span");
+        paintInterestDot(dot, marker.attribute);
+        const text = document.createElement("span");
+        text.className = "canvas-sprite-label";
+        text.textContent = `${marker.name || "Spot of interest"} (${Math.round(marker.x)}, ${Math.round(marker.y)})`;
+        meta.appendChild(dot);
+        meta.appendChild(text);
+
+        const actions = document.createElement("div");
+        actions.className = "canvas-sprite-actions";
+        const delBtn = document.createElement("button");
+        delBtn.type = "button";
+        delBtn.className = "npc-cancel-btn";
+        delBtn.textContent = "Remove";
+        delBtn.addEventListener("click", () => {
+          if (!state.isAdmin) return;
+          stage.callbacks.onInterestRemove?.(id);
+        });
+        actions.appendChild(delBtn);
+
+        row.appendChild(meta);
+        row.appendChild(actions);
+        activeList.appendChild(row);
+      });
+      if (!activeList.children.length) {
+        const empty = document.createElement("p");
+        empty.className = "inv-empty";
+        empty.textContent = "No active spots on the canvas.";
+        activeList.appendChild(empty);
+      }
+    }
+  };
+
   const renderInterestMarkers = () => {
     stage.renderInterestMarkers(
       stage.interestMarkers || new Map(),
       ATTRIBUTE_COLORS,
     );
+    renderInterestPicker();
   };
 
   stage.onChange(renderInterestMarkers);
@@ -231,43 +360,6 @@ export function initCanvasControls(stage) {
       name: spot.name || "Spot of interest",
       attribute: attribute || "",
       ...stage.viewportCenter(),
-    });
-    if (modal) modal.hidden = true;
-  };
-
-  const renderInterestPicker = () => {
-    const list = document.getElementById("canvas-interest-list");
-    if (!list) return;
-    list.textContent = "";
-    const spots = Array.isArray(state.interests) ? state.interests : [];
-    const discovered = spots.filter(
-      (spot) => spot && spot.name && spot.discovered !== false,
-    );
-    if (!discovered.length) {
-      const empty = document.createElement("p");
-      empty.className = "inv-empty";
-      empty.textContent = "No discovered spots of interest.";
-      list.appendChild(empty);
-      return;
-    }
-    discovered.forEach((spot) => {
-      const found = spot.skill ? findSkill(spot.skill) : null;
-      const attribute = found && found.attribute ? found.attribute : "";
-      const pick = document.createElement("button");
-      pick.type = "button";
-      pick.className = "canvas-interest-pick";
-      if (attribute) pick.dataset.attribute = attribute;
-
-      const dot = document.createElement("span");
-      paintInterestDot(dot, attribute);
-      const text = document.createElement("span");
-      text.className = "interest-marker-text";
-      text.textContent = spot.name;
-
-      pick.appendChild(dot);
-      pick.appendChild(text);
-      pick.addEventListener("click", () => placeInterestMarker(spot, attribute));
-      list.appendChild(pick);
     });
   };
 
@@ -345,32 +437,49 @@ export function initCanvasControls(stage) {
       if (formError) formError.textContent = "";
       spriteAdd.disabled = true;
       try {
-        let url = spriteUrl?.value.trim() || "";
-        if (spriteFile?.files?.[0]) {
-          url = await uploadNative(spriteFile.files[0]);
-          spriteFile.value = "";
+        let url = "";
+        let angles = null;
+        if (sprite4Angles?.checked) {
+          angles = {};
+          for (const key of ["tl", "tr", "bl", "br"]) {
+            const inp = angleInputs[key];
+            let aUrl = inp.url?.value.trim() || "";
+            if (inp.file?.files?.[0]) {
+              aUrl = await uploadNative(inp.file.files[0]);
+              inp.file.value = "";
+            }
+            if (!aUrl) {
+              if (formError) formError.textContent = "Provide all 4 angle images or URLs.";
+              return;
+            }
+            angles[key] = aUrl;
+          }
+          url = angles.tl;
+          Object.values(angleInputs).forEach((inp) => {
+            if (inp.url) inp.url.value = "";
+          });
+        } else {
+          url = spriteUrl?.value.trim() || "";
+          if (spriteFile?.files?.[0]) {
+            url = await uploadNative(spriteFile.files[0]);
+            spriteFile.value = "";
+          }
+          if (!url) {
+            if (formError) formError.textContent = "Provide an image file or URL for the sprite.";
+            return;
+          }
         }
-        if (!url) {
-          if (formError) formError.textContent = "Provide an image file or URL for the sprite.";
-          return;
-        }
-        const width = Math.max(16, Number(spriteW?.value) || 120);
-        const height = Math.max(16, Number(spriteH?.value) || 120);
-        const name = spriteName?.value.trim() || "";
+
         const id = uid();
         const center = stage.viewportCenter();
-        const cx = Math.round(center.x - width / 2);
-        const cy = Math.round(center.y - height / 2);
 
         await stage.upsertSprite(
           {
             id,
-            name,
             url,
-            x: cx,
-            y: cy,
-            width,
-            height,
+            angles,
+            x: Math.round(center.x - 60),
+            y: Math.round(center.y - 60),
             scaleX: 1,
             scaleY: 1,
             rotation: 0,
@@ -379,7 +488,6 @@ export function initCanvasControls(stage) {
           true,
         );
         if (spriteUrl) spriteUrl.value = "";
-        if (spriteName) spriteName.value = "";
       } catch (e) {
         if (formError) formError.textContent = e?.message || "Could not add sprite.";
       } finally {
