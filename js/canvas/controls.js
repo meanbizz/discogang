@@ -448,13 +448,13 @@ export function initCanvasControls(stage) {
               aUrl = await uploadNative(inp.file.files[0]);
               inp.file.value = "";
             }
-            if (!aUrl) {
-              if (formError) formError.textContent = "Provide all 4 angle images or URLs.";
-              return;
-            }
-            angles[key] = aUrl;
+            if (aUrl) angles[key] = aUrl;
           }
-          url = angles.tl;
+          if ((!angles.tl && !angles.tr) || (!angles.bl && !angles.br)) {
+            if (formError) formError.textContent = "Provide at least one top and one bottom angle.";
+            return;
+          }
+          url = angles.tl || angles.tr;
           Object.values(angleInputs).forEach((inp) => {
             if (inp.url) inp.url.value = "";
           });

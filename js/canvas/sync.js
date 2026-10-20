@@ -38,8 +38,12 @@ export class CanvasSync {
       },
       onSpriteChange: (sprite) => {
         if (!sprite || !sprite.id) return;
+        const key = String(sprite.id);
+        const cur = this.spritesMap.get(key);
+        const merged = Object.assign({}, cur || {}, sprite);
+        if (!merged.angles && cur && cur.angles) merged.angles = cur.angles;
         this.doc.transact(() => {
-          this.spritesMap.set(String(sprite.id), sprite);
+          this.spritesMap.set(key, merged);
         });
       },
       onSpriteMove: ({ id, x, y }) => {
@@ -47,7 +51,8 @@ export class CanvasSync {
         const key = String(id);
         const cur = this.spritesMap.get(key);
         const node = this.stage.sprites.get(key);
-        const base = cur || (node ? this.stage.serializeSprite(node) : { id: key });
+        const base = Object.assign({}, cur || {}, node ? this.stage.serializeSprite(node) : { id: key });
+        if (!base.angles && cur && cur.angles) base.angles = cur.angles;
         this.doc.transact(() => {
           this.spritesMap.set(key, Object.assign({}, base, { x, y }));
         });

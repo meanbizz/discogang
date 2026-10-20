@@ -23,6 +23,11 @@ export class CanvasStage {
     this._bgDragging = false;
     this._lastClientX = 0;
     this._lastClientY = 0;
+    this.baseWidth = 1920;
+    this.baseHeight = 1080;
+    this.baseScale = 1;
+    this.panX = 0;
+    this.panY = 0;
     this.zoom = 1;
     this.minZoom = 0.25;
     this.maxZoom = 2;
@@ -71,8 +76,8 @@ export class CanvasStage {
     this.bgNode = new window.Konva.Image({
       x: 0,
       y: 0,
-      width: this.stage.width(),
-      height: this.stage.height(),
+      width: this.baseWidth,
+      height: this.baseHeight,
     });
 
     this.transformer = new window.Konva.Transformer({
@@ -211,10 +216,11 @@ export class CanvasStage {
     this.stage.on("touchend touchcancel", () => { this._pinchDist = 0; });
 
     window.addEventListener("resize", () => this.resize());
+    this.resize();
   }
 
   viewportCenter() {
-    if (!this.stage) return { x: 0, y: 0 };
+    if (!this.stage) return { x: this.baseWidth / 2, y: this.baseHeight / 2 };
     return this.stage.getAbsoluteTransform().copy().invert().point({
       x: this.stage.width() / 2,
       y: this.stage.height() / 2,
@@ -280,8 +286,8 @@ export class CanvasStage {
   updateAngleControls() {
     if (!this.angleControls) return;
     const node = this.selectedId ? this.sprites.get(this.selectedId) : null;
-    const angles = node ? node.getAttr("spriteAngles") : null;
-    if (!node || !angles || typeof angles !== "object") {
+    const angles = node ? (node._spriteAngles || node.getAttr("spriteAngles")) : null;
+    if (!node || !angles || typeof angles !== "object" || !Object.keys(angles).length) {
       this.angleControls.visible(false);
       return;
     }
@@ -314,11 +320,16 @@ export class CanvasStage {
   switchSelectedSpriteAngle(cornerKey) {
     const node = this.selectedId ? this.sprites.get(this.selectedId) : null;
     if (!node) return;
-    const angles = node.getAttr("spriteAngles");
-    const nextUrl = angles && angles[cornerKey];
-    if (!nextUrl || nextUrl === node.getAttr("spriteUrl")) return;
+    const angles = node._spriteAngles || node.getAttr("spriteAngles");
+    if (!angles) return;
+    const opp = { tl: "tr", tr: "tl", bl: "br", br: "bl" }[cornerKey];
+    const nextUrl = angles[cornerKey] || angles[opp];
+    const flip = !angles[cornerKey] && Boolean(angles[opp]);
+    if (!nextUrl || (nextUrl === node.getAttr("spriteUrl") && flip === Boolean(node._spriteFlipX))) return;
     node.setAttr("spriteUrl", nextUrl);
-    this.loadImage(nextUrl)
+    node._spriteFlipX = flip;
+    node.setAttr("spriteFlipX", flip);
+    this.loadImage(nextUrl, flip)
       .then((img) => {
         node.image(img);
         this.spriteLayer.batchDraw();
@@ -342,48 +353,55 @@ export class CanvasStage {
     this.spriteLayer.batchDraw();
   }
 
-  clampPos(pos) {
-    return pos;
-    const vw = window.innerWidth, vh = window.innerHeight;
-    const bw = this.bgNode.width() * this.zoom, bh = this.bgNode.height() * this.zoom;
-    let x = pos.x, y = pos.y;
-    if (bw <= vw) x = (vw - bw) / 2; else x = Math.max(vw - bw, Math.min(0, x));
-    if (bh <= vh) y = (vh - bh) / 2; else y = Math.max(vh - bh, Math.min(0, y));
-    return { x, y };
-  }
   applyTransform() {
     if (!this.stage) return;
-    this.stage.scale({ x: this.zoom, y: this.zoom });
-    const p = this.clampPos(this.stage.position());
-    this.stage.position(p);
+    const sw = this.stage.width();
+    const sh = this.stage.height();
+    this.baseScale = Math.max(sw / this.baseWidth, sh / this.baseHeight);
+    const scale = this.baseScale * this.zoom;
+    const cx = (sw - this.baseWidth * scale) / 2;
+    const cy = (sh - this.baseHeight * scale) / 2;
+    this.stage.scale({ x: scale, y: scale });
+    this.stage.position({
+      x: cx + this.panX * this.baseScale,
+      y: cy + this.panY * this.baseScale,
+    });
     this.stage.batchDraw();
   }
   panBy(dx, dy) {
     if (!this.stage) return;
-    const p = this.clampPos({ x: this.stage.x() + (Number(dx) || 0), y: this.stage.y() + (Number(dy) || 0) });
-    this.stage.position(p);
-    this.stage.batchDraw();
+    const bs = this.baseScale || 1;
+    this.panX += (Number(dx) || 0) / bs;
+    this.panY += (Number(dy) || 0) / bs;
+    this.applyTransform();
   }
   resetPan() {
     if (!this.stage) return;
     this.zoom = 1;
+    this.panX = 0;
+    this.panY = 0;
     this.applyTransform();
-    const p = this.clampPos({ x: 0, y: 0 });
-    this.stage.position(p);
-    this.stage.batchDraw();
   }
   setZoom(next, cx, cy) {
     if (!this.stage) return;
     const z = Math.max(this.minZoom, Math.min(this.maxZoom, next));
     if (z === this.zoom) return;
-    const old = this.zoom;
+    const sw = this.stage.width();
+    const sh = this.stage.height();
+    const bs = this.baseScale || 1;
+    const oldScale = bs * this.zoom;
     const stagePos = this.stage.position();
-    const wx = (cx - stagePos.x) / old, wy = (cy - stagePos.y) / old;
+    const wx = (cx - stagePos.x) / oldScale;
+    const wy = (cy - stagePos.y) / oldScale;
     this.zoom = z;
-    const nx = cx - wx * z, ny = cy - wy * z;
-    this.stage.scale({ x: z, y: z });
-    this.stage.position(this.clampPos({ x: nx, y: ny }));
-    this.stage.batchDraw();
+    const newScale = bs * z;
+    const nx = cx - wx * newScale;
+    const ny = cy - wy * newScale;
+    const baseCx = (sw - this.baseWidth * newScale) / 2;
+    const baseCy = (sh - this.baseHeight * newScale) / 2;
+    this.panX = (nx - baseCx) / bs;
+    this.panY = (ny - baseCy) / bs;
+    this.applyTransform();
   }
 
   resize() {
@@ -391,12 +409,26 @@ export class CanvasStage {
     this.stage.width(window.innerWidth);
     this.stage.height(window.innerHeight);
     this.fitBackground();
-    this.bgLayer.batchDraw();
+    this.applyTransform();
   }
 
-  loadImage(url) {
-    if (this.imageCache.has(url)) {
-      return Promise.resolve(this.imageCache.get(url));
+  loadImage(url, flip = false) {
+    const key = flip ? `${url}#flip` : url;
+    if (this.imageCache.has(key)) {
+      return Promise.resolve(this.imageCache.get(key));
+    }
+    if (flip) {
+      return this.loadImage(url, false).then((img) => {
+        const c = document.createElement("canvas");
+        c.width = img.naturalWidth || img.width || 1;
+        c.height = img.naturalHeight || img.height || 1;
+        const ctx = c.getContext("2d");
+        ctx.translate(c.width, 0);
+        ctx.scale(-1, 1);
+        ctx.drawImage(img, 0, 0);
+        this.imageCache.set(key, c);
+        return c;
+      });
     }
     return new Promise((resolve, reject) => {
       const img = new Image();
@@ -411,19 +443,18 @@ export class CanvasStage {
   }
 
   fitBackground() {
-    if (!this.bgNode || !this.bgImage || !this.stage) return;
-    const sw = this.stage.width();
-    const sh = this.stage.height();
-    const iw = this.bgImage.naturalWidth || this.bgImage.width || 1;
-    const ih = this.bgImage.naturalHeight || this.bgImage.height || 1;
-    const scale = Math.max(sw / iw, sh / ih);
-    const w = iw * scale;
-    const h = ih * scale;
-
-    this.bgNode.width(w);
-    this.bgNode.height(h);
-    this.bgNode.x((sw - w) / 2);
-    this.bgNode.y((sh - h) / 2);
+    if (!this.bgNode) return;
+    if (!this.bgImage) {
+      this.baseWidth = 1920;
+      this.baseHeight = 1080;
+    } else {
+      this.baseWidth = this.bgImage.naturalWidth || this.bgImage.width || 1920;
+      this.baseHeight = this.bgImage.naturalHeight || this.bgImage.height || 1080;
+    }
+    this.bgNode.x(0);
+    this.bgNode.y(0);
+    this.bgNode.width(this.baseWidth);
+    this.bgNode.height(this.baseHeight);
   }
 
   async setBackground(url, emit = true) {
@@ -434,7 +465,8 @@ export class CanvasStage {
     if (!cleanUrl) {
       this.bgImage = null;
       this.bgNode.image(null);
-      this.bgLayer.batchDraw();
+      this.fitBackground();
+      this.applyTransform();
       this.notifyChange();
       if (emit && this.callbacks.onBackgroundChange) {
         this.callbacks.onBackgroundChange("");
@@ -448,7 +480,7 @@ export class CanvasStage {
       this.bgImage = img;
       this.bgNode.image(img);
       this.fitBackground();
-      this.bgLayer.batchDraw();
+      this.applyTransform();
       this.notifyChange();
       if (emit && this.callbacks.onBackgroundChange) {
         this.callbacks.onBackgroundChange(cleanUrl);
@@ -471,7 +503,7 @@ export class CanvasStage {
 
     if (!data.url) return;
     try {
-      const img = await this.loadImage(data.url);
+      const img = await this.loadImage(data.url, Boolean(data.flipX));
       if (this.sprites.has(id)) {
         this.updateSpriteNode(this.sprites.get(id), data);
         return;
@@ -498,10 +530,14 @@ export class CanvasStage {
         draggable: this.panEnabled && canDrag,
       });
 
+      const cleanAngles = data.angles && typeof data.angles === "object" && Object.keys(data.angles).length ? Object.assign({}, data.angles) : null;
       node.setAttr("spriteDraggable", canDrag);
       node.setAttr("spriteUrl", data.url);
+      node._spriteFlipX = Boolean(data.flipX);
+      node.setAttr("spriteFlipX", Boolean(data.flipX));
       node.setAttr("spriteName", data.name || "");
-      node.setAttr("spriteAngles", data.angles || null);
+      node._spriteAngles = cleanAngles;
+      node.setAttr("spriteAngles", cleanAngles);
       node.setAttr("zIndexOrder", Number(data.zIndex) || 0);
 
       node.on("click tap", (e) => {
@@ -566,10 +602,18 @@ export class CanvasStage {
       node.draggable(this.panEnabled && canDrag);
     }
     if (data.name !== undefined) node.setAttr("spriteName", String(data.name || ""));
-    if (data.angles !== undefined) node.setAttr("spriteAngles", data.angles || null);
-    if (data.url && data.url !== node.getAttr("spriteUrl")) {
-      node.setAttr("spriteUrl", data.url);
-      this.loadImage(data.url)
+    if (data.angles && typeof data.angles === "object" && Object.keys(data.angles).length) {
+      const cleanAngles = Object.assign({}, data.angles);
+      node._spriteAngles = cleanAngles;
+      node.setAttr("spriteAngles", cleanAngles);
+    }
+    const nextFlip = data.flipX !== undefined ? Boolean(data.flipX) : Boolean(node._spriteFlipX);
+    const nextUrl = data.url || node.getAttr("spriteUrl");
+    if (nextUrl && (nextUrl !== node.getAttr("spriteUrl") || nextFlip !== Boolean(node._spriteFlipX))) {
+      node.setAttr("spriteUrl", nextUrl);
+      node._spriteFlipX = nextFlip;
+      node.setAttr("spriteFlipX", nextFlip);
+      this.loadImage(nextUrl, nextFlip)
         .then((img) => {
           node.image(img);
           this.spriteLayer.batchDraw();
@@ -617,11 +661,13 @@ export class CanvasStage {
   }
 
   serializeSprite(node) {
+    const angles = node._spriteAngles || node.getAttr("spriteAngles") || null;
     return {
       id: node.id(),
       name: node.getAttr("spriteName") || "",
       url: node.getAttr("spriteUrl") || "",
-      angles: node.getAttr("spriteAngles") || null,
+      flipX: Boolean(node._spriteFlipX ?? node.getAttr("spriteFlipX")),
+      angles: angles && typeof angles === "object" && Object.keys(angles).length ? Object.assign({}, angles) : null,
       x: Math.round(node.x()),
       y: Math.round(node.y()),
       width: Math.round(node.width()),

@@ -125,17 +125,25 @@ function cleanCanvas(raw) {
       const url = cleanImageUrl(s.url);
       if (!id || !url) return;
       let angles = null;
-      if (s.angles && typeof s.angles === "object") {
-        const tl = cleanImageUrl(s.angles.tl);
-        const tr = cleanImageUrl(s.angles.tr);
-        const bl = cleanImageUrl(s.angles.bl);
-        const br = cleanImageUrl(s.angles.br);
-        if (tl && tr && bl && br) angles = { tl, tr, bl, br };
+      const rawAngles = (s.angles && typeof s.angles === "object") ? s.angles : (s.spriteAngles && typeof s.spriteAngles === "object") ? s.spriteAngles : null;
+      if (rawAngles) {
+        const tl = cleanImageUrl(rawAngles.tl);
+        const tr = cleanImageUrl(rawAngles.tr);
+        const bl = cleanImageUrl(rawAngles.bl);
+        const br = cleanImageUrl(rawAngles.br);
+        if (tl || tr || bl || br) {
+          angles = {};
+          if (tl) angles.tl = tl;
+          if (tr) angles.tr = tr;
+          if (bl) angles.bl = bl;
+          if (br) angles.br = br;
+        }
       }
       sprites[id] = {
         id,
         name: cleanName(s.name),
         url,
+        flipX: Boolean(s.flipX),
         angles,
         x: Math.round(Number(s.x)) || 0,
         y: Math.round(Number(s.y)) || 0,
