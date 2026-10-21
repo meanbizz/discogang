@@ -41,7 +41,7 @@ html {
 body {
   margin: 0;
   padding: 2rem 0.25rem 3rem;
-  background: var(--bg);
+  background: black;
   color: var(--text-old);
   font-family: var(--font-serif);
   font-size: 1.0625rem;

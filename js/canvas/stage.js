@@ -9,7 +9,9 @@ export class CanvasStage {
     this.stage = null;
     this.bgLayer = null;
     this.spriteLayer = null;
+    this.bgGroup = null;
     this.bgNode = null;
+    this.bgEdgeRects = null;
     this.bgImage = null;
     this.bgUrl = "";
     this.sprites = new Map();
@@ -73,12 +75,34 @@ export class CanvasStage {
     this.bgLayer = new window.Konva.Layer();
     this.spriteLayer = new window.Konva.Layer();
 
+    this.bgGroup = new window.Konva.Group({
+      clipFunc: (ctx) => {
+        ctx.beginPath();
+        ctx.roundRect(0, 0, this.baseWidth, this.baseHeight, 32);
+        ctx.closePath();
+      },
+    });
     this.bgNode = new window.Konva.Image({
       x: 0,
       y: 0,
       width: this.baseWidth,
       height: this.baseHeight,
+      cornerRadius: 32,
     });
+    const stops = [0, "rgba(0,0,0,1)", 1, "rgba(0,0,0,0)"];
+    this.bgEdgeRects = {
+      top: new window.Konva.Rect({ listening: false, fillLinearGradientColorStops: stops }),
+      bottom: new window.Konva.Rect({ listening: false, fillLinearGradientColorStops: stops }),
+      left: new window.Konva.Rect({ listening: false, fillLinearGradientColorStops: stops }),
+      right: new window.Konva.Rect({ listening: false, fillLinearGradientColorStops: stops }),
+    };
+    this.bgGroup.add(
+      this.bgNode,
+      this.bgEdgeRects.top,
+      this.bgEdgeRects.bottom,
+      this.bgEdgeRects.left,
+      this.bgEdgeRects.right,
+    );
 
     this.transformer = new window.Konva.Transformer({
       keepRatio: true,
@@ -102,19 +126,19 @@ export class CanvasStage {
       const btn = new window.Konva.Group({ name: `angle-${key}` });
       btn.add(
         new window.Konva.Circle({
-          radius: 11,
+          radius: 22,
           fill: "rgba(20, 20, 24, 0.85)",
           stroke: "#d9a441",
-          strokeWidth: 1.5,
+          strokeWidth: 3,
         }),
       );
       btn.add(
         new window.Konva.Text({
           text: label,
-          fontSize: 13,
+          fontSize: 26,
           fill: "#fff",
-          x: -6,
-          y: -6,
+          x: -12,
+          y: -12,
           listening: false,
         }),
       );
@@ -125,7 +149,7 @@ export class CanvasStage {
       this.angleControls.add(btn);
     });
 
-    this.bgLayer.add(this.bgNode);
+    this.bgLayer.add(this.bgGroup);
     this.spriteLayer.add(this.transformer);
     this.spriteLayer.add(this.angleControls);
     this.stage.add(this.bgLayer);
@@ -294,7 +318,7 @@ export class CanvasStage {
     const tr = node.getTransform();
     const w = node.width();
     const h = node.height();
-    const offset = 22;
+    const offset = 44;
     const pts = {
       tl: tr.point({ x: 0, y: 0 }),
       tr: tr.point({ x: w, y: 0 }),
@@ -451,10 +475,33 @@ export class CanvasStage {
       this.baseWidth = this.bgImage.naturalWidth || this.bgImage.width || 1920;
       this.baseHeight = this.bgImage.naturalHeight || this.bgImage.height || 1080;
     }
-    this.bgNode.x(0);
-    this.bgNode.y(0);
-    this.bgNode.width(this.baseWidth);
-    this.bgNode.height(this.baseHeight);
+    const w = this.baseWidth;
+    const h = this.baseHeight;
+    this.bgNode.setAttrs({ x: 0, y: 0, width: w, height: h });
+    if (this.bgEdgeRects) {
+      const f = Math.round(Math.min(w, h) * 0.04);
+      const vis = Boolean(this.bgImage);
+      this.bgEdgeRects.top.setAttrs({
+        visible: vis, x: 0, y: 0, width: w, height: f,
+        fillLinearGradientStartPoint: { x: 0, y: 0 },
+        fillLinearGradientEndPoint: { x: 0, y: f },
+      });
+      this.bgEdgeRects.bottom.setAttrs({
+        visible: vis, x: 0, y: h - f, width: w, height: f,
+        fillLinearGradientStartPoint: { x: 0, y: f },
+        fillLinearGradientEndPoint: { x: 0, y: 0 },
+      });
+      this.bgEdgeRects.left.setAttrs({
+        visible: vis, x: 0, y: 0, width: f, height: h,
+        fillLinearGradientStartPoint: { x: 0, y: 0 },
+        fillLinearGradientEndPoint: { x: f, y: 0 },
+      });
+      this.bgEdgeRects.right.setAttrs({
+        visible: vis, x: w - f, y: 0, width: f, height: h,
+        fillLinearGradientStartPoint: { x: f, y: 0 },
+        fillLinearGradientEndPoint: { x: 0, y: 0 },
+      });
+    }
   }
 
   async setBackground(url, emit = true) {
