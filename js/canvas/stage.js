@@ -31,7 +31,7 @@ export class CanvasStage {
     this.panX = 0;
     this.panY = 0;
     this.zoom = 1;
-    this.minZoom = 0.25;
+    this.minZoom = 0.05;
     this.maxZoom = 2;
     this._pinchDist = 0;
 

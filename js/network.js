@@ -51,6 +51,7 @@ import {
   RESUME_MAX_DELAY_MS,
   MAX_RECLAIM_ATTEMPTS,
   RECLAIM_DELAY_MS,
+  CONNECT_TIMEOUT_MS,
   ICE_SERVERS,
 } from "./config.js";
 
@@ -78,6 +79,7 @@ export class NetworkManager {
 
     this.resumeAttempts = 0;
     this.resumeTimer = null;
+    this.connectTimer = null;
     this.reclaimAttempts = 0;
     this.reclaimTimer = null;
     this.keepaliveTimer = null;
@@ -133,8 +135,7 @@ export class NetworkManager {
 
   hidden() {
     return (
-      typeof document !== "undefined" &&
-      document.visibilityState === "hidden"
+      typeof document !== "undefined" && document.visibilityState === "hidden"
     );
   }
 
@@ -266,7 +267,7 @@ export class NetworkManager {
     const instance = new window.Peer(hostId, {
       debug: 1,
       pingInterval: PEER_PING_MS,
-      config: { iceServers: ICE_SERVERS, sdpSemantics: "unified-plan", iceTransportPolicy: "all" },
+      config: { iceServers: ICE_SERVERS, iceCandidatePoolSize: 10 },
     });
     this.peer = instance;
 
@@ -339,7 +340,7 @@ export class NetworkManager {
     const instance = new window.Peer(hostId, {
       debug: 1,
       pingInterval: PEER_PING_MS,
-      config: { iceServers: ICE_SERVERS, sdpSemantics: "unified-plan", iceTransportPolicy: "all" },
+      config: { iceServers: ICE_SERVERS, iceCandidatePoolSize: 10 },
     });
     this.peer = instance;
 
@@ -398,6 +399,13 @@ export class NetworkManager {
         return;
       }
 
+      if (connection.peerConnection) {
+        connection.peerConnection.addEventListener("iceconnectionstatechange", () => {
+          const state = connection.peerConnection?.iceConnectionState;
+          if (state === "failed" || state === "closed") drop();
+        });
+      }
+
       connection.on("open", () => {
         if (!this.sessionAlive(instance, generation)) return;
         /* A seat that re-dialled before its old association ever closed. The
@@ -450,7 +458,7 @@ export class NetworkManager {
     const instance = new window.Peer({
       debug: 1,
       pingInterval: PEER_PING_MS,
-      config: { iceServers: ICE_SERVERS, sdpSemantics: "unified-plan", iceTransportPolicy: "all" },
+      config: { iceServers: ICE_SERVERS, iceCandidatePoolSize: 10 },
     });
     this.peer = instance;
 
@@ -486,14 +494,34 @@ export class NetworkManager {
     this.hostId = hostId;
     this.handlers.onStatus("connecting", "Knocking…");
 
+    this.clearTimer("connectTimer");
     const connection = instance.connect(hostId, { reliable: true });
     this.upstream = connection;
 
     const mine = () =>
       this.sessionAlive(instance, generation) && connection === this.upstream;
 
+    // Abort stalled local/LAN handshakes that never fire open or error.
+    this.connectTimer = setTimeout(() => {
+      this.connectTimer = null;
+      if (!mine() || connection.open) return;
+      this.resumeUpstream("Handshake timed out — redialling…");
+    }, CONNECT_TIMEOUT_MS);
+
+    if (connection.peerConnection) {
+      connection.peerConnection.addEventListener("iceconnectionstatechange", () => {
+        if (!mine()) return;
+        const state = connection.peerConnection?.iceConnectionState;
+        if (state === "failed") {
+          this.clearTimer("connectTimer");
+          this.resumeUpstream("Local route failed — redialling…");
+        }
+      });
+    }
+
     connection.on("open", () => {
       if (!mine()) return;
+      this.clearTimer("connectTimer");
       this.joinAttempts = 0;
       const returning = this.resumeAttempts > 0;
       this.resumeAttempts = 0;
@@ -521,13 +549,15 @@ export class NetworkManager {
 
     connection.on("close", () => {
       if (!mine()) return;
+      this.clearTimer("connectTimer");
       this.upstream = null;
       this.resumeUpstream("The room went quiet — redialling…");
     });
 
     connection.on("error", () => {
       if (!mine()) return;
-      this.handlers.onStatus("error", "Connection error");
+      this.clearTimer("connectTimer");
+      this.resumeUpstream("Connection error — redialling…");
     });
   }
 
@@ -537,6 +567,7 @@ export class NetworkManager {
   resumeUpstream(note) {
     if (this.isHost || !this.hostId) return;
     if (this.resumeTimer) return;
+    this.clearTimer("connectTimer");
 
     const generation = this.sessionGeneration;
     const stale = this.upstream;
@@ -625,6 +656,7 @@ export class NetworkManager {
     this.reclaimAttempts = 0;
     this.heldId = false;
     this.probeAt = 0;
+    this.clearTimer("connectTimer");
     this.clearTimer("resumeTimer");
     this.clearTimer("reclaimTimer");
     this.stopKeepalive();
