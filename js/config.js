@@ -1,6 +1,7 @@
 /* Every tunable number and name the session runs on. */
 
 import { NARRATION_ENDPOINT } from "./secrets/secrets.js";
+import * as secrets from "./secrets/secrets.js";
 
 export const ROOM_PREFIX = "de-salon-";
 export const ADMIN_NAME = "administrateur";
@@ -103,3 +104,15 @@ export const NARRATION = {
   excludedNames: ["ancient reptilian brain", "limbic system"],
 };
 
+export const ICE_SERVERS = [
+  { urls: "stun:stun.l.google.com:19302" },
+  { urls: "stun:stun.cloudflare.com:3478" },
+  // PeerJS's own public relays, lost when a custom config replaces its defaults.
+  {
+    urls: ["turn:eu-0.turn.peerjs.com:3478", "turn:us-0.turn.peerjs.com:3478"],
+    username: "peerjs",
+    credential: "peerjsp",
+  },
+  // Optional private TURN: export TURN_SERVERS = [{ urls, username, credential }] from secrets.js.
+  ...(Array.isArray(secrets.TURN_SERVERS) ? secrets.TURN_SERVERS : []),
+];
