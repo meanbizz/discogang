@@ -80,6 +80,8 @@ export class NetworkManager {
 
     this.resumeAttempts = 0;
     this.forceRelay = false;
+    /* Set once a relay-only attempt gathered nothing: TURN is unreachable. */
+    this.turnDead = false;
     this.resumeTimer = null;
     this.connectTimer = null;
     this.reclaimAttempts = 0;
@@ -101,7 +103,9 @@ export class NetworkManager {
   }
 
   getDebugText() {
-    return this.debugLogs.length ? this.debugLogs.join("\n") : "No connectivity logs recorded.";
+    return this.debugLogs.length
+      ? this.debugLogs.join("\n")
+      : "No connectivity logs recorded.";
   }
 
   attachIceDebug(connection, label) {
@@ -114,7 +118,10 @@ export class NetworkManager {
       });
       pc.addEventListener("iceconnectionstatechange", () => {
         this.logDebug(`${label} ICE state: ${pc.iceConnectionState}`);
-        if (pc.iceConnectionState === "failed" || pc.iceConnectionState === "disconnected") {
+        if (
+          pc.iceConnectionState === "failed" ||
+          pc.iceConnectionState === "disconnected"
+        ) {
           this.logPairStats(pc, label);
         }
       });
@@ -126,7 +133,9 @@ export class NetworkManager {
       });
       pc.addEventListener("icecandidate", (e) => {
         if (e.candidate) {
-          this.logDebug(`${label} ICE candidate: ${e.candidate.type || "unknown"} ${e.candidate.protocol || ""} ${e.candidate.address || ""}`);
+          this.logDebug(
+            `${label} ICE candidate: ${e.candidate.type || "unknown"} ${e.candidate.protocol || ""} ${e.candidate.address || ""}`,
+          );
         } else {
           this.logDebug(`${label} ICE candidate gathering complete`);
         }
@@ -147,12 +156,21 @@ export class NetworkManager {
             remotes += 1;
             const addr = s.address || s.ip || "";
             const mdns = /\.local$/i.test(addr) ? " (mDNS-obfuscated)" : "";
-            this.logDebug(`${label} remote candidate: ${s.candidateType} ${s.protocol || ""} ${addr}${mdns}`);
+            this.logDebug(
+              `${label} remote candidate: ${s.candidateType} ${s.protocol || ""} ${addr}${mdns}`,
+            );
           } else if (s.type === "candidate-pair") {
-            this.logDebug(`${label} candidate pair: ${s.state}`, { nominated: Boolean(s.nominated), sent: s.requestsSent || 0, recv: s.responsesReceived || 0 });
+            this.logDebug(`${label} candidate pair: ${s.state}`, {
+              nominated: Boolean(s.nominated),
+              sent: s.requestsSent || 0,
+              recv: s.responsesReceived || 0,
+            });
           }
         });
-        if (!remotes) this.logDebug(`${label} no remote candidates were received from the other side`);
+        if (!remotes)
+          this.logDebug(
+            `${label} no remote candidates were received from the other side`,
+          );
       })
       .catch(() => {});
   }
@@ -330,7 +348,9 @@ export class NetworkManager {
     this.bindWake();
 
     const hostId = ROOM_PREFIX + roomId;
-    this.logDebug(`Opening room as "${profile?.name}" (target hostId: ${hostId})`);
+    this.logDebug(
+      `Opening room as "${profile?.name}" (target hostId: ${hostId})`,
+    );
     const instance = new window.Peer(hostId, {
       debug: 2,
       pingInterval: PEER_PING_MS,
@@ -348,7 +368,10 @@ export class NetworkManager {
 
     instance.on("error", (error) => {
       if (!this.sessionAlive(instance, generation)) return;
-      this.logDebug(`Host peer error: ${error?.type || "unknown"}`, error?.message || "");
+      this.logDebug(
+        `Host peer error: ${error?.type || "unknown"}`,
+        error?.message || "",
+      );
       if (error && error.type === "unavailable-id") {
         /* Never held it: the room is somebody else's, so knock on it. Held it
            once: this is our own registration still being let go of, and the
@@ -406,7 +429,9 @@ export class NetworkManager {
     if (generation !== this.sessionGeneration) return;
 
     const hostId = ROOM_PREFIX + roomId;
-    this.logDebug(`Reopening room as host (${hostId}), attempt ${this.reclaimAttempts}`);
+    this.logDebug(
+      `Reopening room as host (${hostId}), attempt ${this.reclaimAttempts}`,
+    );
     const instance = new window.Peer(hostId, {
       debug: 2,
       pingInterval: PEER_PING_MS,
@@ -463,7 +488,11 @@ export class NetworkManager {
 
     instance.on("connection", (connection) => {
       this.logDebug(`Incoming connection from peer: ${connection.peer}`);
-      if (!this.sessionAlive(instance, generation)) {
+      /* PeerJS builds the answer before this event is emitted, so closing a
+         live connection here replies and then kills gathering — the guest
+         reaches stable and never receives a candidate. Only a peer that is
+         actually gone may refuse. */
+      if (instance.destroyed || instance !== this.peer) {
         try {
           connection.close();
         } catch (error) {}
@@ -473,10 +502,13 @@ export class NetworkManager {
       this.attachIceDebug(connection, `Host<-${connection.peer}`);
 
       if (connection.peerConnection) {
-        connection.peerConnection.addEventListener("iceconnectionstatechange", () => {
-          const state = connection.peerConnection?.iceConnectionState;
-          if (state === "failed" || state === "closed") drop();
-        });
+        connection.peerConnection.addEventListener(
+          "iceconnectionstatechange",
+          () => {
+            const state = connection.peerConnection?.iceConnectionState;
+            if (state === "failed" || state === "closed") drop();
+          },
+        );
       }
 
       connection.on("open", () => {
@@ -516,7 +548,10 @@ export class NetworkManager {
       const drop = (err) => {
         if (!this.sessionAlive(instance, generation)) return;
         if (this.downstream.get(connection.peer) !== connection) return;
-        this.logDebug(`Downstream peer dropped: ${connection.peer}`, err?.message || "");
+        this.logDebug(
+          `Downstream peer dropped: ${connection.peer}`,
+          err?.message || "",
+        );
         this.downstream.delete(connection.peer);
         this.handlers.onPeerDrop(connection.peer);
       };
@@ -531,8 +566,10 @@ export class NetworkManager {
     this.destroyPeer(stale);
     if (generation !== this.sessionGeneration) return;
 
-    const transportPolicy = this.forceRelay ? "relay" : "all";
-    this.logDebug(`Swapping to guest mode to dial host: ${hostId} (policy: ${transportPolicy})`);
+    const transportPolicy = this.forceRelay && !this.turnDead ? "relay" : "all";
+    this.logDebug(
+      `Swapping to guest mode to dial host: ${hostId} (policy: ${transportPolicy})`,
+    );
     const instance = new window.Peer({
       debug: 2,
       pingInterval: PEER_PING_MS,
@@ -552,7 +589,10 @@ export class NetworkManager {
 
     instance.on("error", (error) => {
       if (!this.sessionAlive(instance, generation)) return;
-      this.logDebug(`Guest peer error: ${error?.type || "unknown"}`, error?.message || "");
+      this.logDebug(
+        `Guest peer error: ${error?.type || "unknown"}`,
+        error?.message || "",
+      );
       if (error && error.type === "peer-unavailable") {
         /* Lost a host we had: re-dial it rather than starting over. */
         if (this.resumeAttempts > 0) this.resumeUpstream("");
@@ -614,14 +654,25 @@ export class NetworkManager {
       const onFail = (reason) => {
         if (!mine() || connection.open) return;
         this.clearTimer("connectTimer");
-        this.forceRelay = !this.forceRelay;
-        this.logDebug(`${reason} — toggling relay (${this.forceRelay}) and redialling`);
-        this.resumeUpstream("Route failed — switching relay…", true);
+        this.logPairStats(pc, `Guest->${hostId}`);
+        // One relay attempt is enough; a dead TURN never revives mid-session.
+        this.forceRelay = !this.turnDead && !this.forceRelay;
+        this.logDebug(`${reason} — relay ${this.forceRelay} and redialling`);
+        this.resumeUpstream("Route failed — redialling…", true);
       };
       pc.addEventListener("iceconnectionstatechange", () => {
         const state = pc.iceConnectionState;
-        if (state === "failed" || state === "disconnected") {
-          onFail(`ICE state ${state}`);
+        if (state === "failed") {
+          onFail("ICE state failed");
+          return;
+        }
+        if (state === "disconnected" && !connection.open) {
+          /* Checks timed out. The handshake timer redials on this same peer,
+             which is cheaper than rebuilding the signalling socket. */
+          this.logDebug(
+            "ICE went quiet while handshaking — leaving it to the handshake timer",
+          );
+          this.logPairStats(pc, `Guest->${hostId}`);
         }
       });
       pc.addEventListener("connectionstatechange", () => {
@@ -636,6 +687,7 @@ export class NetworkManager {
       pc.addEventListener("icegatheringstatechange", () => {
         if (pc.iceGatheringState !== "complete" || !this.forceRelay) return;
         if (gathered || / typ /.test(pc.localDescription?.sdp || "")) return;
+        this.turnDead = true;
         onFail("No relay candidates gathered (TURN unreachable)");
       });
     };

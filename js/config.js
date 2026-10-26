@@ -113,6 +113,16 @@ export const ICE_SERVERS = [
     username: "peerjs",
     credential: "peerjsp",
   },
+  // Relays on 80/443 so a forced-relay attempt can gather something at all.
+  {
+    urls: [
+      "turn:openrelay.metered.ca:80",
+      "turn:openrelay.metered.ca:443",
+      "turns:openrelay.metered.ca:443?transport=tcp",
+    ],
+    username: "openrelayproject",
+    credential: "openrelayproject",
+  },
   // Optional private TURN: export TURN_SERVERS = [{ urls, username, credential }] from secrets.js.
   ...(Array.isArray(secrets.TURN_SERVERS) ? secrets.TURN_SERVERS : []),
 ];
