@@ -52,8 +52,9 @@ import {
   MAX_RECLAIM_ATTEMPTS,
   RECLAIM_DELAY_MS,
   CONNECT_TIMEOUT_MS,
-  ICE_SERVERS,
 } from "./config.js";
+
+import { ICE_SERVERS } from "./secrets/secrets.js";
 
 /* Ours, and never handed up to the app. */
 const WIRE_ONLY = { ping: true, pong: true };
@@ -79,6 +80,7 @@ export class NetworkManager {
     this.heldId = false;
 
     this.resumeAttempts = 0;
+    this.forceRelay = false;
     this.resumeTimer = null;
     this.connectTimer = null;
     this.reclaimAttempts = 0;
@@ -100,7 +102,9 @@ export class NetworkManager {
   }
 
   getDebugText() {
-    return this.debugLogs.length ? this.debugLogs.join("\n") : "No connectivity logs recorded.";
+    return this.debugLogs.length
+      ? this.debugLogs.join("\n")
+      : "No connectivity logs recorded.";
   }
 
   attachIceDebug(connection, label) {
@@ -122,7 +126,9 @@ export class NetworkManager {
       });
       pc.addEventListener("icecandidate", (e) => {
         if (e.candidate) {
-          this.logDebug(`${label} ICE candidate: ${e.candidate.type || "unknown"} ${e.candidate.protocol || ""} ${e.candidate.address || ""}`);
+          this.logDebug(
+            `${label} ICE candidate: ${e.candidate.type || "unknown"} ${e.candidate.protocol || ""} ${e.candidate.address || ""}`,
+          );
         } else {
           this.logDebug(`${label} ICE candidate gathering complete`);
         }
@@ -305,11 +311,13 @@ export class NetworkManager {
     this.bindWake();
 
     const hostId = ROOM_PREFIX + roomId;
-    this.logDebug(`Opening room as "${profile?.name}" (target hostId: ${hostId})`);
+    this.logDebug(
+      `Opening room as "${profile?.name}" (target hostId: ${hostId})`,
+    );
     const instance = new window.Peer(hostId, {
       debug: 2,
       pingInterval: PEER_PING_MS,
-      config: { iceServers: ICE_SERVERS, iceCandidatePoolSize: 2 },
+      config: { iceServers: ICE_SERVERS },
     });
     this.peer = instance;
 
@@ -323,7 +331,10 @@ export class NetworkManager {
 
     instance.on("error", (error) => {
       if (!this.sessionAlive(instance, generation)) return;
-      this.logDebug(`Host peer error: ${error?.type || "unknown"}`, error?.message || "");
+      this.logDebug(
+        `Host peer error: ${error?.type || "unknown"}`,
+        error?.message || "",
+      );
       if (error && error.type === "unavailable-id") {
         /* Never held it: the room is somebody else's, so knock on it. Held it
            once: this is our own registration still being let go of, and the
@@ -381,11 +392,13 @@ export class NetworkManager {
     if (generation !== this.sessionGeneration) return;
 
     const hostId = ROOM_PREFIX + roomId;
-    this.logDebug(`Reopening room as host (${hostId}), attempt ${this.reclaimAttempts}`);
+    this.logDebug(
+      `Reopening room as host (${hostId}), attempt ${this.reclaimAttempts}`,
+    );
     const instance = new window.Peer(hostId, {
       debug: 2,
       pingInterval: PEER_PING_MS,
-      config: { iceServers: ICE_SERVERS, iceCandidatePoolSize: 2 },
+      config: { iceServers: ICE_SERVERS },
     });
     this.peer = instance;
 
@@ -448,10 +461,13 @@ export class NetworkManager {
       this.attachIceDebug(connection, `Host<-${connection.peer}`);
 
       if (connection.peerConnection) {
-        connection.peerConnection.addEventListener("iceconnectionstatechange", () => {
-          const state = connection.peerConnection?.iceConnectionState;
-          if (state === "failed" || state === "closed") drop();
-        });
+        connection.peerConnection.addEventListener(
+          "iceconnectionstatechange",
+          () => {
+            const state = connection.peerConnection?.iceConnectionState;
+            if (state === "failed" || state === "closed") drop();
+          },
+        );
       }
 
       connection.on("open", () => {
@@ -491,7 +507,10 @@ export class NetworkManager {
       const drop = (err) => {
         if (!this.sessionAlive(instance, generation)) return;
         if (this.downstream.get(connection.peer) !== connection) return;
-        this.logDebug(`Downstream peer dropped: ${connection.peer}`, err?.message || "");
+        this.logDebug(
+          `Downstream peer dropped: ${connection.peer}`,
+          err?.message || "",
+        );
         this.downstream.delete(connection.peer);
         this.handlers.onPeerDrop(connection.peer);
       };
@@ -506,11 +525,14 @@ export class NetworkManager {
     this.destroyPeer(stale);
     if (generation !== this.sessionGeneration) return;
 
-    this.logDebug(`Swapping to guest mode to dial host: ${hostId}`);
+    const transportPolicy = this.forceRelay ? "relay" : "all";
+    this.logDebug(
+      `Swapping to guest mode to dial host: ${hostId} (policy: ${transportPolicy})`,
+    );
     const instance = new window.Peer({
       debug: 2,
       pingInterval: PEER_PING_MS,
-      config: { iceServers: ICE_SERVERS, iceCandidatePoolSize: 2 },
+      config: { iceServers: ICE_SERVERS, iceTransportPolicy: transportPolicy },
     });
     this.peer = instance;
 
@@ -526,7 +548,10 @@ export class NetworkManager {
 
     instance.on("error", (error) => {
       if (!this.sessionAlive(instance, generation)) return;
-      this.logDebug(`Guest peer error: ${error?.type || "unknown"}`, error?.message || "");
+      this.logDebug(
+        `Guest peer error: ${error?.type || "unknown"}`,
+        error?.message || "",
+      );
       if (error && error.type === "peer-unavailable") {
         /* Lost a host we had: re-dial it rather than starting over. */
         if (this.resumeAttempts > 0) this.resumeUpstream("");
@@ -585,13 +610,24 @@ export class NetworkManager {
 
     const bindPc = (pc) => {
       if (!pc) return;
+      const onFail = (reason) => {
+        if (!mine() || connection.open) return;
+        this.clearTimer("connectTimer");
+        this.forceRelay = !this.forceRelay;
+        this.logDebug(
+          `${reason} — toggling relay (${this.forceRelay}) and redialling`,
+        );
+        this.resumeUpstream("Route failed — switching relay…", true);
+      };
       pc.addEventListener("iceconnectionstatechange", () => {
-        if (!mine()) return;
         const state = pc.iceConnectionState;
-        if (state === "failed") {
-          this.clearTimer("connectTimer");
-          this.logDebug("ICE connection failed — redialling");
-          this.resumeUpstream("Local route failed — redialling…");
+        if (state === "failed" || state === "disconnected") {
+          onFail(`ICE state ${state}`);
+        }
+      });
+      pc.addEventListener("connectionstatechange", () => {
+        if (pc.connectionState === "failed") {
+          onFail("PeerConnection failed");
         }
       });
     };
@@ -603,6 +639,7 @@ export class NetworkManager {
       this.clearTimer("connectTimer");
       this.logDebug(`Upstream connection open with host ${hostId}`);
       this.joinAttempts = 0;
+      this.forceRelay = false;
       const returning = this.resumeAttempts > 0;
       this.resumeAttempts = 0;
       this.selfId = instance.id;
@@ -647,7 +684,7 @@ export class NetworkManager {
   /* A guest that has lost its host dials again, waiting a little longer each
      time. The app is only told the room is closed once the attempts run out —
      a single dropped association is not the end of a session. */
-  resumeUpstream(note) {
+  resumeUpstream(note, rebuildPeer = false) {
     if (this.isHost || !this.hostId) return;
     if (this.resumeTimer) return;
     this.clearTimer("connectTimer");
@@ -684,8 +721,7 @@ export class NetworkManager {
       if (generation !== this.sessionGeneration) return;
 
       const instance = this.peer;
-      if (!instance || instance.destroyed) {
-        /* The whole peer is gone, so it is rebuilt around the same host id. */
+      if (rebuildPeer || !instance || instance.destroyed) {
         this.swapToGuest(this.hostId, generation, this.profile);
         return;
       }
@@ -736,6 +772,7 @@ export class NetworkManager {
     this.sessionGeneration += 1;
     this.joinAttempts = 0;
     this.resumeAttempts = 0;
+    this.forceRelay = false;
     this.reclaimAttempts = 0;
     this.heldId = false;
     this.probeAt = 0;
