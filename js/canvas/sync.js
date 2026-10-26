@@ -1,6 +1,6 @@
-// Yjs CRDT synchronization over PeerJS for the Konva background canvas.
+// Fast delta and Yjs synchronization over PeerJS for the Konva background canvas.
 import * as Y from "https://esm.sh/yjs@13.6.18";
-import { network, broadcast } from "../app/net.js";
+import { network, broadcast, sendUpstream } from "../app/net.js";
 
 const ORIGIN_REMOTE = "remote-yjs";
 
@@ -16,25 +16,44 @@ export class CanvasSync {
     this.bindDoc();
   }
 
+  sendOp(op, exceptPeerId = null) {
+    const msg = Object.assign({ type: "canvas-op" }, op);
+    if (network.isHost) {
+      broadcast(msg, exceptPeerId);
+    } else {
+      sendUpstream(msg);
+    }
+  }
+
   bindStage() {
     if (!this.stage) return;
     this.stage.callbacks = {
       onInterestChange: (marker) => {
         if (!marker || !marker.id) return;
+        const key = String(marker.id);
+        this.stage.interestMarkers.set(key, marker);
         this.doc.transact(() => {
-          this.interestsMap.set(String(marker.id), marker);
-        });
+          this.interestsMap.set(key, marker);
+        }, ORIGIN_REMOTE);
+        this.stage.notifyChange();
+        this.sendOp({ op: "interest-upsert", marker });
       },
       onInterestRemove: (id) => {
         if (!id) return;
+        const key = String(id);
+        this.stage.interestMarkers.delete(key);
         this.doc.transact(() => {
-          this.interestsMap.delete(String(id));
-        });
+          this.interestsMap.delete(key);
+        }, ORIGIN_REMOTE);
+        this.stage.notifyChange();
+        this.sendOp({ op: "interest-remove", id: key });
       },
       onBackgroundChange: (url) => {
+        const clean = String(url || "");
         this.doc.transact(() => {
-          this.metaMap.set("background", String(url || ""));
-        });
+          this.metaMap.set("background", clean);
+        }, ORIGIN_REMOTE);
+        this.sendOp({ op: "bg", url: clean });
       },
       onSpriteChange: (sprite) => {
         if (!sprite || !sprite.id) return;
@@ -44,7 +63,8 @@ export class CanvasSync {
         if (!merged.angles && cur && cur.angles) merged.angles = cur.angles;
         this.doc.transact(() => {
           this.spritesMap.set(key, merged);
-        });
+        }, ORIGIN_REMOTE);
+        this.sendOp({ op: "sprite-upsert", sprite: merged });
       },
       onSpriteMove: ({ id, x, y }) => {
         if (!id) return;
@@ -53,64 +73,103 @@ export class CanvasSync {
         const node = this.stage.sprites.get(key);
         const base = Object.assign({}, cur || {}, node ? this.stage.serializeSprite(node) : { id: key });
         if (!base.angles && cur && cur.angles) base.angles = cur.angles;
+        const merged = Object.assign({}, base, { x, y });
         this.doc.transact(() => {
-          this.spritesMap.set(key, Object.assign({}, base, { x, y }));
-        });
+          this.spritesMap.set(key, merged);
+        }, ORIGIN_REMOTE);
+        this.sendOp({ op: "sprite-upsert", sprite: merged });
       },
       onSpriteRemove: (id) => {
+        const key = String(id);
         this.doc.transact(() => {
-          this.spritesMap.delete(String(id));
-        });
+          this.spritesMap.delete(key);
+        }, ORIGIN_REMOTE);
+        this.sendOp({ op: "sprite-remove", id: key });
       },
       onClearSprites: () => {
         this.doc.transact(() => {
           Array.from(this.spritesMap.keys()).forEach((k) => this.spritesMap.delete(k));
-        });
+        }, ORIGIN_REMOTE);
+        this.sendOp({ op: "sprites-clear" });
       },
     };
   }
 
   bindDoc() {
-    this.interestsMap.observe((event) => {
-      event.keysChanged.forEach((key) => {
-        const marker = this.interestsMap.get(key);
-        if (marker) this.stage.interestMarkers.set(key, marker);
-        else this.stage.interestMarkers.delete(key);
-      });
-      this.stage.notifyChange();
-    });
-
     this.doc.on("update", (update, origin) => {
       if (origin === ORIGIN_REMOTE) return;
       const msg = { type: "canvas-yjs", update: Array.from(update) };
       if (network.isHost) {
         broadcast(msg);
-      } else if (network.upstream && network.upstream.open) {
-        try {
-          network.upstream.send(msg);
-        } catch (e) {}
+      } else {
+        sendUpstream(msg);
       }
     });
+  }
 
-    this.metaMap.observe((event) => {
-      if (event.transaction.origin === ORIGIN_REMOTE) {
-        this.stage.setBackground(this.metaMap.get("background") || "", false);
-      }
+  syncStageFromDoc() {
+    if (!this.stage) return;
+    this.stage.setBackground(this.metaMap.get("background") || "", false);
+    const currentSprites = new Set(this.stage.sprites.keys());
+    this.spritesMap.forEach((data, key) => {
+      currentSprites.delete(key);
+      if (data) this.stage.upsertSprite(data, false);
     });
+    currentSprites.forEach((key) => this.stage.removeSprite(key, false));
 
-    this.spritesMap.observe((event) => {
-      if (event.transaction.origin === ORIGIN_REMOTE) {
-        event.keysChanged.forEach((key) => {
-          const change = event.changes.keys.get(key);
-          if (change && change.action === "delete") {
-            this.stage.removeSprite(key, false);
-          } else {
-            const data = this.spritesMap.get(key);
-            if (data) this.stage.upsertSprite(data, false);
-          }
-        });
-      }
+    this.stage.interestMarkers.clear();
+    this.interestsMap.forEach((marker, key) => {
+      if (marker) this.stage.interestMarkers.set(key, marker);
     });
+    this.stage.notifyChange();
+  }
+
+  handleMessage(data, fromPeerId = null) {
+    if (!data) return;
+    if (data.type === "canvas-yjs") {
+      this.applyRemoteUpdate(data.update, fromPeerId);
+      return;
+    }
+    if (data.type !== "canvas-op") return;
+
+    if (network.isHost && fromPeerId) {
+      this.sendOp(data, fromPeerId);
+    }
+
+    const op = data.op;
+    if (op === "bg") {
+      const url = String(data.url || "");
+      this.doc.transact(() => this.metaMap.set("background", url), ORIGIN_REMOTE);
+      this.stage.setBackground(url, false);
+    } else if (op === "sprite-upsert" && data.sprite?.id) {
+      const key = String(data.sprite.id);
+      const existed = this.stage.sprites.has(key);
+      this.doc.transact(() => this.spritesMap.set(key, data.sprite), ORIGIN_REMOTE);
+      this.stage.upsertSprite(data.sprite, false).then(() => {
+        if (!existed) this.stage.notifyChange();
+      });
+    } else if (op === "sprite-remove" && data.id) {
+      const key = String(data.id);
+      this.doc.transact(() => this.spritesMap.delete(key), ORIGIN_REMOTE);
+      this.stage.removeSprite(key, false);
+    } else if (op === "sprites-clear") {
+      this.doc.transact(() => {
+        Array.from(this.spritesMap.keys()).forEach((k) => this.spritesMap.delete(k));
+      }, ORIGIN_REMOTE);
+      this.stage.clearSprites(false);
+    } else if (op === "interest-upsert" && data.marker?.id) {
+      const key = String(data.marker.id);
+      this.doc.transact(() => this.interestsMap.set(key, data.marker), ORIGIN_REMOTE);
+      this.stage.interestMarkers.set(key, data.marker);
+      this.stage.notifyChange();
+    } else if (op === "interest-remove" && data.id) {
+      const key = String(data.id);
+      this.doc.transact(() => this.interestsMap.delete(key), ORIGIN_REMOTE);
+      this.stage.interestMarkers.delete(key);
+      this.stage.notifyChange();
+    } else if (op === "full-state" && data.state) {
+      this.replaceState(data.state, false);
+    }
   }
 
   encodeFullState() {
@@ -122,6 +181,7 @@ export class CanvasSync {
     try {
       const update = new Uint8Array(updateArray);
       Y.applyUpdate(this.doc, update, ORIGIN_REMOTE);
+      this.syncStageFromDoc();
       if (network.isHost && fromPeerId) {
         broadcast({ type: "canvas-yjs", update: updateArray }, fromPeerId);
       }
@@ -131,7 +191,8 @@ export class CanvasSync {
   sendFullStateTo(connection) {
     if (!connection || !connection.open) return;
     try {
-      connection.send({ type: "canvas-yjs", update: this.encodeFullState() });
+      const state = this.stage ? this.stage.exportState() : {};
+      connection.send({ type: "canvas-op", op: "full-state", state });
     } catch (e) {}
   }
 
@@ -139,7 +200,6 @@ export class CanvasSync {
     const bg = typeof canvasData.background === "string" ? canvasData.background : "";
     const sprites = canvasData.sprites && typeof canvasData.sprites === "object" ? canvasData.sprites : {};
     const interests = canvasData.interests && typeof canvasData.interests === "object" ? canvasData.interests : {};
-    const origin = emit ? "session-load" : ORIGIN_REMOTE;
     this.doc.transact(() => {
       this.metaMap.set("background", bg);
       Array.from(this.spritesMap.keys()).forEach((k) => {
@@ -154,7 +214,10 @@ export class CanvasSync {
       Object.keys(interests).forEach((k) => {
         if (interests[k]) this.interestsMap.set(String(k), interests[k]);
       });
-    }, origin);
+    }, ORIGIN_REMOTE);
     if (this.stage) this.stage.importState({ background: bg, sprites, interests });
+    if (emit) {
+      this.sendOp({ op: "full-state", state: { background: bg, sprites, interests } });
+    }
   }
 }

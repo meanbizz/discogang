@@ -4,7 +4,7 @@
    into the modules above — no logic lives here. */
 
 import { dom } from "../dom.js";
-import { appendPair, cleanImageUrl, cleanName, paintThumb } from "../utils.js";
+import { appendPair, cleanImageUrl, cleanName, copyText, paintThumb } from "../utils.js";
 import { probeImage, rejectImageFile, uploadImage } from "../upload.js";
 import * as modals from "../modals.js";
 import * as music from "../audio/music.js";
@@ -557,6 +557,17 @@ function bindInterests() {
   if (dom.interestsModal) {
     dom.interestsModal.addEventListener("click", (event) => {
       if (event.target.dataset.close === "true") modals.closeInterests();
+    });
+  }
+  if (dom.debugButton) {
+    dom.debugButton.addEventListener("click", () => {
+      copyText(network.getDebugText(), (ok) => {
+        const prev = "Debug";
+        dom.debugButton.textContent = ok ? "Copied ✓" : "Failed";
+        setTimeout(() => {
+          if (dom.debugButton) dom.debugButton.textContent = prev;
+        }, 1600);
+      });
     });
   }
 }

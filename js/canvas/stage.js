@@ -34,6 +34,7 @@ export class CanvasStage {
     this.minZoom = 0.05;
     this.maxZoom = 2;
     this._pinchDist = 0;
+    this._lastEmitAt = 0;
 
     if (this.container && window.Konva) {
       this.init();
@@ -285,16 +286,31 @@ export class CanvasStage {
         node.on("dragstart", () => {
           if (!state.isAdmin || !this.panEnabled) node.stopDrag();
         });
-        node.on("dragmove dragend", () => {
+        node.on("dragmove", () => {
+          if (!state.isAdmin) return;
+          const now = Date.now();
+          if (now - this._lastEmitAt < 40) return;
+          this._lastEmitAt = now;
+          const current = this.interestMarkers?.get(id);
+          if (current && this.callbacks.onInterestChange) {
+            this.callbacks.onInterestChange({
+              ...current,
+              x: Math.round(node.x()),
+              y: Math.round(node.y()),
+            });
+          }
+        });
+        node.on("dragend", () => {
           if (!state.isAdmin) return;
           const current = this.interestMarkers?.get(id);
           if (current && this.callbacks.onInterestChange) {
             this.callbacks.onInterestChange({
               ...current,
-              x: node.x(),
-              y: node.y(),
+              x: Math.round(node.x()),
+              y: Math.round(node.y()),
             });
           }
+          this.notifyChange();
         });
         this.interestNodes.set(id, node);
         this.spriteLayer.add(node);
@@ -606,12 +622,11 @@ export class CanvasStage {
 
       node.on("dragmove transform", () => {
         if (this.selectedId === id) this.updateAngleControls();
-        if (node.isDragging() && this.callbacks.onSpriteMove) {
-          this.callbacks.onSpriteMove({
-            id,
-            x: Math.round(node.x()),
-            y: Math.round(node.y()),
-          });
+        const now = Date.now();
+        if (now - this._lastEmitAt < 35) return;
+        this._lastEmitAt = now;
+        if (this.callbacks.onSpriteChange) {
+          this.callbacks.onSpriteChange(this.serializeSprite(node));
         }
       });
 
@@ -636,8 +651,10 @@ export class CanvasStage {
   }
 
   updateSpriteNode(node, data) {
-    if (data.x !== undefined) node.x(Number(data.x) || 0);
-    if (data.y !== undefined) node.y(Number(data.y) || 0);
+    if (!node.isDragging()) {
+      if (data.x !== undefined) node.x(Number(data.x) || 0);
+      if (data.y !== undefined) node.y(Number(data.y) || 0);
+    }
     if (data.width !== undefined) node.width(Number(data.width) || node.width());
     if (data.height !== undefined) node.height(Number(data.height) || node.height());
     if (data.scaleX !== undefined) node.scaleX(Number(data.scaleX) || 1);
@@ -669,7 +686,6 @@ export class CanvasStage {
     }
     if (this.selectedId === node.id()) this.updateAngleControls();
     this.spriteLayer.batchDraw();
-    this.notifyChange();
   }
 
   moveSprite(id, x, y, emit = false) {

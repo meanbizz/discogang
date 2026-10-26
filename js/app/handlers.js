@@ -131,6 +131,7 @@ function onHostReceiveData(connection, data) {
   if (data.type === "hello") {
     const name = cleanName(data.profile?.name) || "Unnamed";
     const joiningAdmin = isAdminName(name);
+    network.logDebug(`Host handling hello from "${name}" (${connection.peer}), admin=${joiningAdmin}, resuming=${Boolean(data.resuming)}`);
     const previous = state.roster.get(connection.peer);
     /* The same peer id knocking again is the same seat, whatever it says: a
        wire that came back before anybody noticed it had gone. */
@@ -218,9 +219,9 @@ function onHostReceiveData(connection, data) {
     return;
   }
 
-  if (data.type === "canvas-yjs") {
+  if (data.type === "canvas-yjs" || data.type === "canvas-op") {
     const canvasSync = getCanvasSync();
-    if (canvasSync) canvasSync.applyRemoteUpdate(data.update, connection.peer);
+    if (canvasSync) canvasSync.handleMessage(data, connection.peer);
     return;
   }
 
@@ -729,13 +730,14 @@ function applyPlayerOverride(data) {
 function onGuestReceiveData(data) {
   if (seen(data)) return;
   if (data.type === "welcome") {
+    network.logDebug(`Guest received welcome (assigned ID: ${data.id})`);
     onWelcome(data);
     return;
   }
 
-  if (data.type === "canvas-yjs") {
+  if (data.type === "canvas-yjs" || data.type === "canvas-op") {
     const canvasSync = getCanvasSync();
-    if (canvasSync) canvasSync.applyRemoteUpdate(data.update);
+    if (canvasSync) canvasSync.handleMessage(data);
     return;
   }
 
@@ -935,8 +937,7 @@ setHandlers({
   },
   onPeerDrop: (peerId) => {
     const person = state.roster.get(peerId);
-    /* Kept before it is dropped: this is the whole of what lets a player who
-       lost their wire sit back down where they were. */
+    network.logDebug(`Peer dropped from roster: ${person?.name || peerId}`);
     if (person) rememberSeat(person);
     state.roster.delete(peerId);
     renderRoster();

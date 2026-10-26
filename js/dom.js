@@ -146,6 +146,7 @@ export const dom = {
 
   // Interests — spots of interest for players and administrateur
   interestsButton: document.getElementById("interests-button"),
+  debugButton: document.getElementById("debug-button"),
   interestsModal: document.getElementById("interests-modal"),
   interestsModalClose: document.getElementById("interests-modal-close"),
   interestsClear: document.getElementById("interests-clear"),

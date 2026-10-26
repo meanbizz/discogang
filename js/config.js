@@ -87,7 +87,7 @@ export const RESUME_DELAY_MS = 1500;
 export const RESUME_MAX_DELAY_MS = 15000;
 export const MAX_RECLAIM_ATTEMPTS = 8;
 export const RECLAIM_DELAY_MS = 2500;
-export const CONNECT_TIMEOUT_MS = 10000;
+export const CONNECT_TIMEOUT_MS = 18000;
 
 /* endpoint is the Worker holding the speech key; modelId travels as
    reference_id. excludedNames (lowercased) never earn a play button. */
@@ -104,6 +104,15 @@ export const NARRATION = {
 };
 
 export const ICE_SERVERS = [
-{ urls: "stun:stun.l.google.com:19302" },
-{ urls: "stun:stun.cloudflare.com:3478" },
+  { urls: "stun:stun.l.google.com:19302" },
+  { urls: "stun:stun.cloudflare.com:3478" },
+  {
+    urls: [
+      "turn:openrelay.metered.ca:80",
+      "turn:openrelay.metered.ca:443",
+      "turn:openrelay.metered.ca:443?transport=tcp",
+    ],
+    username: "openrelayproject",
+    credential: "openrelayproject",
+  },
 ];
