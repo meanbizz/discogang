@@ -365,7 +365,7 @@ export class NetworkManager {
     const instance = this.peer;
     if (!instance || instance.destroyed) return;
 
-    if (instance.disconnected) {
+    if (instance.disconnected && !this.reclaimTimer) {
       try {
         instance.reconnect();
       } catch (error) {}
@@ -488,15 +488,13 @@ export class NetworkManager {
   reclaimRoom(generation) {
     if (generation !== this.sessionGeneration) return;
 
-    const stale = this.peer;
-    this.peer = null;
-    this.destroyPeer(stale);
+    // The seats live on this peer's data channels, so it is kept and only its socket is retried.
     this.clearTimer("reclaimTimer");
 
     if (this.reclaimAttempts >= MAX_RECLAIM_ATTEMPTS) {
       this.handlers.onStatus("error", "Room unreachable");
       this.handlers.onSystemNote(
-        "The signalling server will not hand this room back. Leave and rejoin to reopen it.",
+        "The signalling server will not hand this room back. Seated players stay connected; newcomers cannot join until you rejoin.",
       );
       return;
     }
@@ -508,6 +506,13 @@ export class NetworkManager {
       if (generation !== this.sessionGeneration) return;
       /* The seats we already hold are kept: this replaces the signalling
          socket, not the table. */
+      const instance = this.peer;
+      if (instance && !instance.destroyed) {
+        try {
+          instance.reconnect();
+        } catch (error) {}
+        return;
+      }
       this.reopenAsHost(this.roomId, this.profile, generation);
     }, RECLAIM_DELAY_MS);
   }
@@ -574,6 +579,9 @@ export class NetworkManager {
 
     this.handlers.onStatus("online", "Connected");
 
+    // A signalling reconnect fires open again; the listener is bound once per peer.
+    if (instance._salonHosting) return;
+    instance._salonHosting = true;
     instance.on("connection", (connection) => {
       this.logDebug(`Incoming connection from peer: ${connection.peer}`);
       /* PeerJS builds the answer before this event is emitted, so closing a
@@ -647,7 +655,14 @@ export class NetworkManager {
         this.handlers.onPeerDrop(connection.peer);
       };
       connection.on("close", () => drop());
-      connection.on("error", (err) => drop(err));
+      // A non-fatal error leaves the channel open; dropping it would orphan a live seat.
+      connection.on("error", (err) => {
+        if (connection.open) {
+          this.logDebug(`Downstream error from ${connection.peer}`, err?.message || "");
+          return;
+        }
+        drop(err);
+      });
     });
   }
 
@@ -829,8 +844,10 @@ export class NetworkManager {
 
     connection.on("error", (err) => {
       if (!mine()) return;
-      this.clearTimer("connectTimer");
       this.logDebug("Upstream connection error", err?.message || "");
+      // A non-fatal error leaves the channel open, so the wire is kept.
+      if (connection.open) return;
+      this.clearTimer("connectTimer");
       this.resumeUpstream("Connection error — redialling…");
     });
   }
@@ -915,6 +932,8 @@ export class NetworkManager {
     instance.on("disconnected", () => {
       if (!this.sessionAlive(instance, generation) || instance.destroyed)
         return;
+      // A reclaim in progress owns the retry timing.
+      if (this.reclaimTimer) return;
       this.handlers.onStatus("connecting", "Reconnecting…");
       try {
         instance.reconnect();
