@@ -37,6 +37,7 @@ import { setGoals } from "./goals.js";
 import { setStatusRolls } from "./status.js";
 import { refreshLedger } from "./progress.js";
 import { resetTimer } from "./timer.js";
+import { loadTurn } from "../turn.js";
 
 function seat(isAdmin) {
   dom.roleLabel.hidden = !isAdmin;
@@ -164,7 +165,12 @@ export function connect(room, name, portrait) {
 
   if (location.hash.slice(1) !== state.roomId) location.hash = state.roomId;
 
-  network.openRoom(state.roomId, state.profile, network.sessionGeneration);
+  const generation = network.sessionGeneration;
+  loadTurn().then((ok) => {
+    if (generation !== network.sessionGeneration) return;
+    network.logDebug(ok ? "TURN credentials loaded" : "No TURN credentials — direct routes only");
+    network.openRoom(state.roomId, state.profile, generation);
+  });
   if (state.isAdmin) dom.textInput.focus();
   else dom.turnInput.focus();
 }

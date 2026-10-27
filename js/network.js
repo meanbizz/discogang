@@ -169,7 +169,7 @@ export class NetworkManager {
         });
         if (!remotes)
           this.logDebug(
-            `${label} no remote candidates were received from the other side`,
+            `${label} no remote candidates left in stats (none arrived, or every pair was pruned)`,
           );
       })
       .catch(() => {});
