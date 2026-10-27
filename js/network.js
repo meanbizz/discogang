@@ -58,6 +58,12 @@ import {
 /* Ours, and never handed up to the app. */
 const WIRE_ONLY = { ping: true, pong: true };
 
+/* PeerJS caps JSON messages near 16 KB; 4000 chars stays under it even at 3 bytes a char. */
+const CHUNK_CHARS = 4000;
+const CHUNK_MAX_PARTS = 2500;
+const CHUNK_TTL_MS = 60000;
+let chunkSerial = 0;
+
 export class NetworkManager {
   constructor(handlers) {
     this.debugLogs = [];
@@ -100,6 +106,88 @@ export class NetworkManager {
     this.debugLogs.push(entry);
     if (this.debugLogs.length > 500) this.debugLogs.shift();
     console.debug("[Salon Net]", entry);
+  }
+
+  /* Replaces send on one connection so oversized payloads travel as numbered chunks. */
+  wrapConnection(connection) {
+    if (!connection || connection._salonChunked) return;
+    connection._salonChunked = true;
+    connection._salonInbox = new Map();
+    const raw = connection.send.bind(connection);
+    connection.send = (data, ...rest) => {
+      let text;
+      try {
+        text = JSON.stringify(data);
+      } catch (error) {
+        return raw(data, ...rest);
+      }
+      if (typeof text !== "string" || text.length <= CHUNK_CHARS) {
+        return raw(data, ...rest);
+      }
+      const total = Math.ceil(text.length / CHUNK_CHARS);
+      if (total > CHUNK_MAX_PARTS) {
+        this.logDebug(`Dropped outgoing "${data?.type}" — too large (${text.length} chars)`);
+        return;
+      }
+      chunkSerial += 1;
+      const id = chunkSerial.toString(36) + "-" + Date.now().toString(36);
+      for (let i = 0; i < total; i += 1) {
+        raw({
+          type: "chunk",
+          id,
+          i,
+          n: total,
+          d: text.slice(i * CHUNK_CHARS, (i + 1) * CHUNK_CHARS),
+        });
+      }
+    };
+  }
+
+  /* Returns the whole message, or null while its chunks are still arriving. */
+  unchunk(connection, data) {
+    if (!data || data.type !== "chunk") return data;
+    if (!connection._salonInbox) connection._salonInbox = new Map();
+    const inbox = connection._salonInbox;
+    const now = Date.now();
+    inbox.forEach((held, key) => {
+      if (now - held.at > CHUNK_TTL_MS) inbox.delete(key);
+    });
+
+    const id = String(data.id || "");
+    const n = Number(data.n);
+    const i = Number(data.i);
+    if (
+      !id ||
+      !Number.isInteger(n) ||
+      n < 1 ||
+      n > CHUNK_MAX_PARTS ||
+      !Number.isInteger(i) ||
+      i < 0 ||
+      i >= n ||
+      typeof data.d !== "string"
+    ) {
+      return null;
+    }
+
+    let held = inbox.get(id);
+    if (!held || held.parts.length !== n) {
+      held = { parts: new Array(n), got: 0, at: now };
+      inbox.set(id, held);
+    }
+    if (held.parts[i] === undefined) {
+      held.parts[i] = data.d;
+      held.got += 1;
+    }
+    held.at = now;
+    if (held.got < n) return null;
+
+    inbox.delete(id);
+    try {
+      return JSON.parse(held.parts.join(""));
+    } catch (error) {
+      this.logDebug("A chunked message failed to reassemble");
+      return null;
+    }
   }
 
   getDebugText() {
@@ -500,6 +588,7 @@ export class NetworkManager {
       }
 
       this.attachIceDebug(connection, `Host<-${connection.peer}`);
+      this.wrapConnection(connection);
 
       if (connection.peerConnection) {
         connection.peerConnection.addEventListener(
@@ -530,6 +619,8 @@ export class NetworkManager {
       connection.on("data", (data) => {
         if (!this.sessionAlive(instance, generation) || !data?.type) return;
         this.heard();
+        data = this.unchunk(connection, data);
+        if (!data?.type) return;
         if (WIRE_ONLY[data.type]) {
           if (data.type === "ping") {
             try {
@@ -626,6 +717,7 @@ export class NetworkManager {
     });
     this.upstream = connection;
     this.attachIceDebug(connection, `Guest->${hostId}`);
+    this.wrapConnection(connection);
 
     const mine = () =>
       this.sessionAlive(instance, generation) && connection === this.upstream;
@@ -713,6 +805,8 @@ export class NetworkManager {
     connection.on("data", (data) => {
       if (!mine() || !data?.type) return;
       this.heard();
+      data = this.unchunk(connection, data);
+      if (!data?.type) return;
       if (WIRE_ONLY[data.type]) {
         if (data.type === "ping") {
           try {
